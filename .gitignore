@@ -1,34 +1,7 @@
-# =========================
-# Python
-# =========================
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 
-# =========================
-# Ambientes virtuais
-# =========================
-.venv/
-venv/
+data/extratos/*.csv
 
-# =========================
-# VS Code
-# =========================
-.vscode/
-
-# =========================
-# Dados sensíveis / locais
-# =========================
-src/auth/usuarios.json
-
-# =========================
-# Arquivos de sistema
-# =========================
-.DS_Store
-Thumbs.db
-
-# =========================
-# Logs (se surgir)
-# =========================
-*.log
+.env
+usuarios.json

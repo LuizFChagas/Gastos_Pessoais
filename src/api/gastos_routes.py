@@ -3,8 +3,12 @@ from pydantic import BaseModel
 from pathlib import Path
 import shutil
 
+from typing import Optional
+from datetime import datetime
+
 from src.ingestao_manual import adicionar_gasto_manual
 from src.ingestao_extrato_bancario import importar_extrato
+
 
 router = APIRouter()
 
@@ -13,24 +17,25 @@ class GastoManualRequest(BaseModel):
     descricao: str
     valor: float
     categoria: str
+    data_hora: Optional[datetime] = None
 
 
 @router.post("/manual")
 def adicionar_manual(dados: GastoManualRequest):
+
     adicionar_gasto_manual(
         descricao=dados.descricao,
         valor=dados.valor,
-        categoria=dados.categoria
+        categoria=dados.categoria,
+        data_hora=dados.data_hora
     )
-    return {
-        "message": "Gasto manual adicionado com sucesso"
-    }
+
+    return {"message": "Gasto manual adicionado com sucesso"}
 
 
 @router.post("/importar")
 def importar_extrato_bancario(file: UploadFile = File(...)):
 
-    # 🔎 Validação simples de formato
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(
             status_code=400,
@@ -38,6 +43,7 @@ def importar_extrato_bancario(file: UploadFile = File(...)):
         )
 
     caminho_temp = Path("data/extratos") / file.filename
+
     caminho_temp.parent.mkdir(parents=True, exist_ok=True)
 
     with open(caminho_temp, "wb") as buffer:
