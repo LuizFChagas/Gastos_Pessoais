@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from src.auth.auth_service import autenticar, cadastrar_usuario
+
+from src.auth.auth_service import cadastrar_usuario, autenticar_usuario
+
 
 router = APIRouter()
 
@@ -10,16 +12,31 @@ class CadastroRequest(BaseModel):
     senha: str
 
 
+class LoginRequest(BaseModel):
+    usuario: str
+    senha: str
+
+
 @router.post("/cadastro")
 def cadastro(dados: CadastroRequest):
-    sucesso = cadastrar_usuario(dados.usuario, dados.senha)
-    if not sucesso:
-        raise HTTPException(status_code=400, detail="Usuário já existe")
+
+    cadastrar_usuario(
+        usuario=dados.usuario,
+        senha=dados.senha
+    )
+
     return {"message": "Usuário cadastrado com sucesso"}
 
 
 @router.post("/login")
-def login(dados: CadastroRequest):
-    if not autenticar(dados.usuario, dados.senha):
+def login(dados: LoginRequest):
+
+    user = autenticar_usuario(
+        usuario=dados.usuario,
+        senha=dados.senha
+    )
+
+    if not user:
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
+
     return {"message": "Login realizado com sucesso"}
