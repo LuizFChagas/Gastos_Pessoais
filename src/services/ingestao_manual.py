@@ -1,37 +1,33 @@
+from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import Optional
 
 from src.database.database import SessionLocal
-from src.database.models import Gasto, Usuario
+from src.database.models import Gasto
 
 
 def adicionar_gasto_manual(
     descricao: str,
     valor: float,
     categoria: str,
-    data_hora: Optional[datetime] = None
+    usuario_id: int,
+    data_hora: str | None = None
 ):
 
-    db = SessionLocal()
+    db: Session = SessionLocal()
 
-    usuario = db.query(Usuario).first()
-
-    if not usuario:
-        raise Exception("Nenhum usuário encontrado")
-
-    if data_hora is None:
-        data_hora = datetime.utcnow()
+    if data_hora:
+        data = datetime.fromisoformat(data_hora)
+    else:
+        data = datetime.now()
 
     gasto = Gasto(
         descricao=descricao,
         valor=valor,
         categoria=categoria,
-        data_hora=data_hora,
-        usuario_id=usuario.id
+        data_hora=data,
+        usuario_id=usuario_id
     )
 
     db.add(gasto)
-
     db.commit()
-
     db.close()

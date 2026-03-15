@@ -1,40 +1,26 @@
 import pandas as pd
-from datetime import datetime
-
+from sqlalchemy.orm import Session
 from src.database.database import SessionLocal
-from src.database.models import Gasto, Usuario
+from src.database.models import Gasto
 
 
-def importar_extrato(caminho_extrato):
+def importar_extrato(caminho_extrato, usuario_id):
 
     df = pd.read_csv(caminho_extrato)
 
-    db = SessionLocal()
+    db: Session = SessionLocal()
 
-    usuario = db.query(Usuario).first()
-
-    if not usuario:
-        raise Exception("Nenhum usuário encontrado")
-
-    for _, row in df.iterrows():
-
-        data = row.get("data_hora")
-
-        if pd.isna(data):
-            data = datetime.utcnow()
-        else:
-            data = pd.to_datetime(data)
+    for _, linha in df.iterrows():
 
         gasto = Gasto(
-            descricao=row["descricao"],
-            valor=row["valor"],
-            categoria=row["categoria"],
-            data_hora=data,
-            usuario_id=usuario.id
+            descricao=linha["descricao"],
+            valor=linha["valor"],
+            categoria=linha["categoria"],
+            data_hora=linha.get("data_hora"),
+            usuario_id=usuario_id
         )
 
         db.add(gasto)
 
     db.commit()
-
     db.close()
