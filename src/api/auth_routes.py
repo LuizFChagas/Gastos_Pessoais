@@ -1,42 +1,77 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src.auth.auth_service import cadastrar_usuario, autenticar_usuario
+from sqlalchemy.orm import Session
+
+from src.database.database import SessionLocal
+from src.database.models import Usuario
+
+from src.auth.security import criar_token
 
 
 router = APIRouter()
 
 
 class CadastroRequest(BaseModel):
-    usuario: str
+    email: str
     senha: str
 
 
 class LoginRequest(BaseModel):
-    usuario: str
+    email: str
     senha: str
 
 
 @router.post("/cadastro")
 def cadastro(dados: CadastroRequest):
 
-    cadastrar_usuario(
-        usuario=dados.usuario,
+    db: Session = SessionLocal()
+
+    usuario_existente = db.query(Usuario).filter(
+        Usuario.email == dados.email
+    ).first()
+
+    if usuario_existente:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Usuário já existe"
+        )
+
+    novo_usuario = Usuario(
+        email=dados.email,
         senha=dados.senha
     )
 
-    return {"message": "Usuário cadastrado com sucesso"}
+    db.add(novo_usuario)
+    db.commit()
+
+    db.close()
+
+    return {"message": "Usuário criado com sucesso"}
 
 
 @router.post("/login")
 def login(dados: LoginRequest):
 
-    user = autenticar_usuario(
-        usuario=dados.usuario,
-        senha=dados.senha
-    )
+    db: Session = SessionLocal()
 
-    if not user:
-        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+    usuario = db.query(Usuario).filter(
+        Usuario.email == dados.email
+    ).first()
 
-    return {"message": "Login realizado com sucesso"}
+    if not usuario or usuario.senha != dados.senha:
+
+        raise HTTPException(
+            status_code=401,
+            detail="Email ou senha incorretos"
+        )
+
+    token = criar_token(usuario.id)
+
+    db.close()
+
+    return {
+        "access_token": token,
+        "token_type": "bearer"
+    }
