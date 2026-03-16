@@ -1,7 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from pydantic import BaseModel
+import uuid
 from pathlib import Path
 import shutil
+
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from pydantic import BaseModel, Field
 
 from src.services.ingestao_manual import adicionar_gasto_manual
 from src.services.ingestao_extrato_bancario import importar_extrato
@@ -14,9 +16,12 @@ router = APIRouter()
 
 class GastoManualRequest(BaseModel):
 
-    descricao: str
-    valor: float
-    categoria: str
+    descricao: str = Field(min_length=1, max_length=200)
+
+    valor: float = Field(gt=0)
+
+    categoria: str = Field(min_length=1, max_length=50)
+
     data_hora: str | None = None
 
 
@@ -50,7 +55,9 @@ def importar_extrato_bancario(
             detail="Formato inválido. Envie CSV."
         )
 
-    caminho_temp = Path("data/extratos") / file.filename
+    nome_arquivo = f"{uuid.uuid4()}.csv"
+
+    caminho_temp = Path("data/extratos") / nome_arquivo
 
     caminho_temp.parent.mkdir(parents=True, exist_ok=True)
 
@@ -61,6 +68,5 @@ def importar_extrato_bancario(
     importar_extrato(caminho_temp, usuario_id)
 
     return {
-        "message": "Extrato importado com sucesso",
-        "arquivo": file.filename
+        "message": "Extrato importado com sucesso"
     }

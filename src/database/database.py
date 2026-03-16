@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "postgresql+psycopg2://postgres:1951@localhost:5432/controle_gastos"
+from src.core.config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL)
 

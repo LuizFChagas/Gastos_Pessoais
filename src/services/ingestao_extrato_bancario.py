@@ -8,19 +8,32 @@ def importar_extrato(caminho_extrato, usuario_id):
 
     df = pd.read_csv(caminho_extrato)
 
-    db: Session = SessionLocal()
+    # validação das colunas obrigatórias
+    colunas_esperadas = {"descricao", "valor", "categoria"}
 
-    for _, linha in df.iterrows():
-
-        gasto = Gasto(
-            descricao=linha["descricao"],
-            valor=linha["valor"],
-            categoria=linha["categoria"],
-            data_hora=linha.get("data_hora"),
-            usuario_id=usuario_id
+    if not colunas_esperadas.issubset(df.columns):
+        raise ValueError(
+            "CSV inválido. O arquivo deve conter as colunas: descricao, valor, categoria"
         )
 
-        db.add(gasto)
+    db: Session = SessionLocal()
 
-    db.commit()
-    db.close()
+    try:
+
+        for _, linha in df.iterrows():
+
+            gasto = Gasto(
+                descricao=linha["descricao"],
+                valor=float(linha["valor"]),
+                categoria=linha["categoria"],
+                data_hora=linha.get("data_hora"),
+                usuario_id=usuario_id
+            )
+
+            db.add(gasto)
+
+        db.commit()
+
+    finally:
+
+        db.close()
