@@ -1,7 +1,28 @@
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+venv/
+.env/
+.venv/
+
+.env
+
+*.log
+*.tmp
 
 data/extratos/*.csv
 
-.env
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+
+frontend/node_modules/
+frontend/dist/
+
+*.db
+*.sqlite3
+
 usuarios.json
