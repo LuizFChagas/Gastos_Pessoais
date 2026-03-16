@@ -1,48 +1,21 @@
-import API_URL, { getAuthHeaders } from "./api"
+import api from "./api";
 
-export async function adicionarGasto(descricao, valor, categoria, data_hora = null) {
+export const listarGastos = async () => {
+  const response = await api.get("/gastos/mes");
+  return response.data;
+};
 
-  const response = await fetch(`${API_URL}/gastos/manual`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders()
-    },
-    body: JSON.stringify({
-      descricao,
-      valor,
-      categoria,
-      data_hora
-    })
-  })
+export const resumoDashboard = async () => {
+  const response = await api.get("/gastos/dashboard/resumo");
+  return response.data;
+};
 
-  const data = await response.json()
+export const gastosPorMes = async () => {
+  const response = await api.get("/gastos/mes");
+  return response.data;
+};
 
-  if (!response.ok) {
-    throw new Error(data.detail || "Erro ao adicionar gasto")
-  }
-
-  return data
-}
-
-export async function importarExtrato(arquivo) {
-
-  const formData = new FormData()
-  formData.append("file", arquivo)
-
-  const response = await fetch(`${API_URL}/gastos/importar`, {
-    method: "POST",
-    headers: {
-      ...getAuthHeaders()
-    },
-    body: formData
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(data.detail || "Erro ao importar extrato")
-  }
-
-  return data
-}
+export const gastosPorDia = async () => {
+  const response = await api.get("/gastos/por-dia");
+  return response.data;
+};

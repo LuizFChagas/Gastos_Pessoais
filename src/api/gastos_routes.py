@@ -23,7 +23,7 @@ router = APIRouter()
 class GastoManualRequest(BaseModel):
 
     descricao: str = Field(min_length=1, max_length=200)
-    valor: float = Field(gt=0)
+    valor: float
     categoria: str = Field(min_length=1, max_length=50)
     data_hora: str | None = None
 
@@ -73,6 +73,34 @@ def importar_extrato_bancario(
     return {
         "message": "Extrato importado com sucesso"
     }
+
+
+@router.get("/")
+def listar_gastos(usuario_id: int = Depends(pegar_usuario_logado)):
+
+    db: Session = SessionLocal()
+
+    gastos = (
+        db.query(Gasto)
+        .filter(Gasto.usuario_id == usuario_id)
+        .order_by(Gasto.data_hora.desc())
+        .all()
+    )
+
+    resultado = [
+        {
+            "id": g.id,
+            "descricao": g.descricao,
+            "valor": g.valor,
+            "categoria": g.categoria,
+            "data_hora": g.data_hora
+        }
+        for g in gastos
+    ]
+
+    db.close()
+
+    return resultado
 
 
 @router.get("/por-dia")
@@ -131,12 +159,24 @@ def gastos_mes(usuario_id: int = Depends(pegar_usuario_logado)):
             extract("month", Gasto.data_hora) == mes_atual,
             extract("year", Gasto.data_hora) == ano_atual
         )
+        .order_by(Gasto.data_hora.desc())
         .all()
     )
 
+    resultado = [
+        {
+            "id": g.id,
+            "descricao": g.descricao,
+            "valor": g.valor,
+            "categoria": g.categoria,
+            "data_hora": g.data_hora
+        }
+        for g in resultados
+    ]
+
     db.close()
 
-    return resultados
+    return resultado
 
 
 @router.get("/dashboard/resumo")
@@ -144,16 +184,24 @@ def resumo_dashboard(usuario_id: int = Depends(pegar_usuario_logado)):
 
     db: Session = SessionLocal()
 
-    total = (
+    entradas = (
         db.query(func.sum(Gasto.valor))
-        .filter(Gasto.usuario_id == usuario_id)
+        .filter(Gasto.usuario_id == usuario_id, Gasto.valor > 0)
         .scalar()
-    )
+    ) or 0
 
-    total = total or 0
+    saidas = (
+        db.query(func.sum(Gasto.valor))
+        .filter(Gasto.usuario_id == usuario_id, Gasto.valor < 0)
+        .scalar()
+    ) or 0
+
+    saldo = entradas + saidas
 
     db.close()
 
     return {
-        "total_gasto": total
+        "entradas": entradas,
+        "saidas": abs(saidas),
+        "saldo": saldo
     }

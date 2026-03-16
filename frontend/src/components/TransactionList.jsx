@@ -1,11 +1,20 @@
-function TransactionList() {
+function TransactionList({ transactions }) {
 
-  const transactions = [
-    { descricao: "Mercado", valor: -120 },
-    { descricao: "Salário", valor: 3000 },
-    { descricao: "Uber", valor: -45 },
-    { descricao: "Netflix", valor: -39 }
-  ];
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div
+        style={{
+          backgroundColor: "white",
+          padding: "20px",
+          borderRadius: "10px",
+          marginTop: "30px"
+        }}
+      >
+        <h2>Transações recentes</h2>
+        <p>Nenhuma transação encontrada.</p>
+      </div>
+    );
+  }
 
   return (
     <div
