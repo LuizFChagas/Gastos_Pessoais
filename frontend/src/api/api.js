@@ -1,7 +1,16 @@
-import axios from "axios";
+const API_URL = "http://localhost:8000"
 
-const api = axios.create({
-  baseURL: "http://127.0.0.1:8000",
-});
+export function getAuthHeaders() {
 
-export default api;
+  const token = localStorage.getItem("token")
+
+  if (!token) {
+    throw new Error("Usuário não autenticado")
+  }
+
+  return {
+    "Authorization": `Bearer ${token}`
+  }
+}
+
+export default API_URL
