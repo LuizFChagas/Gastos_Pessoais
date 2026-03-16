@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -28,10 +28,14 @@ class Gasto(Base):
 
     valor = Column(Float)
 
-    categoria = Column(String)
+    categoria = Column(String, index=True)
 
-    data_hora = Column(DateTime, default=datetime.utcnow)
+    data_hora = Column(DateTime, default=datetime.utcnow, index=True)
 
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
 
     usuario = relationship("Usuario", back_populates="gastos")
+
+
+Index("idx_gastos_usuario_data", Gasto.usuario_id, Gasto.data_hora)
+Index("idx_gastos_usuario_categoria", Gasto.usuario_id, Gasto.categoria)

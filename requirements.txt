@@ -8,3 +8,4 @@ pydantic
 passlib[bcrypt]
 python-jose[cryptography]
 python-dotenv
+alembic
