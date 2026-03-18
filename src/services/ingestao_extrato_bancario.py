@@ -1,39 +1,77 @@
 import pandas as pd
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
+from datetime import datetime
+import logging
 from src.database.database import SessionLocal
 from src.database.models import Gasto
+from src.services.categorizador import categorizar
+
+
+logger = logging.getLogger(__name__)
 
 
 def importar_extrato(caminho_extrato, usuario_id):
 
-    df = pd.read_csv(caminho_extrato)
+    try:
+        df = pd.read_csv(caminho_extrato, sep=";")
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Erro ao ler o CSV"
+        )
 
-    # validação das colunas obrigatórias
-    colunas_esperadas = {"descricao", "valor", "categoria"}
+    colunas_necessarias = {
+        "Data de Compra",
+        "Descrição",
+        "Valor (em R$)"
+    }
 
-    if not colunas_esperadas.issubset(df.columns):
-        raise ValueError(
-            "CSV inválido. O arquivo deve conter as colunas: descricao, valor, categoria"
+    if not colunas_necessarias.issubset(df.columns):
+        raise HTTPException(
+            status_code=400,
+            detail="CSV inválido. Formato não reconhecido"
         )
 
     db: Session = SessionLocal()
 
-    try:
+    for _, linha in df.iterrows():
 
-        for _, linha in df.iterrows():
+        try:
+            descricao = str(linha["Descrição"]).strip()
 
-            gasto = Gasto(
-                descricao=linha["descricao"],
-                valor=float(linha["valor"]),
-                categoria=linha["categoria"],
-                data_hora=linha.get("data_hora"),
-                usuario_id=usuario_id
+            valor = float(linha["Valor (em R$)"])
+
+            data_hora = datetime.strptime(
+                linha["Data de Compra"], "%d/%m/%Y"
             )
 
-            db.add(gasto)
+            categoria = categorizar(descricao)
 
-        db.commit()
+        except Exception:
+            continue
 
-    finally:
+        existe = db.query(Gasto).filter(
+            Gasto.usuario_id == usuario_id,
+            Gasto.descricao == descricao,
+            Gasto.valor == valor,
+            Gasto.data_hora == data_hora
+        ).first()
 
-        db.close()
+        if existe:
+            continue
+
+        gasto = Gasto(
+            descricao=descricao,
+            valor=valor,
+            categoria=categoria,
+            data_hora=data_hora,
+            usuario_id=usuario_id
+        )
+
+        db.add(gasto)
+
+    db.commit()
+    db.close()
+
+    logger.info(f"Importação finalizada para usuário {usuario_id}")
