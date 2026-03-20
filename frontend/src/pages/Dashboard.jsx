@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import BalanceCard from "../components/BalanceCard";
 import TransactionList from "../components/TransactionList";
 import { resumoDashboard, listarGastos } from "../api/gastosApi";
+import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChart";
+import ExpensesByDayChart from "../components/charts/ExpensesByDayChart";
+import AddTransactionForm from "../components/AddTransactionForm";
 
 function Dashboard() {
 
@@ -34,6 +37,8 @@ function Dashboard() {
     <div>
       <h1>Dashboard</h1>
 
+      <AddTransactionForm onSuccess={carregarDados} />
+
       <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
         
         <BalanceCard
@@ -57,6 +62,9 @@ function Dashboard() {
       </div>
 
       <TransactionList transactions={gastos} />
+
+      <ExpensesByCategoryChart />
+      <ExpensesByDayChart />
 
     </div>
   );
