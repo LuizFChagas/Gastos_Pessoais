@@ -1,7 +1,7 @@
 import api from "./api";
 
 export const listarGastos = async () => {
-  const response = await api.get("/gastos/mes");
+  const response = await api.get("/gastos/");
   return response.data;
 };
 
@@ -17,5 +17,11 @@ export const gastosPorMes = async () => {
 
 export const gastosPorDia = async () => {
   const response = await api.get("/gastos/por-dia");
+  return response.data;
+};
+
+// 👉 ADICIONAR ISSO
+export const gastosPorCategoria = async () => {
+  const response = await api.get("/gastos/por-categoria");
   return response.data;
 };

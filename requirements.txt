@@ -10,3 +10,4 @@ python-jose[cryptography]
 python-dotenv
 alembic
 python-jose
+recharts[front]
