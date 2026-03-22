@@ -71,6 +71,27 @@ def importar_extrato_bancario(
         "arquivo": file.filename
     }
 
+@router.get("/")
+def listar_gastos(
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    gastos = db.query(Gasto).filter(
+        Gasto.usuario_id == usuario_id
+    ).order_by(Gasto.data_hora.desc()).all()
+
+    return [
+        {
+            "id": g.id,
+            "descricao": g.descricao,
+            "valor": g.valor,
+            "categoria": g.categoria,
+            "data": g.data_hora
+        }
+        for g in gastos
+    ]
+
+
 @router.get("/por-dia")
 def gastos_por_dia(
     usuario_id: int = Depends(pegar_usuario_logado),
