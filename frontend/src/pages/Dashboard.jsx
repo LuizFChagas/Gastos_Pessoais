@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
 import BalanceCard from "../components/BalanceCard";
 import TransactionList from "../components/TransactionList";
 import AddTransactionForm from "../components/AddTransactionForm";
@@ -8,16 +6,12 @@ import AddTransactionForm from "../components/AddTransactionForm";
 import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChart";
 import ExpensesByDayChart from "../components/charts/ExpensesByDayChart";
 
-import {
-  resumoDashboard,
-  listarGastos
-} from "../api/gastosApi";
+import { resumoDashboard } from "../api/gastosApi";
 
 function Dashboard() {
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
-
-  const navigate = useNavigate();
+  const [openModal, setOpenModal] = useState(false);
 
   useEffect(() => {
     carregarDados();
@@ -26,29 +20,15 @@ function Dashboard() {
   const carregarDados = async () => {
     try {
       const resumoData = await resumoDashboard();
-      const gastosData = await listarGastos();
-
       setResumo(resumoData);
-      setGastos(gastosData);
-
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
-
   return (
-    <div
-      style={{
-        backgroundColor: "#f5f7fa",
-        minHeight: "100vh",
-        padding: "30px"
-      }}
-    >
+    <div>
+
       {/* HEADER */}
       <div
         style={{
@@ -57,25 +37,29 @@ function Dashboard() {
           alignItems: "center"
         }}
       >
-        <h1 style={{ fontSize: "28px" }}>Dashboard</h1>
+        <div>
+          <h1 style={{ margin: 0 }}>Dashboard</h1>
+          <span style={{ color: "#6b7280" }}>março de 2026</span>
+        </div>
 
         <button
-          onClick={handleLogout}
+          onClick={() => setOpenModal(true)}
           style={{
-            padding: "8px 12px",
-            backgroundColor: "#ef4444",
+            backgroundColor: "#10b981",
             color: "white",
             border: "none",
-            borderRadius: "5px",
-            cursor: "pointer"
+            padding: "10px 20px",
+            borderRadius: "10px",
+            fontWeight: "bold",
+            cursor: "pointer",
+            transition: "0.2s"
           }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#059669"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "#10b981"}
         >
-          Sair
+          + Nova
         </button>
       </div>
-
-      {/* FORM */}
-      <AddTransactionForm onSuccess={carregarDados} />
 
       {/* CARDS */}
       <div
@@ -111,13 +95,93 @@ function Dashboard() {
       <div
         style={{
           display: "flex",
-          gap: "40px",
+          gap: "30px",
           marginTop: "30px"
         }}
       >
-        <ExpensesByCategoryChart />
-        <ExpensesByDayChart />
+        <div style={{ flex: 1 }}>
+          <ExpensesByCategoryChart />
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <ExpensesByDayChart />
+        </div>
       </div>
+
+      {/* MODAL */}
+      {openModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            animation: "fadeIn 0.2s ease"
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "25px",
+              borderRadius: "16px",
+              width: "420px",
+              animation: "scaleIn 0.2s ease"
+            }}
+          >
+            {/* HEADER MODAL */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "15px"
+              }}
+            >
+              <h3>Nova transação</h3>
+
+              <button
+                onClick={() => setOpenModal(false)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: "16px"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* FORM */}
+            <AddTransactionForm
+              onSuccess={() => {
+                carregarDados();
+                setOpenModal(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ANIMAÇÕES */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+
+          @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+        `}
+      </style>
+
     </div>
   );
 }
