@@ -5,18 +5,32 @@ from src.database.database import SessionLocal
 from src.database.models import Gasto
 
 
+def parse_data(data_str: str) -> datetime:
+    try:
+        
+        return datetime.fromisoformat(data_str)
+    except:
+        try:
+            
+            return datetime.strptime(data_str, "%d/%m/%Y")
+        except:
+          
+            return datetime.now()
+
+
 def adicionar_gasto_manual(
     descricao: str,
     valor: float,
     categoria: str,
     usuario_id: int,
+    banco: str,
     data_hora: str | None = None
 ):
 
     db: Session = SessionLocal()
 
     if data_hora:
-        data = datetime.fromisoformat(data_hora)
+        data = parse_data(data_hora)
     else:
         data = datetime.now()
 
@@ -24,6 +38,7 @@ def adicionar_gasto_manual(
         descricao=descricao,
         valor=valor,
         categoria=categoria,
+        banco=banco,
         data_hora=data,
         usuario_id=usuario_id
     )
