@@ -23,19 +23,11 @@ class Gasto(Base):
     __tablename__ = "gastos"
 
     id = Column(Integer, primary_key=True, index=True)
-
     descricao = Column(String)
-
     valor = Column(Float)
-
     categoria = Column(String, index=True)
-
+    banco = Column(String, index=True)  # 👈 NOVO CAMPO
     data_hora = Column(DateTime, default=datetime.utcnow, index=True)
-
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
 
     usuario = relationship("Usuario", back_populates="gastos")
-
-
-Index("idx_gastos_usuario_data", Gasto.usuario_id, Gasto.data_hora)
-Index("idx_gastos_usuario_categoria", Gasto.usuario_id, Gasto.categoria)
