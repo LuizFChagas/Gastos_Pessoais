@@ -6,21 +6,26 @@ import AddTransactionForm from "../components/AddTransactionForm";
 import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChart";
 import ExpensesByDayChart from "../components/charts/ExpensesByDayChart";
 
-import { resumoDashboard } from "../api/gastosApi";
+import { resumoDashboard, listarGastos } from "../api/gastosApi";
 
 function Dashboard() {
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     carregarDados();
-  }, []);
+  }, [reload]);
 
   const carregarDados = async () => {
     try {
       const resumoData = await resumoDashboard();
+      const gastosData = await listarGastos();
+
       setResumo(resumoData);
+      setGastos(gastosData);
+
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
@@ -62,49 +67,23 @@ function Dashboard() {
       </div>
 
       {/* CARDS */}
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          marginTop: "20px"
-        }}
-      >
-        <BalanceCard
-          title="Entradas"
-          value={resumo.entradas || 0}
-          color="#22c55e"
-        />
-
-        <BalanceCard
-          title="Saídas"
-          value={resumo.saidas || 0}
-          color="#ef4444"
-        />
-
-        <BalanceCard
-          title="Saldo"
-          value={resumo.saldo || 0}
-          color="#3b82f6"
-        />
+      <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+        <BalanceCard title="Entradas" value={resumo.entradas || 0} color="#22c55e" />
+        <BalanceCard title="Saídas" value={resumo.saidas || 0} color="#ef4444" />
+        <BalanceCard title="Saldo" value={resumo.saldo || 0} color="#3b82f6" />
       </div>
 
       {/* LISTA */}
       <TransactionList transactions={gastos} />
 
       {/* GRÁFICOS */}
-      <div
-        style={{
-          display: "flex",
-          gap: "30px",
-          marginTop: "30px"
-        }}
-      >
+      <div style={{ display: "flex", gap: "30px", marginTop: "30px" }}>
         <div style={{ flex: 1 }}>
-          <ExpensesByCategoryChart />
+          <ExpensesByCategoryChart reload={reload} />
         </div>
 
         <div style={{ flex: 1 }}>
-          <ExpensesByDayChart />
+          <ExpensesByDayChart reload={reload} />
         </div>
       </div>
 
@@ -133,7 +112,6 @@ function Dashboard() {
               animation: "scaleIn 0.2s ease"
             }}
           >
-            {/* HEADER MODAL */}
             <div
               style={{
                 display: "flex",
@@ -156,10 +134,9 @@ function Dashboard() {
               </button>
             </div>
 
-            {/* FORM */}
             <AddTransactionForm
               onSuccess={() => {
-                carregarDados();
+                setReload(prev => prev + 1); // 🔥 atualiza tudo
                 setOpenModal(false);
               }}
             />
