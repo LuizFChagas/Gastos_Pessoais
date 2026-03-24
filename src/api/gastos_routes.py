@@ -25,6 +25,7 @@ class GastoManualRequest(BaseModel):
     descricao: str
     valor: float
     categoria: str
+    banco: str  
     data_hora: str | None = None
 
 
@@ -33,10 +34,12 @@ def adicionar_manual(
     dados: GastoManualRequest,
     usuario_id: int = Depends(pegar_usuario_logado)
 ):
+
     adicionar_gasto_manual(
         descricao=dados.descricao,
         valor=dados.valor,
         categoria=dados.categoria,
+        banco=dados.banco,  
         usuario_id=usuario_id,
         data_hora=dados.data_hora
     )
