@@ -1,0 +1,21 @@
+import api from "./api";
+
+// LOGIN
+export const login = async (email, senha) => {
+  const response = await api.post("/auth/login", {
+    email,
+    senha
+  });
+
+  return response.data;
+};
+
+// CADASTRO
+export const cadastro = async (email, senha) => {
+  const response = await api.post("/auth/cadastro", {
+    email,
+    senha
+  });
+
+  return response.data;
+};

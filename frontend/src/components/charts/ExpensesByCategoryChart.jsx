@@ -1,31 +1,27 @@
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { useEffect, useState } from "react";
-import { gastosPorCategoria } from "../../api/gastosApi";
 
 const COLORS = ["#3b82f6", "#22c55e", "#ef4444", "#f59e0b", "#8b5cf6"];
 
-function ExpensesByCategoryChart() {
-  const [data, setData] = useState([]);
+function ExpensesByCategoryChart({ data }) {
+  const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
-    carregarDados();
-  }, []);
+    const formatado = Object.values(
+      data.reduce((acc, item) => {
+        const categoria = item.categoria || "outros";
 
-  const carregarDados = async () => {
-    try {
-      const response = await gastosPorCategoria();
+        if (!acc[categoria]) {
+          acc[categoria] = { name: categoria, value: 0 };
+        }
 
-      const formatado = response.map((item) => ({
-        name: item.categoria,
-        value: item.total
-      }));
+        acc[categoria].value += Math.abs(item.valor);
+        return acc;
+      }, {})
+    );
 
-      setData(formatado);
-
-    } catch (error) {
-      console.error("Erro ao carregar gráfico:", error);
-    }
-  };
+    setChartData(formatado);
+  }, [data]);
 
   return (
     <div style={{ marginTop: "40px" }}>
@@ -33,12 +29,12 @@ function ExpensesByCategoryChart() {
 
       <PieChart width={400} height={300}>
         <Pie
-          data={data}
+          data={chartData}
           dataKey="value"
           nameKey="name"
           outerRadius={100}
         >
-          {data.map((entry, index) => (
+          {chartData.map((entry, index) => (
             <Cell key={index} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>

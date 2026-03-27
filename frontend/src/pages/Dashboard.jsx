@@ -6,25 +6,74 @@ import AddTransactionForm from "../components/AddTransactionForm";
 import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChart";
 import ExpensesByDayChart from "../components/charts/ExpensesByDayChart";
 
-import { resumoDashboard, listarGastos } from "../api/gastosApi";
+import { gastosPorIntervalo } from "../api/gastosApi";
 
 function Dashboard() {
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
-  const [reload, setReload] = useState(0);
+
+  // 🔥 NOVO
+  const [periodo, setPeriodo] = useState("mes");
 
   useEffect(() => {
     carregarDados();
-  }, [reload]);
+  }, [periodo]);
+
+  const getIntervalo = () => {
+    const hoje = new Date();
+
+    let inicio, fim;
+
+    if (periodo === "hoje") {
+      inicio = new Date(hoje.setHours(0, 0, 0, 0));
+      fim = new Date();
+    }
+
+    if (periodo === "semana") {
+      inicio = new Date();
+      inicio.setDate(inicio.getDate() - 7);
+      fim = new Date();
+    }
+
+    if (periodo === "mes") {
+      inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      fim = new Date();
+    }
+
+    return {
+      inicio: inicio.toISOString(),
+      fim: fim.toISOString()
+    };
+  };
 
   const carregarDados = async () => {
     try {
-      const resumoData = await resumoDashboard();
-      const gastosData = await listarGastos();
+      const { inicio, fim } = getIntervalo();
 
-      setResumo(resumoData);
-      setGastos(gastosData);
+      const gastosData = await gastosPorIntervalo(inicio, fim);
+
+      const entradas = gastosData
+        .filter(g => g.valor > 0)
+        .reduce((acc, g) => acc + g.valor, 0);
+
+      const saidas = gastosData
+        .filter(g => g.valor < 0)
+        .reduce((acc, g) => acc + Math.abs(g.valor), 0);
+
+      setResumo({
+        entradas,
+        saidas,
+        saldo: entradas - saidas
+      });
+
+      const formatado = gastosData.map((g) => ({
+      ...g,
+      data_hora: g.data_hora || g.data, 
+      banco: g.banco || "Banco"
+    }));
+
+setGastos(formatado);
 
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -47,23 +96,38 @@ function Dashboard() {
           <span style={{ color: "#6b7280" }}>março de 2026</span>
         </div>
 
-        <button
-          onClick={() => setOpenModal(true)}
-          style={{
-            backgroundColor: "#10b981",
-            color: "white",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: "10px",
-            fontWeight: "bold",
-            cursor: "pointer",
-            transition: "0.2s"
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#059669"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "#10b981"}
-        >
-          + Nova
-        </button>
+        {/* 🔥 FILTRO + BOTÃO */}
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <select
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "1px solid #e5e7eb",
+              backgroundColor: "white"
+            }}
+          >
+            <option value="hoje">Hoje</option>
+            <option value="semana">Últimos 7 dias</option>
+            <option value="mes">Este mês</option>
+          </select>
+
+          <button
+            onClick={() => setOpenModal(true)}
+            style={{
+              backgroundColor: "#10b981",
+              color: "white",
+              border: "none",
+              padding: "10px 20px",
+              borderRadius: "10px",
+              fontWeight: "bold",
+              cursor: "pointer"
+            }}
+          >
+            + Nova
+          </button>
+        </div>
       </div>
 
       {/* CARDS */}
@@ -73,19 +137,19 @@ function Dashboard() {
         <BalanceCard title="Saldo" value={resumo.saldo || 0} color="#3b82f6" />
       </div>
 
-      {/* LISTA */}
-      <TransactionList transactions={gastos} />
-
       {/* GRÁFICOS */}
       <div style={{ display: "flex", gap: "30px", marginTop: "30px" }}>
         <div style={{ flex: 1 }}>
-          <ExpensesByCategoryChart reload={reload} />
+          <ExpensesByCategoryChart data={gastos} />
         </div>
 
         <div style={{ flex: 1 }}>
-          <ExpensesByDayChart reload={reload} />
+          <ExpensesByDayChart data={gastos} />
         </div>
       </div>
+
+      {/* LISTA */}
+      <TransactionList transactions={gastos} />
 
       {/* MODAL */}
       {openModal && (
@@ -99,8 +163,7 @@ function Dashboard() {
             backgroundColor: "rgba(0,0,0,0.4)",
             display: "flex",
             justifyContent: "center",
-            alignItems: "center",
-            animation: "fadeIn 0.2s ease"
+            alignItems: "center"
           }}
         >
           <div
@@ -108,8 +171,7 @@ function Dashboard() {
               backgroundColor: "white",
               padding: "25px",
               borderRadius: "16px",
-              width: "420px",
-              animation: "scaleIn 0.2s ease"
+              width: "420px"
             }}
           >
             <div
@@ -126,8 +188,7 @@ function Dashboard() {
                 style={{
                   border: "none",
                   background: "transparent",
-                  cursor: "pointer",
-                  fontSize: "16px"
+                  cursor: "pointer"
                 }}
               >
                 ✕
@@ -136,28 +197,14 @@ function Dashboard() {
 
             <AddTransactionForm
               onSuccess={() => {
-                setReload(prev => prev + 1); // 🔥 atualiza tudo
                 setOpenModal(false);
+                carregarDados();
               }}
+              onCancel={() => setOpenModal(false)}
             />
           </div>
         </div>
       )}
-
-      {/* ANIMAÇÕES */}
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-
-          @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-          }
-        `}
-      </style>
 
     </div>
   );
