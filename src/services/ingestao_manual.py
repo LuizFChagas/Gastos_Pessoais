@@ -21,12 +21,12 @@ def adicionar_gasto_manual(
     categoria: str,
     usuario_id: int,
     banco: str,
+    tipo: str,  # 👈 NOVO
     data_hora: str | None = None
 ):
 
     db: Session = SessionLocal()
 
-    # 🔥 CORREÇÃO AQUI
     descricao = (descricao or "").strip()
     if not descricao:
         descricao = "Sem descrição"
@@ -41,6 +41,7 @@ def adicionar_gasto_manual(
         valor=valor,
         categoria=categoria,
         banco=banco,
+        tipo=tipo,  # 👈 IMPORTANTE
         data_hora=data,
         usuario_id=usuario_id
     )

@@ -7,7 +7,7 @@ function TransactionList({ transactions }) {
     return `${ano}-${mes}-${dia}`;
   };
 
-  // 🔥 ESTILO DAS CATEGORIAS (NOVO)
+  // 🔥 ESTILO DAS CATEGORIAS (MANTIDO)
   const getCategoriaStyle = (categoria) => {
     const map = {
       salario: {
@@ -75,6 +75,9 @@ function TransactionList({ transactions }) {
           const data = t.data_hora || "";
           const banco = t.banco || "Itaú";
 
+          // ✅ NOVO: lógica correta baseada no tipo
+          const isEntrada = t.tipo === "entrada";
+
           return (
             <div
               key={index}
@@ -92,12 +95,12 @@ function TransactionList({ transactions }) {
                 
                 <div
                   style={{
-                    backgroundColor: "#ecfdf5",
+                    backgroundColor: isEntrada ? "#ecfdf5" : "#fee2e2", // 🔥 leve ajuste visual
                     padding: "10px",
                     borderRadius: "12px"
                   }}
                 >
-                  💰
+                  {isEntrada ? "💰" : "💸"} {/* 🔥 ícone dinâmico */}
                 </div>
 
                 <div>
@@ -114,7 +117,7 @@ function TransactionList({ transactions }) {
               {/* DIREITA */}
               <div style={{ textAlign: "right" }}>
                 
-                {/* 🔥 CATEGORIA PERSONALIZADA */}
+                {/* CATEGORIA */}
                 <div
                   style={{
                     display: "inline-flex",
@@ -132,13 +135,14 @@ function TransactionList({ transactions }) {
                   {getCategoriaStyle(t.categoria).icon} {t.categoria}
                 </div>
 
+                {/* 🔥 VALOR CORRIGIDO */}
                 <div
                   style={{
-                    color: t.valor < 0 ? "#ef4444" : "#22c55e",
+                    color: isEntrada ? "#22c55e" : "#ef4444",
                     fontWeight: "bold"
                   }}
                 >
-                  {t.valor < 0 ? "-" : "+"}R$ {Math.abs(t.valor)}
+                  {isEntrada ? "+" : "-"}R$ {t.valor}
                 </div>
 
               </div>

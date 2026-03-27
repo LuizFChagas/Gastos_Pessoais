@@ -1,38 +1,56 @@
 import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
-import { useEffect, useState } from "react";
-
-const COLORS = ["#3b82f6", "#22c55e", "#ef4444", "#f59e0b", "#8b5cf6"];
 
 function ExpensesByCategoryChart({ data }) {
-  const [chartData, setChartData] = useState([]);
 
-  useEffect(() => {
-    const formatado = Object.values(
-      data.reduce((acc, item) => {
-        const categoria = item.categoria || "outros";
+  // ✅ FILTRA APENAS SAÍDAS
+  const gastosSaida = data.filter(g => g.tipo === "saida");
 
-        if (!acc[categoria]) {
-          acc[categoria] = { name: categoria, value: 0 };
-        }
+  // ✅ AGRUPA POR CATEGORIA
+  const agrupado = gastosSaida.reduce((acc, item) => {
+    const categoria = item.categoria || "outros";
 
-        acc[categoria].value += Math.abs(item.valor);
-        return acc;
-      }, {})
-    );
+    if (!acc[categoria]) {
+      acc[categoria] = 0;
+    }
 
-    setChartData(formatado);
-  }, [data]);
+    acc[categoria] += item.valor;
+
+    return acc;
+  }, {});
+
+  // ✅ FORMATA PARA O GRÁFICO
+  const chartData = Object.keys(agrupado).map((key) => ({
+    name: key,
+    value: agrupado[key]
+  }));
+
+  const COLORS = [
+    "#3b82f6",
+    "#22c55e",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#06b6d4"
+  ];
 
   return (
-    <div style={{ marginTop: "40px" }}>
-      <h2>Gastos por Categoria</h2>
+    <div
+      style={{
+        backgroundColor: "white",
+        padding: "20px",
+        borderRadius: "12px"
+      }}
+    >
+      <h3>Gastos por Categoria</h3>
 
-      <PieChart width={400} height={300}>
+      <PieChart width={300} height={250}>
         <Pie
           data={chartData}
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
           dataKey="value"
           nameKey="name"
-          outerRadius={100}
         >
           {chartData.map((entry, index) => (
             <Cell key={index} fill={COLORS[index % COLORS.length]} />

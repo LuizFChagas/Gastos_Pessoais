@@ -1,12 +1,12 @@
-import pandas as pd
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from datetime import datetime
+import pandas as pd
 import logging
+
 from src.database.database import SessionLocal
 from src.database.models import Gasto
 from src.services.categorizador import categorizar
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,10 @@ def importar_extrato(caminho_extrato, usuario_id):
 
     db: Session = SessionLocal()
 
+    # ✅ LOOP TEM QUE ESTAR AQUI DENTRO
     for _, linha in df.iterrows():
-
         try:
             descricao = str(linha["Descrição"]).strip()
-
             valor = float(linha["Valor (em R$)"])
 
             data_hora = datetime.strptime(
@@ -47,6 +46,8 @@ def importar_extrato(caminho_extrato, usuario_id):
             )
 
             categoria = categorizar(descricao)
+
+            tipo = "entrada" if valor > 0 else "saida"  # 👈 NOVO
 
         except Exception:
             continue
@@ -65,6 +66,7 @@ def importar_extrato(caminho_extrato, usuario_id):
             descricao=descricao,
             valor=valor,
             categoria=categoria,
+            tipo=tipo,  # 👈 IMPORTANTE
             data_hora=data_hora,
             usuario_id=usuario_id
         )
