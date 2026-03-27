@@ -74,6 +74,7 @@ def importar_extrato_bancario(
         "arquivo": file.filename
     }
 
+
 @router.get("/")
 def listar_gastos(
     usuario_id: int = Depends(pegar_usuario_logado),
@@ -89,7 +90,8 @@ def listar_gastos(
             "descricao": g.descricao,
             "valor": g.valor,
             "categoria": g.categoria,
-            "data": g.data_hora
+            "banco": g.banco,              
+            "data_hora": g.data_hora       
         }
         for g in gastos
     ]
@@ -148,6 +150,7 @@ def resumo_dashboard(
         "saldo": float(saldo)
     }
 
+
 @router.get("/por-mes")
 def gastos_por_mes(
     ano: int,
@@ -170,10 +173,12 @@ def gastos_por_mes(
 
     return [
         {
+            "id": g.id,
             "descricao": g.descricao,
             "valor": g.valor,
             "categoria": g.categoria,
-            "data": g.data_hora
+            "banco": g.banco,
+            "data_hora": g.data_hora
         }
         for g in gastos
     ]
@@ -200,10 +205,12 @@ def gastos_por_intervalo(
 
     return [
         {
+            "id": g.id,
             "descricao": g.descricao,
             "valor": g.valor,
             "categoria": g.categoria,
-            "data": g.data_hora
+            "banco": g.banco,              # 🔥 CORREÇÃO PRINCIPAL
+            "data_hora": g.data_hora       # 🔥 PADRÃO IGUAL AO RESTO
         }
         for g in gastos
     ]
@@ -223,10 +230,33 @@ def top_maiores_gastos(
 
     return [
         {
+            "id": g.id,
             "descricao": g.descricao,
             "valor": g.valor,
             "categoria": g.categoria,
-            "data": g.data_hora
+            "banco": g.banco,
+            "data_hora": g.data_hora
         }
         for g in gastos
     ]
+
+
+# 🔥 NOVA ROTA DELETE (ADICIONADA)
+@router.delete("/{gasto_id}")
+def deletar_gasto(
+    gasto_id: int,
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    gasto = db.query(Gasto).filter(
+        Gasto.id == gasto_id,
+        Gasto.usuario_id == usuario_id
+    ).first()
+
+    if not gasto:
+        raise HTTPException(status_code=404, detail="Gasto não encontrado")
+
+    db.delete(gasto)
+    db.commit()
+
+    return {"message": "Gasto deletado com sucesso"}

@@ -3,20 +3,35 @@ function BalanceCard({ title, value, color }) {
     <div
       style={{
         backgroundColor: "white",
+        borderRadius: "12px",
         padding: "20px",
-        borderRadius: "10px",
-        boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+        flex: 1,
+        boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
         borderLeft: `6px solid ${color}`,
-        minWidth: "220px"
+        minHeight: "100px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center"
       }}
     >
-      <p style={{ color: "#6b7280", fontSize: "14px" }}>
+      <span
+        style={{
+          color: "#6b7280",
+          fontSize: "14px"
+        }}
+      >
         {title}
-      </p>
+      </span>
 
-      <h2 style={{ marginTop: "10px" }}>
-        {value}
-      </h2>
+      <strong
+        style={{
+          fontSize: "24px",
+          marginTop: "8px",
+          color: "#111827"
+        }}
+      >
+        R$ {value}
+      </strong>
     </div>
   );
 }

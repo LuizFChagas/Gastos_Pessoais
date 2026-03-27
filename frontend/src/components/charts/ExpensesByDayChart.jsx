@@ -14,7 +14,7 @@ function ExpensesByDayChart() {
       const response = await gastosPorDia();
 
       const formatado = response.map((item) => ({
-        dia: item.dia,
+        dia: item.data, // 🔥 CORREÇÃO AQUI
         total: item.total
       }));
 

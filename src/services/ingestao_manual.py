@@ -7,14 +7,11 @@ from src.database.models import Gasto
 
 def parse_data(data_str: str) -> datetime:
     try:
-        
         return datetime.fromisoformat(data_str)
     except:
         try:
-            
             return datetime.strptime(data_str, "%d/%m/%Y")
         except:
-          
             return datetime.now()
 
 
@@ -28,6 +25,11 @@ def adicionar_gasto_manual(
 ):
 
     db: Session = SessionLocal()
+
+    # 🔥 CORREÇÃO AQUI
+    descricao = (descricao or "").strip()
+    if not descricao:
+        descricao = "Sem descrição"
 
     if data_hora:
         data = parse_data(data_hora)
