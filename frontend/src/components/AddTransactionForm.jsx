@@ -10,7 +10,6 @@ function AddTransactionForm({ onSuccess, onCancel }) {
   const [banco, setBanco] = useState("");
   const [nota, setNota] = useState("");
 
-  // 🔥 LISTA COMPLETA DE CATEGORIAS
   const categorias = [
     "salario",
     "alimentação",
@@ -25,18 +24,32 @@ function AddTransactionForm({ onSuccess, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!valor || !descricao || !banco) {
+      alert("Preencha os campos obrigatórios");
+      return;
+    }
+
+    const valorNumerico = Number(valor);
+
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      alert("Digite um valor válido");
+      return;
+    }
+
     try {
-      await api.post("/gastos/manual", { 
+      await api.post("/gastos/manual", {
         descricao,
-        valor: tipo === "saida" ? -Math.abs(valor) : Math.abs(valor),
+        valor: valorNumerico, // 👈 sempre positivo
         categoria,
         banco,
-        data_hora: data
+        data_hora: data || null,
+        tipo // 👈 define entrada/saida
       });
 
       onSuccess();
 
     } catch (error) {
+      console.log(error);
       alert("Erro ao adicionar");
     }
   };
@@ -129,11 +142,21 @@ function AddTransactionForm({ onSuccess, onCancel }) {
         <div style={{ flex: 1 }}>
           <label style={{ fontSize: "13px", color: "#6b7280" }}>Valor (R$)</label>
           <input
-            type="number"
-            placeholder="0,00"
+            type="text"
+            placeholder="0.00"
             value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            style={inputStyle}
+            onChange={(e) => {
+              const val = e.target.value;
+
+              // 🔥 só permite números e ponto
+              if (/^\d*\.?\d*$/.test(val)) {
+                setValor(val);
+              }
+            }}
+            style={{
+              ...inputStyle,
+              borderColor: tipo === "saida" ? "#ef4444" : "#22c55e"
+            }}
           />
         </div>
       </div>
@@ -154,7 +177,6 @@ function AddTransactionForm({ onSuccess, onCancel }) {
         <div style={{ flex: 1 }}>
           <label style={{ fontSize: "13px", color: "#6b7280" }}>Categoria</label>
 
-          {/* 🔥 AGORA FUNCIONA */}
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}

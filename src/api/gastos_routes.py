@@ -25,28 +25,31 @@ class GastoManualRequest(BaseModel):
     descricao: str
     valor: float
     categoria: str
-    banco: str  
+    banco: str
+    tipo: str  # 👈 NOVO
     data_hora: str | None = None
 
 
+# ✅ CRIAR GASTO / ENTRADA
 @router.post("/manual")
-def adicionar_manual(
-    dados: GastoManualRequest,
+def criar_gasto_manual(
+    request: GastoManualRequest,
     usuario_id: int = Depends(pegar_usuario_logado)
 ):
-
     adicionar_gasto_manual(
-        descricao=dados.descricao,
-        valor=dados.valor,
-        categoria=dados.categoria,
-        banco=dados.banco,  
-        usuario_id=usuario_id,
-        data_hora=dados.data_hora
+        request.descricao,
+        request.valor,
+        request.categoria,
+        usuario_id,
+        request.banco,
+        request.tipo,
+        request.data_hora
     )
 
-    return {"message": "Gasto manual adicionado com sucesso"}
+    return {"msg": "Gasto adicionado"}
 
 
+# ✅ IMPORTAR EXTRATO
 @router.post("/importar")
 def importar_extrato_bancario(
     file: UploadFile = File(...),
@@ -75,6 +78,7 @@ def importar_extrato_bancario(
     }
 
 
+# ✅ LISTAR TODOS (ENTRADA + SAÍDA)
 @router.get("/")
 def listar_gastos(
     usuario_id: int = Depends(pegar_usuario_logado),
@@ -90,13 +94,15 @@ def listar_gastos(
             "descricao": g.descricao,
             "valor": g.valor,
             "categoria": g.categoria,
-            "banco": g.banco,              
-            "data_hora": g.data_hora       
+            "banco": g.banco,
+            "tipo": g.tipo,  # 👈 NOVO
+            "data_hora": g.data_hora
         }
         for g in gastos
     ]
 
 
+# ✅ GASTOS POR DIA (SOMENTE SAÍDA)
 @router.get("/por-dia")
 def gastos_por_dia(
     usuario_id: int = Depends(pegar_usuario_logado),
@@ -106,7 +112,8 @@ def gastos_por_dia(
         func.date(Gasto.data_hora).label("data"),
         func.sum(Gasto.valor).label("total")
     ).filter(
-        Gasto.usuario_id == usuario_id
+        Gasto.usuario_id == usuario_id,
+        Gasto.tipo == "saida"  # 👈 FILTRO
     ).group_by(
         func.date(Gasto.data_hora)
     ).all()
@@ -114,6 +121,7 @@ def gastos_por_dia(
     return [{"data": str(r.data), "total": float(r.total)} for r in resultados]
 
 
+# ✅ GASTOS POR CATEGORIA (SOMENTE SAÍDA)
 @router.get("/por-categoria")
 def gastos_por_categoria(
     usuario_id: int = Depends(pegar_usuario_logado),
@@ -123,7 +131,8 @@ def gastos_por_categoria(
         Gasto.categoria,
         func.sum(Gasto.valor).label("total")
     ).filter(
-        Gasto.usuario_id == usuario_id
+        Gasto.usuario_id == usuario_id,
+        Gasto.tipo == "saida"  # 👈 FILTRO
     ).group_by(
         Gasto.categoria
     ).all()
@@ -140,17 +149,28 @@ def resumo_dashboard(
         Gasto.usuario_id == usuario_id
     ).all()
 
-    entradas = sum(g.valor for g in gastos if g.valor > 0)
-    saidas = sum(abs(g.valor) for g in gastos if g.valor < 0)
+    entradas = 0
+    saidas = 0
+
+    for g in gastos:
+        tipo = (g.tipo or "").strip().lower()
+
+        if tipo == "entrada":
+            entradas += float(g.valor)
+
+        elif tipo == "saida":
+            saidas += float(g.valor)
+
     saldo = entradas - saidas
 
     return {
-        "entradas": float(entradas),
-        "saidas": float(saidas),
-        "saldo": float(saldo)
+        "entradas": entradas,
+        "saidas": saidas,
+        "saldo": saldo
     }
 
 
+# ✅ POR MÊS (MANTÉM TUDO)
 @router.get("/por-mes")
 def gastos_por_mes(
     ano: int,
@@ -178,12 +198,14 @@ def gastos_por_mes(
             "valor": g.valor,
             "categoria": g.categoria,
             "banco": g.banco,
+            "tipo": g.tipo,
             "data_hora": g.data_hora
         }
         for g in gastos
     ]
 
 
+# ✅ INTERVALO
 @router.get("/intervalo")
 def gastos_por_intervalo(
     data_inicio: str = Query(...),
@@ -209,13 +231,15 @@ def gastos_por_intervalo(
             "descricao": g.descricao,
             "valor": g.valor,
             "categoria": g.categoria,
-            "banco": g.banco,              # 🔥 CORREÇÃO PRINCIPAL
-            "data_hora": g.data_hora       # 🔥 PADRÃO IGUAL AO RESTO
+            "banco": g.banco,
+            "tipo": g.tipo,
+            "data_hora": g.data_hora
         }
         for g in gastos
     ]
 
 
+# ✅ TOP GASTOS (SOMENTE SAÍDA)
 @router.get("/top-gastos")
 def top_maiores_gastos(
     limite: int = 5,
@@ -223,7 +247,8 @@ def top_maiores_gastos(
     db: Session = Depends(get_db)
 ):
     gastos = db.query(Gasto).filter(
-        Gasto.usuario_id == usuario_id
+        Gasto.usuario_id == usuario_id,
+        Gasto.tipo == "saida"  # 👈 IMPORTANTE
     ).order_by(
         desc(Gasto.valor)
     ).limit(limite).all()
@@ -235,13 +260,14 @@ def top_maiores_gastos(
             "valor": g.valor,
             "categoria": g.categoria,
             "banco": g.banco,
+            "tipo": g.tipo,
             "data_hora": g.data_hora
         }
         for g in gastos
     ]
 
 
-# 🔥 NOVA ROTA DELETE (ADICIONADA)
+# ✅ DELETE
 @router.delete("/{gasto_id}")
 def deletar_gasto(
     gasto_id: int,

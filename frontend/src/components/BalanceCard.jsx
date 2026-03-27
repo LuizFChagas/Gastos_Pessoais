@@ -1,4 +1,11 @@
 function BalanceCard({ title, value, color }) {
+
+  const formatar = (v) =>
+    Number(v || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+
   return (
     <div
       style={{
@@ -30,7 +37,7 @@ function BalanceCard({ title, value, color }) {
           color: "#111827"
         }}
       >
-        R$ {value}
+        {formatar(value)}
       </strong>
     </div>
   );

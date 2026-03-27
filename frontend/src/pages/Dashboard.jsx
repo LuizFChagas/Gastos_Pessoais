@@ -13,7 +13,13 @@ function Dashboard() {
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
 
-  // 🔥 NOVO
+  // 🔥 (mantido, caso queira usar depois)
+  const formatar = (v) =>
+    Number(v || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+
   const [periodo, setPeriodo] = useState("mes");
 
   useEffect(() => {
@@ -53,13 +59,14 @@ function Dashboard() {
 
       const gastosData = await gastosPorIntervalo(inicio, fim);
 
+      // ✅ CORREÇÃO AQUI (BASEADO EM TIPO)
       const entradas = gastosData
-        .filter(g => g.valor > 0)
+        .filter(g => g.tipo === "entrada")
         .reduce((acc, g) => acc + g.valor, 0);
 
       const saidas = gastosData
-        .filter(g => g.valor < 0)
-        .reduce((acc, g) => acc + Math.abs(g.valor), 0);
+        .filter(g => g.tipo === "saida")
+        .reduce((acc, g) => acc + g.valor, 0);
 
       setResumo({
         entradas,
@@ -67,13 +74,14 @@ function Dashboard() {
         saldo: entradas - saidas
       });
 
+      // 🔥 mantém seu padrão
       const formatado = gastosData.map((g) => ({
-      ...g,
-      data_hora: g.data_hora || g.data, 
-      banco: g.banco || "Banco"
-    }));
+        ...g,
+        data_hora: g.data_hora || g.data,
+        banco: g.banco || "Banco"
+      }));
 
-setGastos(formatado);
+      setGastos(formatado);
 
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -96,7 +104,7 @@ setGastos(formatado);
           <span style={{ color: "#6b7280" }}>março de 2026</span>
         </div>
 
-        {/* 🔥 FILTRO + BOTÃO */}
+        {/* FILTRO + BOTÃO */}
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <select
             value={periodo}
