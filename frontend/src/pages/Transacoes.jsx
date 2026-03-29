@@ -71,10 +71,9 @@ function Transacoes() {
     return map[categoria?.toLowerCase()] || map["outros"];
   };
 
-  // 🔥 CORREÇÃO FINAL (SEM BUG DE DATA)
   const formatarDataBonita = (dataStr) => {
     const [ano, mes, dia] = dataStr.split("-");
-    const data = new Date(ano, mes - 1, dia); // 👈 CORREÇÃO AQUI
+    const data = new Date(ano, mes - 1, dia);
 
     const dias = [
       "domingo", "segunda-feira", "terça-feira",
@@ -90,7 +89,6 @@ function Transacoes() {
     return `${dias[data.getDay()].toUpperCase()}, ${dia} DE ${meses[data.getMonth()].toUpperCase()}`;
   };
 
-  // 🔥 AGRUPAMENTO
   const agrupadoPorData = transacoesFiltradas.reduce((acc, t) => {
     const data = t.data_hora?.split("T")[0];
 
@@ -172,7 +170,6 @@ function Transacoes() {
         {datasOrdenadas.map((data, index) => (
           <div key={index}>
 
-            {/* DATA */}
             <div style={{
               margin: "20px 0 10px",
               fontSize: "13px",
@@ -255,7 +252,7 @@ function Transacoes() {
         ))}
       </div>
 
-      {/* 🔥 MODAL ORIGINAL (INTOCADO) */}
+      {/* 🔥 MODAL DELETE (INALTERADO) */}
       {openDeleteModal && (
         <div style={{
           position: "fixed",
@@ -281,48 +278,60 @@ function Transacoes() {
             </p>
 
             <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-              <button
-                onClick={() => setOpenDeleteModal(false)}
-                style={{
-                  flex: 1,
-                  padding: "10px",
-                  borderRadius: "10px",
-                  border: "none",
-                  backgroundColor: "#e5e7eb",
-                  cursor: "pointer"
-                }}
-              >
-                Cancelar
-              </button>
-
-              <button
-                onClick={confirmarDelete}
-                style={{
-                  flex: 1,
-                  padding: "10px",
-                  borderRadius: "10px",
-                  border: "none",
-                  backgroundColor: "#ef4444",
-                  color: "white",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}
-              >
-                Excluir
-              </button>
+              <button onClick={() => setOpenDeleteModal(false)}>Cancelar</button>
+              <button onClick={confirmarDelete}>Excluir</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* 🔥 MODAL NOVO (CORRIGIDO IGUAL DASHBOARD) */}
       {openModal && (
-        <AddTransactionForm
-          onSuccess={() => {
-            setOpenModal(false);
-            carregar();
-          }}
-          onCancel={() => setOpenModal(false)}
-        />
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0,0,0,0.4)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
+        }}>
+          <div style={{
+            backgroundColor: "white",
+            padding: "25px",
+            borderRadius: "16px",
+            width: "420px"
+          }}>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "15px"
+            }}>
+              <h3>Nova transação</h3>
+
+              <button
+                onClick={() => setOpenModal(false)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <AddTransactionForm
+              onSuccess={() => {
+                setOpenModal(false);
+                carregar();
+              }}
+              onCancel={() => setOpenModal(false)}
+            />
+          </div>
+        </div>
       )}
 
     </div>
