@@ -252,7 +252,7 @@ function Transacoes() {
         ))}
       </div>
 
-      {/* 🔥 MODAL DELETE (INALTERADO) */}
+      {/* ✅ MODAL DELETE ORIGINAL (INTACTO) */}
       {openDeleteModal && (
         <div style={{
           position: "fixed",
@@ -278,14 +278,41 @@ function Transacoes() {
             </p>
 
             <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-              <button onClick={() => setOpenDeleteModal(false)}>Cancelar</button>
-              <button onClick={confirmarDelete}>Excluir</button>
+              <button
+                onClick={() => setOpenDeleteModal(false)}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  borderRadius: "10px",
+                  border: "none",
+                  backgroundColor: "#e5e7eb",
+                  cursor: "pointer"
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={confirmarDelete}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  borderRadius: "10px",
+                  border: "none",
+                  backgroundColor: "#ef4444",
+                  color: "white",
+                  fontWeight: "bold",
+                  cursor: "pointer"
+                }}
+              >
+                Excluir
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🔥 MODAL NOVO (CORRIGIDO IGUAL DASHBOARD) */}
+      {/* ✅ MODAL NOVO (CORRIGIDO) */}
       {openModal && (
         <div style={{
           position: "fixed",
