@@ -39,28 +39,31 @@ function AddTransactionForm({ onSuccess, onCancel }) {
     try {
       await api.post("/gastos/manual", {
         descricao,
-        valor: valorNumerico, // 👈 sempre positivo
+        valor: valorNumerico,
         categoria,
         banco,
         data_hora: data || null,
-        tipo // 👈 define entrada/saida
+        tipo
       });
 
       onSuccess();
-
     } catch (error) {
       console.log(error);
       alert("Erro ao adicionar");
     }
   };
 
+  // ✅ INPUT CORRIGIDO
   const inputStyle = {
     width: "100%",
     marginTop: "5px",
     padding: "10px",
     borderRadius: "10px",
-    border: "1px solid #e5e7eb",
-    boxSizing: "border-box"
+    border: "1px solid var(--border)",
+    boxSizing: "border-box",
+    backgroundColor: "var(--input)",
+    color: "#111827", // 🔥 força texto visível
+    appearance: "none"
   };
 
   return (
@@ -78,7 +81,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
         style={{
           position: "relative",
           display: "flex",
-          backgroundColor: "#e5e7eb",
+          backgroundColor: "var(--input)",
           borderRadius: "12px",
           padding: "4px"
         }}
@@ -104,7 +107,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
             padding: "10px",
             cursor: "pointer",
             zIndex: 1,
-            color: tipo === "saida" ? "white" : "#374151",
+            color: tipo === "saida" ? "white" : "#111827",
             fontWeight: "600"
           }}
         >
@@ -119,7 +122,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
             padding: "10px",
             cursor: "pointer",
             zIndex: 1,
-            color: tipo === "entrada" ? "white" : "#374151",
+            color: tipo === "entrada" ? "white" : "#111827",
             fontWeight: "600"
           }}
         >
@@ -130,7 +133,9 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       {/* DATA + VALOR */}
       <div style={{ display: "flex", gap: "12px" }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "#6b7280" }}>Data</label>
+          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
+            Data
+          </label>
           <input
             type="date"
             value={data}
@@ -140,15 +145,15 @@ function AddTransactionForm({ onSuccess, onCancel }) {
         </div>
 
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "#6b7280" }}>Valor (R$)</label>
+          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
+            Valor (R$)
+          </label>
           <input
             type="text"
             placeholder="0.00"
             value={valor}
             onChange={(e) => {
               const val = e.target.value;
-
-              // 🔥 só permite números e ponto
               if (/^\d*\.?\d*$/.test(val)) {
                 setValor(val);
               }
@@ -163,7 +168,9 @@ function AddTransactionForm({ onSuccess, onCancel }) {
 
       {/* DESCRIÇÃO */}
       <div>
-        <label style={{ fontSize: "13px", color: "#6b7280" }}>Descrição</label>
+        <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
+          Descrição
+        </label>
         <input
           placeholder="Ex: Mercado, Salário..."
           value={descricao}
@@ -175,12 +182,17 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       {/* CATEGORIA + BANCO */}
       <div style={{ display: "flex", gap: "12px" }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "#6b7280" }}>Categoria</label>
+          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
+            Categoria
+          </label>
 
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
-            style={inputStyle}
+            style={{
+              ...inputStyle,
+              color: "#111827"
+            }}
           >
             {categorias.map((cat, index) => (
               <option key={index} value={cat}>
@@ -188,11 +200,12 @@ function AddTransactionForm({ onSuccess, onCancel }) {
               </option>
             ))}
           </select>
-
         </div>
 
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "#6b7280" }}>Banco</label>
+          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
+            Banco
+          </label>
           <input
             placeholder="Ex: Nubank..."
             value={banco}
@@ -204,7 +217,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
 
       {/* NOTA */}
       <div>
-        <label style={{ fontSize: "13px", color: "#6b7280" }}>
+        <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
           Nota (opcional)
         </label>
         <input
@@ -217,6 +230,8 @@ function AddTransactionForm({ onSuccess, onCancel }) {
 
       {/* BOTÕES */}
       <div style={{ display: "flex", gap: "12px", marginTop: "5px" }}>
+        
+        {/* 🔥 CANCELAR VERMELHO FIXO */}
         <button
           type="button"
           onClick={() => onCancel && onCancel()}
@@ -225,9 +240,9 @@ function AddTransactionForm({ onSuccess, onCancel }) {
             padding: "12px",
             borderRadius: "12px",
             border: "none",
-            backgroundColor: "#e5e7eb",
+            backgroundColor: "#ef4444",
+            color: "white",
             fontWeight: "600",
-            color: "#374151",
             cursor: "pointer"
           }}
         >

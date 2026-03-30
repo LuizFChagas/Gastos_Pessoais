@@ -9,7 +9,7 @@ function BalanceCard({ title, value, color }) {
   return (
     <div
       style={{
-        backgroundColor: "white",
+        backgroundColor: "var(--card)",
         borderRadius: "12px",
         padding: "20px",
         flex: 1,
@@ -23,7 +23,7 @@ function BalanceCard({ title, value, color }) {
     >
       <span
         style={{
-          color: "#6b7280",
+          color: "var(--subtext)",
           fontSize: "14px"
         }}
       >
@@ -34,7 +34,7 @@ function BalanceCard({ title, value, color }) {
         style={{
           fontSize: "24px",
           marginTop: "8px",
-          color: "#111827"
+          color: "var(--text)"
         }}
       >
         {formatar(value)}

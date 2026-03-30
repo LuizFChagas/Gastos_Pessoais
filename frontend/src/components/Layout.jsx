@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 
-function Layout({ children }) {
+function Layout({ children, toggleTheme, darkMode }) {
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
@@ -12,15 +12,38 @@ function Layout({ children }) {
       <div
         style={{
           width: "240px",
-          backgroundColor: "#ffffff",
-          borderRight: "1px solid #e5e7eb",
+          backgroundColor: "var(--card)",
+          borderRight: "1px solid var(--border)",
           padding: "20px"
         }}
       >
-        <h2 style={{ color: "#22c55e", fontWeight: "bold" }}>
-          FinanceIA
-        </h2>
+        
+        {/* 🔥 HEADER COM BOTÃO */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between"
+          }}
+        >
+          <h2 style={{ color: "#22c55e", fontWeight: "bold", margin: 0 }}>
+            FinanceIA
+          </h2>
 
+          <button
+            onClick={toggleTheme}
+            style={{
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              fontSize: "18px"
+            }}
+          >
+            {darkMode ? "🌙" : "☀️"}
+          </button>
+        </div>
+
+        {/* MENU */}
         <div
           style={{
             marginTop: "40px",
@@ -35,7 +58,7 @@ function Layout({ children }) {
               padding: "10px",
               borderRadius: "8px",
               backgroundColor: isActive("/") ? "#dcfce7" : "transparent",
-              color: isActive("/") ? "#16a34a" : "#374151",
+              color: isActive("/") ? "#16a34a" : "var(--text)",
               textDecoration: "none",
               fontWeight: isActive("/") ? "bold" : "normal"
             }}
@@ -49,7 +72,7 @@ function Layout({ children }) {
               padding: "10px",
               borderRadius: "8px",
               backgroundColor: isActive("/transacoes") ? "#dcfce7" : "transparent",
-              color: isActive("/transacoes") ? "#16a34a" : "#374151",
+              color: isActive("/transacoes") ? "#16a34a" : "var(--text)",
               textDecoration: "none"
             }}
           >
@@ -62,7 +85,7 @@ function Layout({ children }) {
               padding: "10px",
               borderRadius: "8px",
               backgroundColor: isActive("/importar") ? "#dcfce7" : "transparent",
-              color: isActive("/importar") ? "#16a34a" : "#374151",
+              color: isActive("/importar") ? "#16a34a" : "var(--text)",
               textDecoration: "none"
             }}
           >
@@ -75,7 +98,7 @@ function Layout({ children }) {
       <div
         style={{
           flex: 1,
-          backgroundColor: "#f5f7fa",
+          backgroundColor: "var(--bg)",
           padding: "30px",
           overflowY: "auto"
         }}
