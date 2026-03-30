@@ -12,14 +12,6 @@ function Dashboard() {
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
-
-  // 🔥 (mantido, caso queira usar depois)
-  const formatar = (v) =>
-    Number(v || 0).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    });
-
   const [periodo, setPeriodo] = useState("mes");
 
   useEffect(() => {
@@ -28,7 +20,6 @@ function Dashboard() {
 
   const getIntervalo = () => {
     const hoje = new Date();
-
     let inicio, fim;
 
     if (periodo === "hoje") {
@@ -59,7 +50,6 @@ function Dashboard() {
 
       const gastosData = await gastosPorIntervalo(inicio, fim);
 
-      // ✅ CORREÇÃO AQUI (BASEADO EM TIPO)
       const entradas = gastosData
         .filter(g => g.tipo === "entrada")
         .reduce((acc, g) => acc + g.valor, 0);
@@ -74,7 +64,6 @@ function Dashboard() {
         saldo: entradas - saidas
       });
 
-      // 🔥 mantém seu padrão
       const formatado = gastosData.map((g) => ({
         ...g,
         data_hora: g.data_hora || g.data,
@@ -92,19 +81,16 @@ function Dashboard() {
     <div>
 
       {/* HEADER */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}
-      >
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center"
+      }}>
         <div>
-          <h1 style={{ margin: 0 }}>Dashboard</h1>
-          <span style={{ color: "#6b7280" }}>março de 2026</span>
+          <h1 style={{ margin: 0, color: "var(--text)" }}>Dashboard</h1>
+          <span style={{ color: "var(--subtext)" }}>março de 2026</span>
         </div>
 
-        {/* FILTRO + BOTÃO */}
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <select
             value={periodo}
@@ -112,8 +98,9 @@ function Dashboard() {
             style={{
               padding: "8px 12px",
               borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              backgroundColor: "white"
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--card)",
+              color: "var(--text)"
             }}
           >
             <option value="hoje">Hoje</option>
@@ -152,7 +139,8 @@ function Dashboard() {
         </div>
 
         <div style={{ flex: 1 }}>
-          <ExpensesByDayChart data={gastos} />
+          {/* ✅ CORREÇÃO FINAL */}
+          <ExpensesByDayChart periodo={periodo} />
         </div>
       </div>
 
@@ -161,34 +149,29 @@ function Dashboard() {
 
       {/* MODAL */}
       {openModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.4)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center"
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "25px",
-              borderRadius: "16px",
-              width: "420px"
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "15px"
-              }}
-            >
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0,0,0,0.4)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
+        }}>
+          <div style={{
+            backgroundColor: "var(--card)",
+            padding: "25px",
+            borderRadius: "16px",
+            width: "420px",
+            color: "var(--text)"
+          }}>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "15px"
+            }}>
               <h3>Nova transação</h3>
 
               <button
@@ -196,7 +179,8 @@ function Dashboard() {
                 style={{
                   border: "none",
                   background: "transparent",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  color: "var(--text)"
                 }}
               >
                 ✕

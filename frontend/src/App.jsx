@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -10,46 +11,64 @@ import PrivateRoute from "./components/PrivateRoute";
 import Layout from "./components/Layout";
 
 function App() {
+
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const temaSalvo = localStorage.getItem("theme");
+
+    if (temaSalvo === "dark") {
+      document.body.classList.add("dark");
+      setDarkMode(true);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (darkMode) {
+      document.body.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    } else {
+      document.body.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    }
+
+    setDarkMode(!darkMode);
+  };
+
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* LOGIN */}
         <Route path="/login" element={<Login />} />
-
-        {/* CADASTRO */}
         <Route path="/cadastro" element={<Cadastro />} />
 
-        {/* DASHBOARD */}
         <Route
           path="/"
           element={
             <PrivateRoute>
-              <Layout>
+              <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
                 <Dashboard />
               </Layout>
             </PrivateRoute>
           }
         />
 
-        {/* TRANSAÇÕES */}
         <Route
           path="/transacoes"
           element={
             <PrivateRoute>
-              <Layout>
+              <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
                 <Transacoes />
               </Layout>
             </PrivateRoute>
           }
         />
 
-        {/* IMPORTAR */}
         <Route
           path="/importar"
           element={
             <PrivateRoute>
-              <Layout>
+              <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
                 <Importar />
               </Layout>
             </PrivateRoute>
