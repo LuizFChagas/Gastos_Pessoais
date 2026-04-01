@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 /* ========================= */
 /* 🌞 TEMA CLARO (PADRÃO) */
 /* ========================= */
@@ -8,8 +10,7 @@
   --subtext: #6b7280;
   --border: #e5e7eb;
 
- 
-  --input: #f3f4f6; 
+  --input: #f3f4f6;
 }
 
 /* ========================= */
@@ -22,6 +23,15 @@ body.dark {
   --subtext: #94a3b8;
   --border: #334155;
 
-  
-  --input: #a4a4a8; 
+  --input: #a4a4a8;
+}
+
+/* ========================= */
+/* 🌍 GLOBAL */
+/* ========================= */
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif; 
+  transition: all 0.2s ease;
 }

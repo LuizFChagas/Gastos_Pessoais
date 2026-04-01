@@ -12,20 +12,18 @@ function Dashboard() {
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
-  const [periodo, setPeriodo] = useState("mes");
+  const [periodo, setPeriodo] = useState("mes_custom");
+
+  const [mesSelecionado, setMesSelecionado] = useState(new Date().getMonth());
+  const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear());
 
   useEffect(() => {
     carregarDados();
-  }, [periodo]);
+  }, [periodo, mesSelecionado, anoSelecionado]);
 
   const getIntervalo = () => {
     const hoje = new Date();
     let inicio, fim;
-
-    if (periodo === "hoje") {
-      inicio = new Date(hoje.setHours(0, 0, 0, 0));
-      fim = new Date();
-    }
 
     if (periodo === "semana") {
       inicio = new Date();
@@ -33,9 +31,14 @@ function Dashboard() {
       fim = new Date();
     }
 
-    if (periodo === "mes") {
-      inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-      fim = new Date();
+    if (periodo === "ano") {
+      inicio = new Date(anoSelecionado, 0, 1);
+      fim = new Date(anoSelecionado, 11, 31);
+    }
+
+    if (periodo === "mes_custom") {
+      inicio = new Date(anoSelecionado, mesSelecionado, 1);
+      fim = new Date(anoSelecionado, mesSelecionado + 1, 0);
     }
 
     return {
@@ -92,9 +95,19 @@ function Dashboard() {
         </div>
 
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          
           <select
             value={periodo}
-            onChange={(e) => setPeriodo(e.target.value)}
+            onChange={(e) => {
+              const novoPeriodo = e.target.value;
+              setPeriodo(novoPeriodo);
+
+              if (novoPeriodo === "mes_custom") {
+                const hoje = new Date();
+                setMesSelecionado(hoje.getMonth());
+                setAnoSelecionado(hoje.getFullYear());
+              }
+            }}
             style={{
               padding: "8px 12px",
               borderRadius: "8px",
@@ -103,10 +116,49 @@ function Dashboard() {
               color: "var(--text)"
             }}
           >
-            <option value="hoje">Hoje</option>
             <option value="semana">Últimos 7 dias</option>
-            <option value="mes">Este mês</option>
+            <option value="ano">Este ano</option>
+            <option value="mes_custom">Selecionar mês</option>
           </select>
+
+          {periodo === "mes_custom" && (
+            <>
+              <select
+                value={mesSelecionado}
+                onChange={(e) => setMesSelecionado(Number(e.target.value))}
+                style={{
+                  padding: "8px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--card)",
+                  color: "var(--text)"
+                }}
+              >
+                {[
+                  "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+                ].map((mes, index) => (
+                  <option key={index} value={index}>{mes}</option>
+                ))}
+              </select>
+
+              <select
+                value={anoSelecionado}
+                onChange={(e) => setAnoSelecionado(Number(e.target.value))}
+                style={{
+                  padding: "8px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--card)",
+                  color: "var(--text)"
+                }}
+              >
+                {[2024, 2025, 2026].map((ano) => (
+                  <option key={ano} value={ano}>{ano}</option>
+                ))}
+              </select>
+            </>
+          )}
 
           <button
             onClick={() => setOpenModal(true)}
@@ -133,14 +185,26 @@ function Dashboard() {
       </div>
 
       {/* GRÁFICOS */}
-      <div style={{ display: "flex", gap: "30px", marginTop: "30px" }}>
-        <div style={{ flex: 1 }}>
-          <ExpensesByCategoryChart data={gastos} />
+      <div style={{
+        display: "flex",
+        gap: "30px",
+        marginTop: "30px",
+        alignItems: "stretch"
+      }}>
+        <div style={{ flex: 1, display: "flex" }}>
+          <div style={{ width: "100%", height: "100%" }}>
+            <ExpensesByCategoryChart data={gastos} />
+          </div>
         </div>
 
-        <div style={{ flex: 1 }}>
-          {/* ✅ CORREÇÃO FINAL */}
-          <ExpensesByDayChart periodo={periodo} />
+        <div style={{ flex: 1, display: "flex" }}>
+          <div style={{ width: "100%", height: "100%" }}>
+            <ExpensesByDayChart
+              periodo={periodo === "mes_custom" ? "mes" : periodo}
+              mesSelecionado={mesSelecionado}
+              anoSelecionado={anoSelecionado}
+            />
+          </div>
         </div>
       </div>
 
