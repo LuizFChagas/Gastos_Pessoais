@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
+import { getCategoriaStyle, capitalizar } from "../../utils/categorias";
 
 function ExpensesByCategoryChart({ data }) {
 
@@ -18,8 +19,6 @@ function ExpensesByCategoryChart({ data }) {
     }, []);
 
   const total = dadosFiltrados.reduce((acc, item) => acc + item.value, 0);
-
-  const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
 
   return (
     <div style={{
@@ -53,7 +52,7 @@ function ExpensesByCategoryChart({ data }) {
           <PieChart width={250} height={250}>
             <Pie data={dadosFiltrados} dataKey="value" outerRadius={90}>
               {dadosFiltrados.map((entry, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                <Cell key={index} fill={getCategoriaStyle(entry.name).chartColor} />
               ))}
             </Pie>
 
@@ -76,28 +75,35 @@ function ExpensesByCategoryChart({ data }) {
             gap: "10px",
             minWidth: "180px"
           }}>
-            {dadosFiltrados.map((item, index) => (
-              <div key={index} style={{ display: "flex", gap: "10px" }}>
-                <div style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: COLORS[index % COLORS.length]
-                }} />
+            {dadosFiltrados.map((item, index) => {
+              const style = getCategoriaStyle(item.name);
+              return (
+                <div key={index} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <div style={{
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    backgroundColor: style.chartColor,
+                    flexShrink: 0
+                  }} />
 
-                <span style={{ color: "var(--text)" }}>{item.name}</span>
+                  <span style={{ color: "var(--text)" }}>
+                    {style.icon} {capitalizar(item.name)}
+                  </span>
 
-                <span style={{
-                  marginLeft: "auto",
-                  color: COLORS[index % COLORS.length]
-                }}>
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL"
-                  }).format(item.value)}
-                </span>
-              </div>
-            ))}
+                  <span style={{
+                    marginLeft: "auto",
+                    color: style.chartColor,
+                    fontWeight: "600"
+                  }}>
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "BRL"
+                    }).format(item.value)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

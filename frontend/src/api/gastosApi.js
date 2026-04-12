@@ -58,6 +58,12 @@ export const listarExtratos = async () => {
   return response.data;
 };
 
+// MESES COM DADOS DISPONÍVEIS
+export const listarMesesDisponiveis = async () => {
+  const response = await api.get("/gastos/meses-disponiveis");
+  return response.data;
+};
+
 // DELETAR EXTRATO E SEUS GASTOS
 export const deletarExtrato = async (id) => {
   await api.delete(`/gastos/extratos/${id}`);

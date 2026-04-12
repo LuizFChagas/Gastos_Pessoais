@@ -6,23 +6,47 @@ import AddTransactionForm from "../components/AddTransactionForm";
 import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChart";
 import ExpensesByDayChart from "../components/charts/ExpensesByDayChart";
 
-import { gastosPorIntervalo } from "../api/gastosApi";
+import { gastosPorIntervalo, listarMesesDisponiveis } from "../api/gastosApi";
 
 function Dashboard() {
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
-  const [periodo, setPeriodo] = useState("mes_custom");
+  const [periodo, setPeriodo] = useState(
+    () => localStorage.getItem("dashboard_periodo") || "mes_custom"
+  );
+  const [mesSelecionado, setMesSelecionado] = useState(
+    () => {
+      const salvo = localStorage.getItem("dashboard_mes");
+      return salvo !== null ? Number(salvo) : new Date().getMonth();
+    }
+  );
+  const [anoSelecionado, setAnoSelecionado] = useState(
+    () => {
+      const salvo = localStorage.getItem("dashboard_ano");
+      return salvo !== null ? Number(salvo) : new Date().getFullYear();
+    }
+  );
+  const [mesesComDados, setMesesComDados] = useState([]);
 
-  const [mesSelecionado, setMesSelecionado] = useState(new Date().getMonth());
-  const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear());
+  const NOMES_MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const NOMES_MESES_MIN = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+  useEffect(() => {
+    localStorage.setItem("dashboard_periodo", periodo);
+    localStorage.setItem("dashboard_mes", mesSelecionado);
+    localStorage.setItem("dashboard_ano", anoSelecionado);
+  }, [periodo, mesSelecionado, anoSelecionado]);
+
+  useEffect(() => {
+    carregarMesesDisponiveis();
+  }, []);
 
   useEffect(() => {
     carregarDados();
   }, [periodo, mesSelecionado, anoSelecionado]);
 
   const getIntervalo = () => {
-    const hoje = new Date();
     let inicio, fim;
 
     if (periodo === "semana") {
@@ -45,6 +69,21 @@ function Dashboard() {
       inicio: inicio.toISOString(),
       fim: fim.toISOString()
     };
+  };
+
+  const carregarMesesDisponiveis = async () => {
+    try {
+      const data = await listarMesesDisponiveis();
+      setMesesComDados(data);
+      if (data.length > 0) {
+        const mesesDoAno = data.filter(m => m.ano === anoSelecionado).map(m => m.mes);
+        if (mesesDoAno.length > 0 && !mesesDoAno.includes(mesSelecionado)) {
+          setMesSelecionado(mesesDoAno[mesesDoAno.length - 1]);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar meses disponíveis:", error);
+    }
   };
 
   const carregarDados = async () => {
@@ -91,7 +130,11 @@ function Dashboard() {
       }}>
         <div>
           <h1 style={{ margin: 0, color: "var(--text)" }}>Dashboard</h1>
-          <span style={{ color: "var(--subtext)" }}>março de 2026</span>
+          <span style={{ color: "var(--subtext)" }}>
+            {periodo === "semana" && "Últimos 7 dias"}
+            {periodo === "ano" && `Ano de ${anoSelecionado}`}
+            {periodo === "mes_custom" && `${NOMES_MESES_MIN[mesSelecionado]} de ${anoSelecionado}`}
+          </span>
         </div>
 
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -134,17 +177,27 @@ function Dashboard() {
                   color: "var(--text)"
                 }}
               >
-                {[
-                  "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
-                ].map((mes, index) => (
-                  <option key={index} value={index}>{mes}</option>
-                ))}
+                {(() => {
+                  const mesesDoAno = mesesComDados.filter(m => m.ano === anoSelecionado).map(m => m.mes);
+                  if (mesesDoAno.length === 0) {
+                    return <option value="" disabled>Nenhum dado disponível</option>;
+                  }
+                  return mesesDoAno.map((idx) => (
+                    <option key={idx} value={idx}>{NOMES_MESES[idx]}</option>
+                  ));
+                })()}
               </select>
 
               <select
                 value={anoSelecionado}
-                onChange={(e) => setAnoSelecionado(Number(e.target.value))}
+                onChange={(e) => {
+                  const novoAno = Number(e.target.value);
+                  setAnoSelecionado(novoAno);
+                  const mesesDoNovoAno = mesesComDados.filter(m => m.ano === novoAno).map(m => m.mes);
+                  if (mesesDoNovoAno.length > 0 && !mesesDoNovoAno.includes(mesSelecionado)) {
+                    setMesSelecionado(mesesDoNovoAno[mesesDoNovoAno.length - 1]);
+                  }
+                }}
                 style={{
                   padding: "8px",
                   borderRadius: "8px",
@@ -255,6 +308,7 @@ function Dashboard() {
               onSuccess={() => {
                 setOpenModal(false);
                 carregarDados();
+                carregarMesesDisponiveis();
               }}
               onCancel={() => setOpenModal(false)}
             />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from "../api/api";
-import { CATEGORIAS } from "../utils/categorias";
+import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
 
 function AddTransactionForm({ onSuccess, onCancel }) {
   const [tipo, setTipo] = useState("saida");
@@ -186,7 +186,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
           >
             {CATEGORIAS.map((cat, index) => (
               <option key={index} value={cat}>
-                {cat}
+                {getCategoriaStyle(cat).icon} {capitalizar(cat)}
               </option>
             ))}
           </select>

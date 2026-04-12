@@ -1,3 +1,5 @@
+import { getCategoriaStyle, capitalizar } from "../utils/categorias";
+
 function TransactionList({ transactions }) {
 
   const formatarData = (data) => {
@@ -5,21 +7,6 @@ function TransactionList({ transactions }) {
 
     const [ano, mes, dia] = data.split("T")[0].split("-");
     return `${ano}-${mes}-${dia}`;
-  };
-
-  const getCategoriaStyle = (categoria) => {
-    const map = {
-      salario: { bg: "#d1fae5", color: "#065f46", icon: "💰" },
-      alimentação: { bg: "#fef3c7", color: "#92400e", icon: "🍔" },
-      transporte: { bg: "#dbeafe", color: "#1e40af", icon: "🚗" },
-      moradia: { bg: "#e0e7ff", color: "#3730a3", icon: "🏠" },
-      lazer: { bg: "#fce7f3", color: "#9d174d", icon: "🎮" },
-      educação: { bg: "#ede9fe", color: "#5b21b6", icon: "📚" },
-      saúde: { bg: "#fee2e2", color: "#991b1b", icon: "💊" },
-      outros: { bg: "#e5e7eb", color: "#374151", icon: "🏷️" }
-    };
-
-    return map[categoria?.toLowerCase()] || map["outros"];
   };
 
   return (
@@ -62,8 +49,8 @@ function TransactionList({ transactions }) {
                 <div
                   style={{
                     backgroundColor: isEntrada
-                      ? "rgba(34,197,94,0.2)"   // 🔥 verde suave dark
-                      : "rgba(239,68,68,0.2)", // 🔥 vermelho suave dark
+                      ? "rgba(34,197,94,0.2)"
+                      : "rgba(239,68,68,0.2)",
                     padding: "10px",
                     borderRadius: "12px"
                   }}
@@ -99,7 +86,7 @@ function TransactionList({ transactions }) {
                     color: getCategoriaStyle(t.categoria).color
                   }}
                 >
-                  {getCategoriaStyle(t.categoria).icon} {t.categoria}
+                  {getCategoriaStyle(t.categoria).icon} {capitalizar(t.categoria)}
                 </div>
 
                 <div

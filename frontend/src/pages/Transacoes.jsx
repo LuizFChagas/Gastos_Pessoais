@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { listarGastos, deletarGasto } from "../api/gastosApi";
 import AddTransactionForm from "../components/AddTransactionForm";
-import { CATEGORIAS, getCategoriaSyle } from "../utils/categorias";
+import { CATEGORIAS, getCategoriaSyle, capitalizar } from "../utils/categorias";
 
 function Transacoes() {
   const [transacoes, setTransacoes] = useState([]);
@@ -45,7 +45,7 @@ function Transacoes() {
   const transacoesFiltradas = transacoes.filter((t) => {
     const matchCategoria =
       categoriaSelecionada === "todos" ||
-      t.categoria === categoriaSelecionada;
+      t.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase();
 
     const matchBusca =
       t.descricao?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -148,7 +148,7 @@ function Transacoes() {
           }}
         >
           {categorias.map((cat, index) => (
-            <option key={index} value={cat}>{cat}</option>
+            <option key={index} value={cat}>{capitalizar(cat)}</option>
           ))}
         </select>
       </div>
@@ -215,7 +215,7 @@ function Transacoes() {
                       backgroundColor: getCategoriaSyle(t.categoria).bg,
                       color: getCategoriaSyle(t.categoria).color
                     }}>
-                      {getCategoriaSyle(t.categoria).icon} {t.categoria}
+                      {getCategoriaSyle(t.categoria).icon} {capitalizar(t.categoria)}
                     </div>
 
                     <div style={{
