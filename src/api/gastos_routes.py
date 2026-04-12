@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 
 from src.database.deps import get_db
-from src.database.models import Gasto
+from src.database.models import Gasto, Extrato
 
 from src.services.ingestao_manual import adicionar_gasto_manual
 from src.services.ingestao_extrato_bancario import importar_extrato
@@ -53,7 +53,9 @@ def criar_gasto_manual(
 @router.post("/importar")
 def importar_extrato_bancario(
     file: UploadFile = File(...),
-    usuario_id: int = Depends(pegar_usuario_logado)
+    banco: str = "",
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
 ):
 
     if not file.filename.lower().endswith(".csv"):
@@ -68,14 +70,66 @@ def importar_extrato_bancario(
     with open(caminho_temp, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    importar_extrato(caminho_temp, usuario_id)
+    extrato = Extrato(
+        nome_arquivo=file.filename,
+        banco=banco,
+        usuario_id=usuario_id
+    )
+    db.add(extrato)
+    db.commit()
+    db.refresh(extrato)
+
+    importar_extrato(caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco)
 
     logger.info(f"Usuário {usuario_id} importou arquivo: {file.filename}")
 
     return {
         "message": "Extrato importado com sucesso",
-        "arquivo": file.filename
+        "arquivo": file.filename,
+        "extrato_id": extrato.id
     }
+
+
+# ✅ LISTAR HISTÓRICO DE EXTRATOS
+@router.get("/extratos")
+def listar_extratos(
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    extratos = db.query(Extrato).filter(
+        Extrato.usuario_id == usuario_id
+    ).order_by(Extrato.data_importacao.desc()).all()
+
+    return [
+        {
+            "id": e.id,
+            "nome_arquivo": e.nome_arquivo,
+            "banco": e.banco,
+            "data_importacao": e.data_importacao
+        }
+        for e in extratos
+    ]
+
+
+# ✅ DELETAR EXTRATO E TODOS OS GASTOS VINCULADOS
+@router.delete("/extratos/{extrato_id}")
+def deletar_extrato(
+    extrato_id: int,
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    extrato = db.query(Extrato).filter(
+        Extrato.id == extrato_id,
+        Extrato.usuario_id == usuario_id
+    ).first()
+
+    if not extrato:
+        raise HTTPException(status_code=404, detail="Extrato não encontrado")
+
+    db.delete(extrato)
+    db.commit()
+
+    return {"message": "Extrato e transações vinculadas deletados com sucesso"}
 
 
 # ✅ LISTAR TODOS (ENTRADA + SAÍDA)
