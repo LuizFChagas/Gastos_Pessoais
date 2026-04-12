@@ -293,6 +293,24 @@ def gastos_por_intervalo(
     ]
 
 
+# ✅ MESES COM DADOS
+@router.get("/meses-disponiveis")
+def meses_disponiveis(
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    from sqlalchemy import extract
+
+    resultados = db.query(
+        extract('year', Gasto.data_hora).label('ano'),
+        extract('month', Gasto.data_hora).label('mes')
+    ).filter(
+        Gasto.usuario_id == usuario_id
+    ).distinct().order_by('ano', 'mes').all()
+
+    return [{"ano": int(r.ano), "mes": int(r.mes) - 1} for r in resultados]
+
+
 # ✅ TOP GASTOS (SOMENTE SAÍDA)
 @router.get("/top-gastos")
 def top_maiores_gastos(
