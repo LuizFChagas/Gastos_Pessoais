@@ -41,3 +41,24 @@ export const gastosPorIntervalo = async (dataInicio, dataFim) => {
 export const deletarGasto = async (id) => {
   await api.delete(`/gastos/${id}`);
 };
+
+// IMPORTAR EXTRATO (CSV)
+export const importarExtrato = async (arquivo, banco) => {
+  const formData = new FormData();
+  formData.append("file", arquivo);
+  const response = await api.post(`/gastos/importar?banco=${encodeURIComponent(banco)}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+  return response.data;
+};
+
+// LISTAR HISTÓRICO DE EXTRATOS
+export const listarExtratos = async () => {
+  const response = await api.get("/gastos/extratos");
+  return response.data;
+};
+
+// DELETAR EXTRATO E SEUS GASTOS
+export const deletarExtrato = async (id) => {
+  await api.delete(`/gastos/extratos/${id}`);
+};

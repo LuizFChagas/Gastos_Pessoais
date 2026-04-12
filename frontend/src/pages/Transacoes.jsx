@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { listarGastos, deletarGasto } from "../api/gastosApi";
 import AddTransactionForm from "../components/AddTransactionForm";
+import { CATEGORIAS, getCategoriaSyle } from "../utils/categorias";
 
 function Transacoes() {
   const [transacoes, setTransacoes] = useState([]);
@@ -39,10 +40,7 @@ function Transacoes() {
     }
   };
 
-  const categorias = [
-    "todos",
-    ...new Set(transacoes.map((t) => t.categoria))
-  ];
+  const categorias = ["todos", ...CATEGORIAS];
 
   const transacoesFiltradas = transacoes.filter((t) => {
     const matchCategoria =
@@ -56,20 +54,6 @@ function Transacoes() {
     return matchCategoria && matchBusca;
   });
 
-  const getCategoriaStyle = (categoria) => {
-    const map = {
-      salario: { bg: "#d1fae5", color: "#065f46", icon: "💰" },
-      alimentação: { bg: "#fef3c7", color: "#92400e", icon: "🍔" },
-      transporte: { bg: "#dbeafe", color: "#1e40af", icon: "🚗" },
-      moradia: { bg: "#e0e7ff", color: "#3730a3", icon: "🏠" },
-      lazer: { bg: "#fce7f3", color: "#9d174d", icon: "🎮" },
-      educação: { bg: "#ede9fe", color: "#5b21b6", icon: "📚" },
-      saúde: { bg: "#fee2e2", color: "#991b1b", icon: "💊" },
-      outros: { bg: "#e5e7eb", color: "#374151", icon: "🏷️" }
-    };
-
-    return map[categoria?.toLowerCase()] || map["outros"];
-  };
 
   const formatarDataBonita = (dataStr) => {
     const [ano, mes, dia] = dataStr.split("-");
@@ -228,10 +212,10 @@ function Transacoes() {
                       fontSize: "12px",
                       fontWeight: "500",
                       marginBottom: "5px",
-                      backgroundColor: getCategoriaStyle(t.categoria).bg,
-                      color: getCategoriaStyle(t.categoria).color
+                      backgroundColor: getCategoriaSyle(t.categoria).bg,
+                      color: getCategoriaSyle(t.categoria).color
                     }}>
-                      {getCategoriaStyle(t.categoria).icon} {t.categoria}
+                      {getCategoriaSyle(t.categoria).icon} {t.categoria}
                     </div>
 
                     <div style={{

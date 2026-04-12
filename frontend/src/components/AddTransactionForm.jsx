@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api/api";
+import { CATEGORIAS } from "../utils/categorias";
 
 function AddTransactionForm({ onSuccess, onCancel }) {
   const [tipo, setTipo] = useState("saida");
@@ -9,17 +10,6 @@ function AddTransactionForm({ onSuccess, onCancel }) {
   const [categoria, setCategoria] = useState("outros");
   const [banco, setBanco] = useState("");
   const [nota, setNota] = useState("");
-
-  const categorias = [
-    "salario",
-    "alimentação",
-    "transporte",
-    "moradia",
-    "lazer",
-    "educação",
-    "saúde",
-    "outros"
-  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -194,7 +184,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
               color: "#111827"
             }}
           >
-            {categorias.map((cat, index) => (
+            {CATEGORIAS.map((cat, index) => (
               <option key={index} value={cat}>
                 {cat}
               </option>
