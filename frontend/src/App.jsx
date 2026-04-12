@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
@@ -39,11 +40,15 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        <Route path="/login" element={<Login />} />
+        {/* Página inicial pública */}
+        <Route path="/" element={<Landing />} />
+
+        <Route path="/login"    element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
 
+        {/* App autenticado */}
         <Route
-          path="/"
+          path="/app"
           element={
             <PrivateRoute>
               <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
@@ -54,7 +59,7 @@ function App() {
         />
 
         <Route
-          path="/transacoes"
+          path="/app/transacoes"
           element={
             <PrivateRoute>
               <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
@@ -65,7 +70,7 @@ function App() {
         />
 
         <Route
-          path="/importar"
+          path="/app/importar"
           element={
             <PrivateRoute>
               <Layout toggleTheme={toggleTheme} darkMode={darkMode}>

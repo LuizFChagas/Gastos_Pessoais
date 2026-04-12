@@ -1,11 +1,12 @@
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
+import { getCategoriaStyle, capitalizar } from "../../utils/categorias";
 
 function ExpensesByCategoryChart({ data }) {
 
   const dadosFiltrados = data
     .filter(g => g.tipo === "saida")
     .reduce((acc, item) => {
-      const categoria = item.categoria || "outros";
+      const categoria = (item.categoria || "outros").toLowerCase();
       const existente = acc.find(i => i.name === categoria);
 
       if (existente) {
@@ -18,8 +19,6 @@ function ExpensesByCategoryChart({ data }) {
     }, []);
 
   const total = dadosFiltrados.reduce((acc, item) => acc + item.value, 0);
-
-  const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
 
   return (
     <div style={{
@@ -50,22 +49,22 @@ function ExpensesByCategoryChart({ data }) {
           justifyContent: "space-between",
           flex: 1
         }}>
-          <PieChart width={250} height={250}>
+          <PieChart width={220} height={220}>
             <Pie data={dadosFiltrados} dataKey="value" outerRadius={90}>
               {dadosFiltrados.map((entry, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                <Cell key={index} fill={getCategoriaStyle(entry.name).chartColor} />
               ))}
             </Pie>
-
             <Tooltip
               formatter={(value) => {
-                const porcentagem = ((value / total) * 100).toFixed(1);
-                return `${porcentagem}%`;
+                const pct = ((value / total) * 100).toFixed(1);
+                return [`${pct}%`, ""];
               }}
               contentStyle={{
                 backgroundColor: "#1e293b",
                 border: "none",
-                color: "#fff"
+                color: "#fff",
+                borderRadius: "8px"
               }}
             />
           </PieChart>
@@ -73,31 +72,39 @@ function ExpensesByCategoryChart({ data }) {
           <div style={{
             display: "flex",
             flexDirection: "column",
-            gap: "10px",
-            minWidth: "180px"
+            gap: "8px",
+            minWidth: "170px",
+            maxHeight: "280px",
+            overflowY: "auto"
           }}>
-            {dadosFiltrados.map((item, index) => (
-              <div key={index} style={{ display: "flex", gap: "10px" }}>
-                <div style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: COLORS[index % COLORS.length]
-                }} />
-
-                <span style={{ color: "var(--text)" }}>{item.name}</span>
-
-                <span style={{
-                  marginLeft: "auto",
-                  color: COLORS[index % COLORS.length]
-                }}>
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL"
-                  }).format(item.value)}
-                </span>
-              </div>
-            ))}
+            {dadosFiltrados.map((item, index) => {
+              const style = getCategoriaStyle(item.name);
+              return (
+                <div key={index} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    backgroundColor: style.chartColor,
+                    flexShrink: 0
+                  }} />
+                  <span style={{ color: "var(--text)", fontSize: "13px" }}>
+                    {style.icon} {capitalizar(item.name)}
+                  </span>
+                  <span style={{
+                    marginLeft: "auto",
+                    color: style.chartColor,
+                    fontSize: "12px",
+                    fontWeight: "600"
+                  }}>
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "BRL"
+                    }).format(item.value)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

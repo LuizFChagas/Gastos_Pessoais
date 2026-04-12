@@ -62,3 +62,9 @@ export const listarExtratos = async () => {
 export const deletarExtrato = async (id) => {
   await api.delete(`/gastos/extratos/${id}`);
 };
+
+// MESES QUE POSSUEM DADOS
+export const listarMesesDisponiveis = async () => {
+  const response = await api.get("/gastos/meses-disponiveis");
+  return response.data;
+};
