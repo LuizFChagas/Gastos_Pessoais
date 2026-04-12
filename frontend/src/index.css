@@ -24,11 +24,9 @@ body {
   display: block;
 }
 
-/* 🔥 FORÇA inputs bonitos */
+/* inputs herdam o tema via CSS variables */
 input,
 select {
-  background-color: white !important;
-  color: #111827 !important;
   border: 1px solid #e5e7eb;
 }
 
