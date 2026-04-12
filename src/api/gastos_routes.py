@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, extract
 
 from src.database.deps import get_db
 from src.database.models import Gasto, Extrato
@@ -130,6 +130,23 @@ def deletar_extrato(
     db.commit()
 
     return {"message": "Extrato e transações vinculadas deletados com sucesso"}
+
+
+# ✅ MESES QUE TÊM DADOS
+@router.get("/meses-disponiveis")
+def meses_disponiveis(
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    resultados = db.query(
+        extract("year",  Gasto.data_hora).label("ano"),
+        extract("month", Gasto.data_hora).label("mes")
+    ).filter(
+        Gasto.usuario_id == usuario_id
+    ).distinct().order_by("ano", "mes").all()
+
+    # mes retorna 1-12 do banco; convertemos para 0-11 (padrão JS)
+    return [{"ano": int(r.ano), "mes": int(r.mes) - 1} for r in resultados]
 
 
 # ✅ LISTAR TODOS (ENTRADA + SAÍDA)
@@ -291,24 +308,6 @@ def gastos_por_intervalo(
         }
         for g in gastos
     ]
-
-
-# ✅ MESES COM DADOS
-@router.get("/meses-disponiveis")
-def meses_disponiveis(
-    usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
-):
-    from sqlalchemy import extract
-
-    resultados = db.query(
-        extract('year', Gasto.data_hora).label('ano'),
-        extract('month', Gasto.data_hora).label('mes')
-    ).filter(
-        Gasto.usuario_id == usuario_id
-    ).distinct().order_by('ano', 'mes').all()
-
-    return [{"ano": int(r.ano), "mes": int(r.mes) - 1} for r in resultados]
 
 
 # ✅ TOP GASTOS (SOMENTE SAÍDA)

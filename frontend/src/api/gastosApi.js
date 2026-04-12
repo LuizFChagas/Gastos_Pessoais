@@ -68,3 +68,4 @@ export const listarMesesDisponiveis = async () => {
 export const deletarExtrato = async (id) => {
   await api.delete(`/gastos/extratos/${id}`);
 };
+

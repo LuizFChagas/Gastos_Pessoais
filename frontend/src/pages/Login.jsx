@@ -32,7 +32,7 @@ function Login() {
     try {
       const data = await login(email, senha);
       localStorage.setItem("token", data.access_token);
-      navigate("/");
+      navigate("/app");
     } catch {
       setErro("Email ou senha inválidos");
     } finally {

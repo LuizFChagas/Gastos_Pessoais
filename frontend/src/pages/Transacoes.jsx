@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { listarGastos, deletarGasto } from "../api/gastosApi";
 import AddTransactionForm from "../components/AddTransactionForm";
-import { CATEGORIAS, getCategoriaSyle, capitalizar } from "../utils/categorias";
+import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
 
 function Transacoes() {
   const [transacoes, setTransacoes] = useState([]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
   const [busca, setBusca] = useState("");
   const [openModal, setOpenModal] = useState(false);
-
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [gastoSelecionado, setGastoSelecionado] = useState(null);
 
@@ -45,7 +44,7 @@ function Transacoes() {
   const transacoesFiltradas = transacoes.filter((t) => {
     const matchCategoria =
       categoriaSelecionada === "todos" ||
-      t.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase();
+      (t.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase());
 
     const matchBusca =
       t.descricao?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -53,7 +52,6 @@ function Transacoes() {
 
     return matchCategoria && matchBusca;
   });
-
 
   const formatarDataBonita = (dataStr) => {
     const [ano, mes, dia] = dataStr.split("-");
@@ -63,7 +61,6 @@ function Transacoes() {
       "domingo", "segunda-feira", "terça-feira",
       "quarta-feira", "quinta-feira", "sexta-feira", "sábado"
     ];
-
     const meses = [
       "janeiro", "fevereiro", "março", "abril",
       "maio", "junho", "julho", "agosto",
@@ -75,10 +72,8 @@ function Transacoes() {
 
   const agrupadoPorData = transacoesFiltradas.reduce((acc, t) => {
     const data = t.data_hora?.split("T")[0];
-
     if (!acc[data]) acc[data] = [];
     acc[data].push(t);
-
     return acc;
   }, {});
 
@@ -100,13 +95,9 @@ function Transacoes() {
         <button
           onClick={() => setOpenModal(true)}
           style={{
-            backgroundColor: "#10b981",
-            color: "white",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: "10px",
-            fontWeight: "bold",
-            cursor: "pointer"
+            backgroundColor: "#10b981", color: "white", border: "none",
+            padding: "10px 20px", borderRadius: "10px",
+            fontWeight: "bold", cursor: "pointer"
           }}
         >
           + Nova
@@ -115,24 +106,17 @@ function Transacoes() {
 
       {/* FILTROS */}
       <div style={{
-        display: "flex",
-        gap: "10px",
-        marginTop: "20px",
-        backgroundColor: "var(--card)",
-        padding: "15px",
-        borderRadius: "12px"
+        display: "flex", gap: "10px", marginTop: "20px",
+        backgroundColor: "var(--card)", padding: "15px", borderRadius: "12px"
       }}>
         <input
           placeholder="🔍 Buscar..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           style={{
-            flex: 1,
-            padding: "10px",
-            borderRadius: "10px",
+            flex: 1, padding: "10px", borderRadius: "10px",
             border: "1px solid var(--border)",
-            backgroundColor: "var(--input)",
-            color: "var(--text)"
+            backgroundColor: "var(--input)", color: "var(--text)"
           }}
         />
 
@@ -140,54 +124,46 @@ function Transacoes() {
           value={categoriaSelecionada}
           onChange={(e) => setCategoriaSelecionada(e.target.value)}
           style={{
-            padding: "10px",
-            borderRadius: "10px",
+            padding: "10px", borderRadius: "10px",
             border: "1px solid var(--border)",
-            backgroundColor: "var(--input)",
-            color: "var(--text)"
+            backgroundColor: "var(--input)", color: "var(--text)"
           }}
         >
           {categorias.map((cat, index) => (
-            <option key={index} value={cat}>{capitalizar(cat)}</option>
+            <option key={index} value={cat}>
+              {cat === "todos" ? "Todas" : capitalizar(cat)}
+            </option>
           ))}
         </select>
       </div>
 
-      {/* LISTA */}
+      {/* LISTA AGRUPADA POR DATA */}
       <div style={{ marginTop: "20px" }}>
         {datasOrdenadas.map((data, index) => (
           <div key={index}>
-
             <div style={{
-              margin: "20px 0 10px",
-              fontSize: "13px",
-              fontWeight: "700",
-              color: "var(--subtext)"
+              margin: "20px 0 10px", fontSize: "13px",
+              fontWeight: "700", color: "var(--subtext)"
             }}>
               {formatarDataBonita(data)}
             </div>
 
             {agrupadoPorData[data].map((t, i) => {
               const isEntrada = t.tipo === "entrada";
+              const style = getCategoriaStyle(t.categoria);
 
               return (
                 <div key={i} style={{
-                  backgroundColor: "var(--card)",
-                  padding: "15px",
-                  borderRadius: "12px",
-                  marginBottom: "10px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
+                  backgroundColor: "var(--card)", padding: "15px",
+                  borderRadius: "12px", marginBottom: "10px",
+                  display: "flex", justifyContent: "space-between", alignItems: "center"
                 }}>
-
                   <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                     <div style={{
                       backgroundColor: isEntrada
                         ? "rgba(34, 197, 94, 0.15)"
                         : "rgba(239, 68, 68, 0.15)",
-                      padding: "10px",
-                      borderRadius: "10px"
+                      padding: "10px", borderRadius: "10px", fontSize: "18px"
                     }}>
                       {isEntrada ? "💰" : "💸"}
                     </div>
@@ -204,41 +180,30 @@ function Transacoes() {
 
                   <div style={{ textAlign: "right" }}>
                     <div style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "4px 10px",
-                      borderRadius: "999px",
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      marginBottom: "5px",
-                      backgroundColor: getCategoriaSyle(t.categoria).bg,
-                      color: getCategoriaSyle(t.categoria).color
+                      display: "inline-flex", alignItems: "center", gap: "6px",
+                      padding: "4px 10px", borderRadius: "999px",
+                      fontSize: "12px", fontWeight: "500", marginBottom: "5px",
+                      backgroundColor: style.bg, color: style.color
                     }}>
-                      {getCategoriaSyle(t.categoria).icon} {capitalizar(t.categoria)}
+                      {style.icon} {capitalizar(t.categoria)}
                     </div>
 
                     <div style={{
-                      color: isEntrada ? "#22c55e" : "#ef4444",
-                      fontWeight: "bold"
+                      color: isEntrada ? "#22c55e" : "#ef4444", fontWeight: "bold"
                     }}>
-                      {isEntrada ? "+" : "-"}R$ {Math.abs(t.valor)}
+                      {isEntrada ? "+" : "-"}R$ {Math.abs(t.valor).toFixed(2)}
                     </div>
 
                     <button
                       onClick={() => handleDeleteClick(t.id)}
                       style={{
-                        marginTop: "5px",
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "#9ca3af"
+                        marginTop: "5px", background: "transparent",
+                        border: "none", cursor: "pointer", color: "#9ca3af"
                       }}
                     >
                       🗑️
                     </button>
                   </div>
-
                 </div>
               );
             })}
@@ -246,60 +211,38 @@ function Transacoes() {
         ))}
       </div>
 
-      {/* DELETE MODAL */}
+      {/* MODAL DELETE */}
       {openDeleteModal && (
         <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
           backgroundColor: "rgba(0,0,0,0.5)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center"
+          display: "flex", justifyContent: "center", alignItems: "center"
         }}>
           <div style={{
-            backgroundColor: "var(--card)",
-            padding: "25px",
-            borderRadius: "16px",
-            width: "350px",
-            textAlign: "center"
+            backgroundColor: "var(--card)", padding: "25px",
+            borderRadius: "16px", width: "350px", textAlign: "center"
           }}>
             <h3 style={{ color: "var(--text)" }}>Excluir transação</h3>
-
             <p style={{ color: "var(--subtext)" }}>
               Tem certeza que deseja excluir essa transação?
             </p>
-
             <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
               <button
                 onClick={() => setOpenDeleteModal(false)}
                 style={{
-                  flex: 1,
-                  padding: "10px",
-                  borderRadius: "10px",
-                  border: "none",
-                  backgroundColor: "#ef4444",
-                  color: "white",
-                  fontWeight: "600",
-                  cursor: "pointer"
+                  flex: 1, padding: "10px", borderRadius: "10px",
+                  border: "none", backgroundColor: "var(--border)",
+                  color: "var(--text)", fontWeight: "600", cursor: "pointer"
                 }}
               >
                 Cancelar
               </button>
-
               <button
                 onClick={confirmarDelete}
                 style={{
-                  flex: 1,
-                  padding: "10px",
-                  borderRadius: "10px",
-                  border: "none",
-                  backgroundColor: "#dc2626",
-                  color: "white",
-                  fontWeight: "bold",
-                  cursor: "pointer"
+                  flex: 1, padding: "10px", borderRadius: "10px",
+                  border: "none", backgroundColor: "#dc2626",
+                  color: "white", fontWeight: "bold", cursor: "pointer"
                 }}
               >
                 Excluir
@@ -309,30 +252,19 @@ function Transacoes() {
         </div>
       )}
 
-      {/* MODAL NOVO */}
+      {/* MODAL NOVA TRANSAÇÃO */}
       {openModal && (
         <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
           backgroundColor: "rgba(0,0,0,0.4)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center"
+          display: "flex", justifyContent: "center", alignItems: "center"
         }}>
           <div style={{
-            backgroundColor: "var(--card)",
-            padding: "25px",
-            borderRadius: "16px",
-            width: "420px"
+            backgroundColor: "var(--card)", padding: "25px",
+            borderRadius: "16px", width: "420px"
           }}>
             <AddTransactionForm
-              onSuccess={() => {
-                setOpenModal(false);
-                carregar();
-              }}
+              onSuccess={() => { setOpenModal(false); carregar(); }}
               onCancel={() => setOpenModal(false)}
             />
           </div>

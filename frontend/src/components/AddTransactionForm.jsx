@@ -43,7 +43,6 @@ function AddTransactionForm({ onSuccess, onCancel }) {
     }
   };
 
-  // ✅ INPUT CORRIGIDO
   const inputStyle = {
     width: "100%",
     marginTop: "5px",
@@ -52,53 +51,38 @@ function AddTransactionForm({ onSuccess, onCancel }) {
     border: "1px solid var(--border)",
     boxSizing: "border-box",
     backgroundColor: "var(--input)",
-    color: "#111827", // 🔥 força texto visível
+    color: "#111827",
     appearance: "none"
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px"
-      }}
-    >
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-      {/* TOGGLE */}
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          backgroundColor: "var(--input)",
-          borderRadius: "12px",
-          padding: "4px"
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: "4px",
-            left: tipo === "saida" ? "4px" : "50%",
-            width: "calc(50% - 4px)",
-            height: "calc(100% - 8px)",
-            backgroundColor: tipo === "saida" ? "#ef4444" : "#22c55e",
-            borderRadius: "10px",
-            transition: "all 0.3s ease"
-          }}
-        />
+      {/* TOGGLE ENTRADA / SAÍDA */}
+      <div style={{
+        position: "relative",
+        display: "flex",
+        backgroundColor: "var(--input)",
+        borderRadius: "12px",
+        padding: "4px"
+      }}>
+        <div style={{
+          position: "absolute",
+          top: "4px",
+          left: tipo === "saida" ? "4px" : "50%",
+          width: "calc(50% - 4px)",
+          height: "calc(100% - 8px)",
+          backgroundColor: tipo === "saida" ? "#ef4444" : "#22c55e",
+          borderRadius: "10px",
+          transition: "all 0.3s ease"
+        }} />
 
         <div
           onClick={() => setTipo("saida")}
           style={{
-            flex: 1,
-            textAlign: "center",
-            padding: "10px",
-            cursor: "pointer",
-            zIndex: 1,
-            color: tipo === "saida" ? "white" : "#111827",
-            fontWeight: "600"
+            flex: 1, textAlign: "center", padding: "10px",
+            cursor: "pointer", zIndex: 1,
+            color: tipo === "saida" ? "white" : "#111827", fontWeight: "600"
           }}
         >
           💸 Saída
@@ -107,13 +91,9 @@ function AddTransactionForm({ onSuccess, onCancel }) {
         <div
           onClick={() => setTipo("entrada")}
           style={{
-            flex: 1,
-            textAlign: "center",
-            padding: "10px",
-            cursor: "pointer",
-            zIndex: 1,
-            color: tipo === "entrada" ? "white" : "#111827",
-            fontWeight: "600"
+            flex: 1, textAlign: "center", padding: "10px",
+            cursor: "pointer", zIndex: 1,
+            color: tipo === "entrada" ? "white" : "#111827", fontWeight: "600"
           }}
         >
           💰 Entrada
@@ -123,9 +103,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       {/* DATA + VALOR */}
       <div style={{ display: "flex", gap: "12px" }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
-            Data
-          </label>
+          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Data</label>
           <input
             type="date"
             value={data}
@@ -133,34 +111,24 @@ function AddTransactionForm({ onSuccess, onCancel }) {
             style={inputStyle}
           />
         </div>
-
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
-            Valor (R$)
-          </label>
+          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Valor (R$)</label>
           <input
             type="text"
             placeholder="0.00"
             value={valor}
             onChange={(e) => {
               const val = e.target.value;
-              if (/^\d*\.?\d*$/.test(val)) {
-                setValor(val);
-              }
+              if (/^\d*\.?\d*$/.test(val)) setValor(val);
             }}
-            style={{
-              ...inputStyle,
-              borderColor: tipo === "saida" ? "#ef4444" : "#22c55e"
-            }}
+            style={{ ...inputStyle, borderColor: tipo === "saida" ? "#ef4444" : "#22c55e" }}
           />
         </div>
       </div>
 
       {/* DESCRIÇÃO */}
       <div>
-        <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
-          Descrição
-        </label>
+        <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Descrição</label>
         <input
           placeholder="Ex: Mercado, Salário..."
           value={descricao}
@@ -172,17 +140,11 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       {/* CATEGORIA + BANCO */}
       <div style={{ display: "flex", gap: "12px" }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
-            Categoria
-          </label>
-
+          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Categoria</label>
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
-            style={{
-              ...inputStyle,
-              color: "#111827"
-            }}
+            style={{ ...inputStyle, color: "#111827" }}
           >
             {CATEGORIAS.map((cat, index) => (
               <option key={index} value={cat}>
@@ -191,11 +153,8 @@ function AddTransactionForm({ onSuccess, onCancel }) {
             ))}
           </select>
         </div>
-
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
-            Banco
-          </label>
+          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Banco</label>
           <input
             placeholder="Ex: Nubank..."
             value={banco}
@@ -207,9 +166,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
 
       {/* NOTA */}
       <div>
-        <label style={{ fontSize: "13px", color: "var(--subtext)" }}>
-          Nota (opcional)
-        </label>
+        <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Nota (opcional)</label>
         <input
           placeholder="Observação..."
           value={nota}
@@ -220,36 +177,23 @@ function AddTransactionForm({ onSuccess, onCancel }) {
 
       {/* BOTÕES */}
       <div style={{ display: "flex", gap: "12px", marginTop: "5px" }}>
-        
-        {/* 🔥 CANCELAR VERMELHO FIXO */}
         <button
           type="button"
           onClick={() => onCancel && onCancel()}
           style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "12px",
-            border: "none",
-            backgroundColor: "#ef4444",
-            color: "white",
-            fontWeight: "600",
-            cursor: "pointer"
+            flex: 1, padding: "12px", borderRadius: "12px",
+            border: "none", backgroundColor: "#ef4444",
+            color: "white", fontWeight: "600", cursor: "pointer"
           }}
         >
           Cancelar
         </button>
-
         <button
           type="submit"
           style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "12px",
-            border: "none",
-            backgroundColor: "#10b981",
-            color: "white",
-            fontWeight: "bold",
-            cursor: "pointer"
+            flex: 1, padding: "12px", borderRadius: "12px",
+            border: "none", backgroundColor: "#10b981",
+            color: "white", fontWeight: "bold", cursor: "pointer"
           }}
         >
           Adicionar
