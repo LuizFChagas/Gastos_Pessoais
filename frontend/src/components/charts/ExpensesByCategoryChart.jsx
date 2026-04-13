@@ -1,7 +1,25 @@
-import { PieChart, Pie, Cell, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, Sector } from "recharts";
+import { useState } from "react";
 import { getCategoriaStyle, capitalizar } from "../../utils/categorias";
 
+const renderActiveShape = (props) => {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+  return (
+    <Sector
+      cx={cx}
+      cy={cy}
+      innerRadius={innerRadius - 4}
+      outerRadius={outerRadius + 8}
+      startAngle={startAngle}
+      endAngle={endAngle}
+      fill={fill}
+      opacity={1}
+    />
+  );
+};
+
 function ExpensesByCategoryChart({ data }) {
+  const [activeIndex, setActiveIndex] = useState(null);
 
   const dadosFiltrados = data
     .filter(g => g.tipo === "saida")
@@ -18,19 +36,29 @@ function ExpensesByCategoryChart({ data }) {
       return acc;
     }, []);
 
+  dadosFiltrados.sort((a, b) => {
+    if (a.name === "outros") return 1;
+    if (b.name === "outros") return -1;
+    return a.name.localeCompare(b.name, "pt-BR");
+  });
+
   const total = dadosFiltrados.reduce((acc, item) => acc + item.value, 0);
+
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   return (
     <div style={{
       backgroundColor: "var(--card)",
       padding: "20px",
-      borderRadius: "12px",
+      borderRadius: "16px",
       height: "359px",
       minHeight: "350px",
       display: "flex",
-      flexDirection: "column"
+      flexDirection: "column",
+      boxShadow: "var(--shadow-md)"
     }}>
-      <h3 style={{ color: "var(--text)" }}>Gastos por Categoria</h3>
+      <h3 style={{ color: "var(--text)", margin: "0 0 12px 0" }}>Gastos por Categoria</h3>
 
       {dadosFiltrados.length === 0 ? (
         <div style={{
@@ -46,61 +74,142 @@ function ExpensesByCategoryChart({ data }) {
         <div style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "flex-start",
           flex: 1
         }}>
-          <PieChart width={220} height={220}>
-            <Pie data={dadosFiltrados} dataKey="value" outerRadius={90}>
-              {dadosFiltrados.map((entry, index) => (
-                <Cell key={index} fill={getCategoriaStyle(entry.name).chartColor} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value) => {
-                const pct = ((value / total) * 100).toFixed(1);
-                return [`${pct}%`, ""];
-              }}
-              contentStyle={{
-                backgroundColor: "#1e293b",
-                border: "none",
-                color: "#fff",
-                borderRadius: "8px"
-              }}
-            />
-          </PieChart>
+          {/* Donut chart com total no centro */}
+          <div style={{ position: "relative", width: 220, height: 220, flexShrink: 0 }}>
+            <PieChart width={220} height={220}>
+              <Pie
+                data={dadosFiltrados}
+                dataKey="value"
+                innerRadius={58}
+                outerRadius={90}
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                onMouseEnter={(_, index) => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(null)}
+                strokeWidth={0}
+                animationBegin={0}
+                animationDuration={600}
+              >
+                {dadosFiltrados.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={getCategoriaStyle(entry.name).chartColor}
+                    opacity={activeIndex === null || activeIndex === index ? 1 : 0.4}
+                    style={{ cursor: "pointer", transition: "opacity 0.2s" }}
+                  />
+                ))}
+              </Pie>
+            </PieChart>
 
+            {/* Total no centro do donut */}
+            <div style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              textAlign: "center",
+              pointerEvents: "none"
+            }}>
+              {activeIndex !== null ? (
+                <>
+                  <div style={{
+                    color: getCategoriaStyle(dadosFiltrados[activeIndex].name).chartColor,
+                    fontSize: "13px",
+                    fontWeight: "700",
+                    lineHeight: 1.2
+                  }}>
+                    {((dadosFiltrados[activeIndex].value / total) * 100).toFixed(1)}%
+                  </div>
+                  <div style={{ color: "var(--subtext)", fontSize: "10px", marginTop: "2px" }}>
+                    {capitalizar(dadosFiltrados[activeIndex].name)}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ color: "var(--text)", fontSize: "12px", fontWeight: "700", lineHeight: 1.2 }}>
+                    {formatCurrency(total)}
+                  </div>
+                  <div style={{ color: "var(--subtext)", fontSize: "10px", marginTop: "2px" }}>
+                    total
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Legenda */}
           <div style={{
             display: "flex",
             flexDirection: "column",
-            gap: "8px",
-            minWidth: "170px",
-            maxHeight: "280px",
-            overflowY: "auto"
+            gap: "6px",
+            flex: 1,
+            alignItems: "center",
+            marginLeft: "0px"
           }}>
             {dadosFiltrados.map((item, index) => {
               const style = getCategoriaStyle(item.name);
+              const pct = ((item.value / total) * 100).toFixed(1);
+              const isActive = activeIndex === index;
+
               return (
-                <div key={index} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div
+                  key={index}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onMouseLeave={() => setActiveIndex(null)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    width: "240px",
+                    padding: "4px 6px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    transition: "background 0.15s",
+                    backgroundColor: isActive ? "rgba(255,255,255,0.06)" : "transparent"
+                  }}
+                >
                   <div style={{
                     width: "10px",
                     height: "10px",
                     borderRadius: "50%",
                     backgroundColor: style.chartColor,
-                    flexShrink: 0
+                    flexShrink: 0,
+                    transition: "transform 0.15s",
+                    transform: isActive ? "scale(1.4)" : "scale(1)"
                   }} />
-                  <span style={{ color: "var(--text)", fontSize: "13px" }}>
-                    {style.icon} {capitalizar(item.name)}
+                  <span style={{ fontSize: "13px", width: "20px", flexShrink: 0 }}>
+                    {style.icon}
                   </span>
                   <span style={{
-                    marginLeft: "auto",
+                    color: "var(--text)",
+                    fontSize: "13px",
+                    width: "90px",
+                    flexShrink: 0,
+                    fontWeight: isActive ? "600" : "400",
+                    transition: "font-weight 0.1s"
+                  }}>
+                    {capitalizar(item.name)}
+                  </span>
+                  <span style={{
                     color: style.chartColor,
                     fontSize: "12px",
-                    fontWeight: "600"
+                    fontWeight: "600",
+                    textAlign: "right",
+                    flex: 1
                   }}>
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL"
-                    }).format(item.value)}
+                    {formatCurrency(item.value)}
+                  </span>
+                  <span style={{
+                    color: "var(--subtext)",
+                    fontSize: "11px",
+                    width: "36px",
+                    textAlign: "right",
+                    flexShrink: 0
+                  }}>
+                    {pct}%
                   </span>
                 </div>
               );

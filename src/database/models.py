@@ -39,6 +39,7 @@ class Gasto(Base):
     banco = Column(String, index=True)
     tipo = Column(String, index=True)
     data_hora = Column(DateTime, default=datetime.utcnow, index=True)
+    data_original = Column(DateTime, nullable=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
     extrato_id = Column(Integer, ForeignKey("extratos.id"), nullable=True, index=True)
 

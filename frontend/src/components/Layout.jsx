@@ -16,12 +16,13 @@ function Layout({ children, toggleTheme, darkMode }) {
 
       {/* SIDEBAR */}
       <div style={{
-        width: "240px",
+        width: "220px",
         backgroundColor: "var(--card)",
         borderRight: "1px solid var(--border)",
-        padding: "20px",
+        padding: "20px 16px",
         display: "flex",
-        flexDirection: "column"
+        flexDirection: "column",
+        boxShadow: "var(--shadow)"
       }}>
 
         {/* HEADER */}
@@ -39,42 +40,31 @@ function Layout({ children, toggleTheme, darkMode }) {
 
         {/* MENU */}
         <div style={{ marginTop: "40px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
-          <Link
-            to="/app"
-            style={{
-              padding: "10px", borderRadius: "8px",
-              backgroundColor: isActive("/app") ? "#dcfce7" : "transparent",
-              color: isActive("/app") ? "#16a34a" : "var(--text)",
-              textDecoration: "none",
-              fontWeight: isActive("/app") ? "bold" : "normal"
-            }}
-          >
-            📊 Dashboard
-          </Link>
-
-          <Link
-            to="/app/transacoes"
-            style={{
-              padding: "10px", borderRadius: "8px",
-              backgroundColor: isActive("/app/transacoes") ? "#dcfce7" : "transparent",
-              color: isActive("/app/transacoes") ? "#16a34a" : "var(--text)",
-              textDecoration: "none"
-            }}
-          >
-            💳 Transações
-          </Link>
-
-          <Link
-            to="/app/importar"
-            style={{
-              padding: "10px", borderRadius: "8px",
-              backgroundColor: isActive("/app/importar") ? "#dcfce7" : "transparent",
-              color: isActive("/app/importar") ? "#16a34a" : "var(--text)",
-              textDecoration: "none"
-            }}
-          >
-            📁 Importar
-          </Link>
+          {[
+            { to: "/app", icon: "📊", label: "Dashboard" },
+            { to: "/app/transacoes", icon: "💳", label: "Transações" },
+            { to: "/app/importar", icon: "📁", label: "Importar" }
+          ].map(({ to, icon, label }) => (
+            <Link
+              key={to}
+              to={to}
+              style={{
+                padding: "10px 12px",
+                borderRadius: "10px",
+                backgroundColor: isActive(to) ? "var(--nav-active-bg)" : "transparent",
+                color: isActive(to) ? "var(--nav-active-text)" : "var(--subtext)",
+                textDecoration: "none",
+                fontWeight: isActive(to) ? "600" : "400",
+                fontSize: "14px",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                transition: "background 0.15s, color 0.15s"
+              }}
+            >
+              <span>{icon}</span> {label}
+            </Link>
+          ))}
         </div>
 
         {/* BOTÃO SAIR */}

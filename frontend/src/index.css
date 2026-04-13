@@ -26,8 +26,20 @@ body {
 
 /* inputs herdam o tema via CSS variables */
 input,
-select {
+select,
+textarea {
+  font-family: 'Inter', sans-serif;
   border: 1px solid #e5e7eb;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
 }
 
 button {

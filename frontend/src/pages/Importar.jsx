@@ -35,9 +35,7 @@ function Importar() {
     if (file) setStep(2);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
+  const handleDragOver = (e) => e.preventDefault();
 
   const handleUpload = async () => {
     if (!arquivo) {
@@ -74,67 +72,46 @@ function Importar() {
     }
   };
 
+  const StepCircle = ({ n }) => (
+    <div style={{
+      background: step >= n ? "#10b981" : "var(--border)",
+      color: step >= n ? "white" : "var(--subtext)",
+      borderRadius: "50%",
+      width: "30px",
+      height: "30px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontWeight: "600",
+      fontSize: "14px",
+      flexShrink: 0,
+      transition: "background 0.3s"
+    }}>
+      {n}
+    </div>
+  );
+
   return (
     <div>
 
       {/* HEADER */}
-      <h1 style={{ marginBottom: "5px" }}>Importar Extrato</h1>
-      <p style={{ color: "#6b7280", marginBottom: "20px" }}>
-        Importe um arquivo CSV, PDF ou imagem do seu extrato bancário
+      <h1 style={{ marginBottom: "5px", color: "var(--text)" }}>Importar Extrato</h1>
+      <p style={{ color: "var(--subtext)", marginBottom: "24px", margin: "0 0 24px" }}>
+        Importe um arquivo CSV do seu extrato bancário
       </p>
 
       {/* STEPPER */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-
-        <div style={{
-          background: step >= 1 ? "#10b981" : "#e5e7eb",
-          color: "white",
-          borderRadius: "50%",
-          width: "30px",
-          height: "30px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
-          1
-        </div>
-
-        <div style={{ width: "40px", height: "2px", background: "#e5e7eb" }} />
-
-        <div style={{
-          background: step >= 2 ? "#10b981" : "#e5e7eb",
-          color: step >= 2 ? "white" : "transparent",
-          borderRadius: "50%",
-          width: "30px",
-          height: "30px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
-          2
-        </div>
-
-        <div style={{ width: "40px", height: "2px", background: "#e5e7eb" }} />
-
-        <div style={{
-          background: step >= 3 ? "#10b981" : "#e5e7eb",
-          color: step >= 3 ? "white" : "transparent",
-          borderRadius: "50%",
-          width: "30px",
-          height: "30px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
-          3
-        </div>
-
-        <span style={{ marginLeft: "10px", color: "#6b7280" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
+        <StepCircle n={1} />
+        <div style={{ width: "40px", height: "2px", background: step >= 2 ? "#10b981" : "var(--border)", transition: "background 0.3s" }} />
+        <StepCircle n={2} />
+        <div style={{ width: "40px", height: "2px", background: step >= 3 ? "#10b981" : "var(--border)", transition: "background 0.3s" }} />
+        <StepCircle n={3} />
+        <span style={{ marginLeft: "10px", color: "var(--subtext)", fontSize: "14px" }}>
           {step === 1 && "Selecionar arquivo"}
           {step === 2 && "Revisar informações"}
           {step === 3 && "Processando..."}
         </span>
-
       </div>
 
       {/* DROP AREA */}
@@ -142,12 +119,13 @@ function Importar() {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         style={{
-          border: "2px dashed #d1d5db",
+          border: `2px dashed ${arquivo ? "#10b981" : "var(--border)"}`,
           borderRadius: "16px",
           padding: "40px",
           textAlign: "center",
-          backgroundColor: "#f9fafb",
-          cursor: "pointer"
+          backgroundColor: "var(--card)",
+          cursor: "pointer",
+          transition: "border-color 0.2s"
         }}
       >
         <input
@@ -159,53 +137,48 @@ function Importar() {
         />
 
         <label htmlFor="fileInput" style={{ cursor: "pointer" }}>
-          <div style={{ fontSize: "40px", marginBottom: "10px" }}>⬆️</div>
-
-          <div style={{ fontWeight: "600", marginBottom: "5px" }}>
-            Arraste ou clique para selecionar
+          <div style={{
+            width: "48px", height: "48px",
+            borderRadius: "12px",
+            backgroundColor: arquivo ? "rgba(16,185,129,0.15)" : "var(--input)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 12px",
+            fontSize: "22px",
+            transition: "background 0.2s"
+          }}>
+            {arquivo ? "✅" : "📂"}
           </div>
 
-          <div style={{ fontSize: "12px", color: "#6b7280" }}>
-            Suporta CSV, PDF, imagens e XLSX
+          <div style={{ fontWeight: "600", color: "var(--text)", marginBottom: "4px", fontSize: "15px" }}>
+            {arquivo ? arquivo.name : "Arraste ou clique para selecionar"}
+          </div>
+
+          <div style={{ fontSize: "12px", color: "var(--subtext)" }}>
+            {arquivo ? "Arquivo selecionado" : "Suporta CSV"}
           </div>
         </label>
 
         {arquivo && (
-          <div
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setArquivo(null);
+              setStep(1);
+            }}
             style={{
-              marginTop: "15px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "10px",
-              color: "#10b981"
+              marginTop: "12px",
+              background: "rgba(239,68,68,0.15)",
+              color: "#ef4444",
+              border: "none",
+              borderRadius: "8px",
+              padding: "4px 12px",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: "600"
             }}
           >
-            ✔ {arquivo.name}
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setArquivo(null);
-                setStep(1);
-              }}
-              style={{
-                background: "#fee2e2",
-                color: "#991b1b",
-                border: "none",
-                borderRadius: "50%",
-                width: "22px",
-                height: "22px",
-                cursor: "pointer",
-                fontWeight: "bold",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}
-            >
-              ✕
-            </button>
-          </div>
+            Remover
+          </button>
         )}
       </div>
 
@@ -214,16 +187,17 @@ function Importar() {
         <div style={{
           marginTop: "12px",
           padding: "10px 14px",
-          background: "#fee2e2",
-          color: "#991b1b",
+          background: "rgba(239,68,68,0.15)",
+          color: "#ef4444",
           borderRadius: "8px",
-          fontSize: "14px"
+          fontSize: "14px",
+          border: "1px solid rgba(239,68,68,0.3)"
         }}>
           {erro}
         </div>
       )}
 
-      {/* INPUT + BOTÃO */}
+      {/* INPUT BANCO + BOTÃO */}
       <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
         <input
           value={banco}
@@ -233,7 +207,12 @@ function Importar() {
             flex: 1,
             padding: "12px",
             borderRadius: "10px",
-            border: "1px solid #e5e7eb"
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--input)",
+            color: "var(--text)",
+            fontSize: "14px",
+            outline: "none",
+            fontFamily: "inherit"
           }}
         />
 
@@ -241,13 +220,16 @@ function Importar() {
           onClick={handleUpload}
           disabled={carregando}
           style={{
-            backgroundColor: carregando ? "#6b7280" : "#10b981",
+            backgroundColor: carregando ? "var(--border)" : "#10b981",
             color: "white",
             border: "none",
-            padding: "12px 20px",
+            padding: "12px 24px",
             borderRadius: "10px",
-            fontWeight: "bold",
-            cursor: carregando ? "not-allowed" : "pointer"
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: carregando ? "not-allowed" : "pointer",
+            transition: "background 0.2s",
+            boxShadow: carregando ? "none" : "0 2px 12px rgba(16,185,129,0.35)"
           }}
         >
           {carregando ? "Processando..." : "⬆️ Processar"}
@@ -256,10 +238,10 @@ function Importar() {
 
       {/* HISTÓRICO */}
       <div style={{ marginTop: "40px" }}>
-        <h3>Histórico</h3>
+        <h3 style={{ color: "var(--text)", marginBottom: "16px" }}>Histórico</h3>
 
         {historico.length === 0 ? (
-          <p style={{ color: "#6b7280" }}>Nenhum extrato enviado ainda.</p>
+          <p style={{ color: "var(--subtext)" }}>Nenhum extrato enviado ainda.</p>
         ) : (
           historico.map((item) => (
             <div
@@ -268,27 +250,29 @@ function Importar() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                backgroundColor: "white",
-                padding: "12px",
-                borderRadius: "10px",
+                backgroundColor: "var(--card)",
+                padding: "14px 16px",
+                borderRadius: "12px",
                 marginBottom: "10px",
-                border: "1px solid #e5e7eb"
+                border: "1px solid var(--border)"
               }}
             >
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <div
-                  style={{
-                    backgroundColor: "#e5e7eb",
-                    padding: "8px",
-                    borderRadius: "8px"
-                  }}
-                >
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <div style={{
+                  backgroundColor: "var(--input)",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  fontSize: "18px",
+                  lineHeight: 1
+                }}>
                   📄
                 </div>
 
                 <div>
-                  <div style={{ fontWeight: "500" }}>{item.nome_arquivo}</div>
-                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                  <div style={{ fontWeight: "500", color: "var(--text)", fontSize: "14px" }}>
+                    {item.nome_arquivo}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--subtext)", marginTop: "2px" }}>
                     {item.banco || "Sem banco"} •{" "}
                     {new Date(item.data_importacao).toLocaleDateString("pt-BR")}
                   </div>
@@ -298,12 +282,14 @@ function Importar() {
               <button
                 onClick={() => handleDeletarExtrato(item.id)}
                 style={{
-                  background: "#fee2e2",
-                  color: "#991b1b",
+                  background: "rgba(239,68,68,0.12)",
+                  color: "#ef4444",
                   border: "none",
-                  padding: "6px 10px",
+                  padding: "7px 10px",
                   borderRadius: "8px",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  transition: "background 0.2s"
                 }}
               >
                 🗑️

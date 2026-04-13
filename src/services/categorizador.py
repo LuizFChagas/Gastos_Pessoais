@@ -132,6 +132,7 @@ MAPEAMENTO = {
     "verdureiro": "alimentação",
     "feltrin": "alimentação",
     "topstop": "alimentação",
+    "mercadito": "alimentação",
 
     # SAÚDE
     "farmacia": "saúde",

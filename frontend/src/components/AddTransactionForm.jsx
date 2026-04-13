@@ -43,20 +43,33 @@ function AddTransactionForm({ onSuccess, onCancel }) {
     }
   };
 
+  const accentColor = tipo === "saida" ? "#ef4444" : "#22c55e";
+
   const inputStyle = {
     width: "100%",
-    marginTop: "5px",
-    padding: "10px",
+    marginTop: "6px",
+    padding: "10px 12px",
+    height: "42px",
     borderRadius: "10px",
     border: "1px solid var(--border)",
     boxSizing: "border-box",
     backgroundColor: "var(--input)",
-    color: "#111827",
-    appearance: "none"
+    color: "var(--text)",
+    fontSize: "14px",
+    outline: "none",
+    appearance: "none",
+    transition: "border-color 0.2s"
+  };
+
+  const labelStyle = {
+    fontSize: "12px",
+    fontWeight: "500",
+    color: "var(--subtext)",
+    letterSpacing: "0.3px"
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
 
       {/* TOGGLE ENTRADA / SAÍDA */}
       <div style={{
@@ -72,9 +85,10 @@ function AddTransactionForm({ onSuccess, onCancel }) {
           left: tipo === "saida" ? "4px" : "50%",
           width: "calc(50% - 4px)",
           height: "calc(100% - 8px)",
-          backgroundColor: tipo === "saida" ? "#ef4444" : "#22c55e",
+          backgroundColor: accentColor,
           borderRadius: "10px",
-          transition: "all 0.3s ease"
+          transition: "all 0.25s ease",
+          boxShadow: `0 2px 8px ${accentColor}55`
         }} />
 
         <div
@@ -82,7 +96,9 @@ function AddTransactionForm({ onSuccess, onCancel }) {
           style={{
             flex: 1, textAlign: "center", padding: "10px",
             cursor: "pointer", zIndex: 1,
-            color: tipo === "saida" ? "white" : "#111827", fontWeight: "600"
+            color: tipo === "saida" ? "white" : "var(--subtext)",
+            fontWeight: "600", fontSize: "14px",
+            transition: "color 0.2s"
           }}
         >
           💸 Saída
@@ -93,7 +109,9 @@ function AddTransactionForm({ onSuccess, onCancel }) {
           style={{
             flex: 1, textAlign: "center", padding: "10px",
             cursor: "pointer", zIndex: 1,
-            color: tipo === "entrada" ? "white" : "#111827", fontWeight: "600"
+            color: tipo === "entrada" ? "white" : "var(--subtext)",
+            fontWeight: "600", fontSize: "14px",
+            transition: "color 0.2s"
           }}
         >
           💰 Entrada
@@ -103,7 +121,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       {/* DATA + VALOR */}
       <div style={{ display: "flex", gap: "12px" }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Data</label>
+          <label style={labelStyle}>Data</label>
           <input
             type="date"
             value={data}
@@ -112,23 +130,27 @@ function AddTransactionForm({ onSuccess, onCancel }) {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Valor (R$)</label>
+          <label style={labelStyle}>Valor (R$)</label>
           <input
             type="text"
-            placeholder="0.00"
+            placeholder="0,00"
             value={valor}
             onChange={(e) => {
               const val = e.target.value;
               if (/^\d*\.?\d*$/.test(val)) setValor(val);
             }}
-            style={{ ...inputStyle, borderColor: tipo === "saida" ? "#ef4444" : "#22c55e" }}
+            style={{
+              ...inputStyle,
+              borderColor: valor ? accentColor : "var(--border)",
+              fontWeight: valor ? "600" : "400"
+            }}
           />
         </div>
       </div>
 
       {/* DESCRIÇÃO */}
       <div>
-        <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Descrição</label>
+        <label style={labelStyle}>Descrição</label>
         <input
           placeholder="Ex: Mercado, Salário..."
           value={descricao}
@@ -140,21 +162,37 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       {/* CATEGORIA + BANCO */}
       <div style={{ display: "flex", gap: "12px" }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Categoria</label>
-          <select
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            style={{ ...inputStyle, color: "#111827" }}
-          >
-            {CATEGORIAS.map((cat, index) => (
-              <option key={index} value={cat}>
-                {getCategoriaStyle(cat).icon} {capitalizar(cat)}
-              </option>
-            ))}
-          </select>
+          <label style={labelStyle}>Categoria</label>
+          <div style={{ position: "relative", marginTop: "6px" }}>
+            <select
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+              style={{ ...inputStyle, marginTop: 0, paddingRight: "32px" }}
+            >
+              {CATEGORIAS.map((cat, index) => (
+                <option key={index} value={cat}>
+                  {getCategoriaStyle(cat).icon} {capitalizar(cat)}
+                </option>
+              ))}
+            </select>
+            <svg
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none"
+              }}
+              width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="var(--subtext)" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
         </div>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Banco</label>
+          <label style={labelStyle}>Banco</label>
           <input
             placeholder="Ex: Nubank..."
             value={banco}
@@ -166,7 +204,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
 
       {/* NOTA */}
       <div>
-        <label style={{ fontSize: "13px", color: "var(--subtext)" }}>Nota (opcional)</label>
+        <label style={labelStyle}>Nota <span style={{ color: "var(--subtext)", fontWeight: 400 }}>(opcional)</span></label>
         <input
           placeholder="Observação..."
           value={nota}
@@ -176,14 +214,17 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       </div>
 
       {/* BOTÕES */}
-      <div style={{ display: "flex", gap: "12px", marginTop: "5px" }}>
+      <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
         <button
           type="button"
           onClick={() => onCancel && onCancel()}
           style={{
             flex: 1, padding: "12px", borderRadius: "12px",
-            border: "none", backgroundColor: "#ef4444",
-            color: "white", fontWeight: "600", cursor: "pointer"
+            border: "1px solid var(--border)",
+            backgroundColor: "transparent",
+            color: "var(--subtext)", fontWeight: "600",
+            fontSize: "14px", cursor: "pointer",
+            transition: "border-color 0.2s, color 0.2s"
           }}
         >
           Cancelar
@@ -191,12 +232,16 @@ function AddTransactionForm({ onSuccess, onCancel }) {
         <button
           type="submit"
           style={{
-            flex: 1, padding: "12px", borderRadius: "12px",
-            border: "none", backgroundColor: "#10b981",
-            color: "white", fontWeight: "bold", cursor: "pointer"
+            flex: 2, padding: "12px", borderRadius: "12px",
+            border: "none",
+            backgroundColor: accentColor,
+            color: "white", fontWeight: "700",
+            fontSize: "14px", cursor: "pointer",
+            boxShadow: `0 2px 12px ${accentColor}55`,
+            transition: "background-color 0.2s, box-shadow 0.2s"
           }}
         >
-          Adicionar
+          Adicionar {tipo === "saida" ? "Saída" : "Entrada"}
         </button>
       </div>
 

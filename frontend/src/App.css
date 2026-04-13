@@ -4,13 +4,18 @@
 /* 🌞 TEMA CLARO (PADRÃO) */
 /* ========================= */
 :root {
-  --bg: #f3f4f6;
+  --bg: #f0f4f8;
   --card: #ffffff;
-  --text: #111827;
-  --subtext: #6b7280;
-  --border: #e5e7eb;
+  --text: #0f172a;
+  --subtext: #64748b;
+  --border: #e2e8f0;
+  --input: #f8fafc;
 
-  --input: #f3f4f6;
+  --shadow: 0 1px 4px rgba(15,23,42,0.07), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-md: 0 4px 16px rgba(15,23,42,0.10), 0 1px 4px rgba(15,23,42,0.06);
+
+  --nav-active-bg: rgba(16,185,129,0.10);
+  --nav-active-text: #059669;
 }
 
 /* ========================= */
@@ -22,8 +27,13 @@ body.dark {
   --text: #f1f5f9;
   --subtext: #94a3b8;
   --border: #334155;
+  --input: #162032;
 
-  --input: #a4a4a8;
+  --shadow: 0 1px 4px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+
+  --nav-active-bg: rgba(16,185,129,0.15);
+  --nav-active-text: #10b981;
 }
 
 /* ========================= */
@@ -32,6 +42,11 @@ body.dark {
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: 'Inter', sans-serif; 
-  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.3s ease, color 0.2s ease;
+}
+
+body:not(.dark) {
+  background: linear-gradient(160deg, #ffffff 0%, #ecfdf5 100%);
+  min-height: 100vh;
 }

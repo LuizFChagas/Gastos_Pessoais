@@ -39,42 +39,36 @@ function Dashboard() {
   useEffect(() => { localStorage.setItem("dashboard_mes", mesSelecionado); }, [mesSelecionado]);
   useEffect(() => { localStorage.setItem("dashboard_ano", anoSelecionado); }, [anoSelecionado]);
 
-  // Carrega meses que têm dados
-  useEffect(() => {
-    listarMesesDisponiveis()
-      .then(setMesesComDados)
-      .catch(() => {});
-  }, []);
+  const toLocalISO = (d) => {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
 
-  useEffect(() => {
-    carregarDados();
-  }, [periodo, mesSelecionado, anoSelecionado]);
-
-  const getIntervalo = () => {
+  const getIntervalo = (mes = mesSelecionado, ano = anoSelecionado, per = periodo) => {
     let inicio, fim;
 
-    if (periodo === "semana") {
+    if (per === "semana") {
       inicio = new Date();
       inicio.setDate(inicio.getDate() - 7);
       fim = new Date();
     }
 
-    if (periodo === "ano") {
-      inicio = new Date(anoSelecionado, 0, 1);
-      fim = new Date(anoSelecionado, 11, 31);
+    if (per === "ano") {
+      inicio = new Date(ano, 0, 1, 0, 0, 0);
+      fim = new Date(ano, 11, 31, 23, 59, 59);
     }
 
-    if (periodo === "mes_custom") {
-      inicio = new Date(anoSelecionado, mesSelecionado, 1);
-      fim = new Date(anoSelecionado, mesSelecionado + 1, 0);
+    if (per === "mes_custom") {
+      inicio = new Date(ano, mes, 1, 0, 0, 0);
+      fim = new Date(ano, mes + 1, 0, 23, 59, 59);
     }
 
-    return { inicio: inicio.toISOString(), fim: fim.toISOString() };
+    return { inicio: toLocalISO(inicio), fim: toLocalISO(fim) };
   };
 
-  const carregarDados = async () => {
+  const carregarDados = async (mes = mesSelecionado, ano = anoSelecionado, per = periodo) => {
     try {
-      const { inicio, fim } = getIntervalo();
+      const { inicio, fim } = getIntervalo(mes, ano, per);
       const gastosData = await gastosPorIntervalo(inicio, fim);
 
       const entradas = gastosData
@@ -96,6 +90,37 @@ function Dashboard() {
       console.error("Erro ao carregar dados:", error);
     }
   };
+
+  // Inicialização: carrega meses, corrige mês se necessário e busca dados tudo junto
+  useEffect(() => {
+    const inicializar = async () => {
+      try {
+        const meses = await listarMesesDisponiveis();
+        setMesesComDados(meses);
+
+        const disponiveis = meses
+          .filter(m => m.ano === anoSelecionado)
+          .map(m => m.mes);
+
+        let mesCorreto = mesSelecionado;
+        if (periodo === "mes_custom" && disponiveis.length > 0 && !disponiveis.includes(mesSelecionado)) {
+          mesCorreto = disponiveis[disponiveis.length - 1];
+          setMesSelecionado(mesCorreto);
+        }
+
+        await carregarDados(mesCorreto, anoSelecionado, periodo);
+      } catch {
+        await carregarDados();
+      }
+    };
+
+    inicializar();
+  }, []);
+
+  // Recarrega quando o usuário muda período/mês/ano manualmente
+  useEffect(() => {
+    carregarDados();
+  }, [periodo, mesSelecionado, anoSelecionado]);
 
   // Meses disponíveis para o ano selecionado
   const mesesDoAno = mesesComDados
@@ -131,9 +156,16 @@ function Dashboard() {
               const novoPeriodo = e.target.value;
               setPeriodo(novoPeriodo);
               if (novoPeriodo === "mes_custom") {
-                const hoje = new Date();
-                setMesSelecionado(hoje.getMonth());
-                setAnoSelecionado(hoje.getFullYear());
+                // Usa o mês mais recente com dados, senão o mês atual
+                if (mesesComDados.length > 0) {
+                  const ultimo = mesesComDados[mesesComDados.length - 1];
+                  setAnoSelecionado(ultimo.ano);
+                  setMesSelecionado(ultimo.mes);
+                } else {
+                  const hoje = new Date();
+                  setMesSelecionado(hoje.getMonth());
+                  setAnoSelecionado(hoje.getFullYear());
+                }
               }
             }}
             style={{
@@ -230,20 +262,35 @@ function Dashboard() {
 
       {/* MODAL NOVA TRANSAÇÃO */}
       {openModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-          backgroundColor: "rgba(0,0,0,0.4)",
-          display: "flex", justifyContent: "center", alignItems: "center"
-        }}>
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setOpenModal(false); }}
+          style={{
+            position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+            backgroundColor: "rgba(0,0,0,0.55)",
+            backdropFilter: "blur(4px)",
+            display: "flex", justifyContent: "center", alignItems: "center",
+            zIndex: 1000
+          }}
+        >
           <div style={{
-            backgroundColor: "var(--card)", padding: "25px",
-            borderRadius: "16px", width: "420px", color: "var(--text)"
+            backgroundColor: "var(--card)",
+            padding: "28px",
+            borderRadius: "20px",
+            width: "440px",
+            color: "var(--text)",
+            boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
+            border: "1px solid var(--border)"
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
-              <h3>Nova transação</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>Nova transação</h3>
               <button
                 onClick={() => setOpenModal(false)}
-                style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text)" }}
+                style={{
+                  border: "none", background: "var(--input)",
+                  cursor: "pointer", color: "var(--subtext)",
+                  width: "30px", height: "30px", borderRadius: "8px",
+                  fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center"
+                }}
               >
                 ✕
               </button>
