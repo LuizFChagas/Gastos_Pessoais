@@ -69,3 +69,15 @@ export const deletarExtrato = async (id) => {
   await api.delete(`/gastos/extratos/${id}`);
 };
 
+// EDITAR TRANSAÇÃO
+export const editarGasto = async (id, dados) => {
+  const response = await api.put(`/gastos/${id}`, dados);
+  return response.data;
+};
+
+// RECATEGORIZAR EM LOTE
+export const recategorizarLote = async (ids, categoria) => {
+  const response = await api.put("/gastos/recategorizar-lote", { ids, categoria });
+  return response.data;
+};
+

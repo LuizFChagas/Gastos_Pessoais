@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Transacoes from "./pages/Transacoes";
 import Importar from "./pages/Importar";
+import Relatorios from "./pages/Relatorios";
 
 import PrivateRoute from "./components/PrivateRoute";
 import Layout from "./components/Layout";
@@ -64,6 +65,17 @@ function App() {
             <PrivateRoute>
               <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
                 <Transacoes />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/app/relatorios"
+          element={
+            <PrivateRoute>
+              <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
+                <Relatorios />
               </Layout>
             </PrivateRoute>
           }

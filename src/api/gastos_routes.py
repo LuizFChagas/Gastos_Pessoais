@@ -342,6 +342,68 @@ def top_maiores_gastos(
     ]
 
 
+class EditarGastoRequest(BaseModel):
+    descricao: str | None = None
+    valor: float | None = None
+    categoria: str | None = None
+    tipo: str | None = None
+    banco: str | None = None
+    data_hora: str | None = None
+
+
+class RecategorizarLoteRequest(BaseModel):
+    ids: list[int]
+    categoria: str
+
+
+# ✅ RECATEGORIZAR EM LOTE (antes do /{gasto_id} para evitar conflito de rota)
+@router.put("/recategorizar-lote")
+def recategorizar_lote(
+    request: RecategorizarLoteRequest,
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    db.query(Gasto).filter(
+        Gasto.id.in_(request.ids),
+        Gasto.usuario_id == usuario_id
+    ).update({"categoria": request.categoria}, synchronize_session=False)
+    db.commit()
+    return {"message": f"{len(request.ids)} transações recategorizadas"}
+
+
+# ✅ EDITAR TRANSAÇÃO
+@router.put("/{gasto_id}")
+def editar_gasto(
+    gasto_id: int,
+    request: EditarGastoRequest,
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    gasto = db.query(Gasto).filter(
+        Gasto.id == gasto_id,
+        Gasto.usuario_id == usuario_id
+    ).first()
+
+    if not gasto:
+        raise HTTPException(status_code=404, detail="Gasto não encontrado")
+
+    if request.descricao is not None:
+        gasto.descricao = request.descricao
+    if request.valor is not None:
+        gasto.valor = request.valor
+    if request.categoria is not None:
+        gasto.categoria = request.categoria
+    if request.tipo is not None:
+        gasto.tipo = request.tipo
+    if request.banco is not None:
+        gasto.banco = request.banco
+    if request.data_hora is not None:
+        gasto.data_hora = datetime.fromisoformat(request.data_hora)
+
+    db.commit()
+    return {"message": "Gasto atualizado"}
+
+
 # ✅ DELETE
 @router.delete("/{gasto_id}")
 def deletar_gasto(

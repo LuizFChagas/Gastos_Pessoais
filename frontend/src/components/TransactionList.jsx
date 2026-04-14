@@ -27,6 +27,7 @@ function TransactionList({ transactions }) {
           const banco = t.banco || "Banco";
           const isEstorno = t.tipo === "saida" && t.valor < 0;
           const isEntrada = t.tipo === "entrada";
+          const isRecorrente = t.categoria?.toLowerCase() === "assinaturas";
           const style = getCategoriaStyle(t.categoria);
 
           return (
@@ -78,6 +79,11 @@ function TransactionList({ transactions }) {
                       ↩ Estorno
                     </span>
                   )}
+                  {isRecorrente && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}>
+                      🔁 Recorrente
+                    </span>
+                  )}
                   {t.descricao?.startsWith("Pix") && (
                     <span style={{
                       fontSize: "10px", fontWeight: "600",
@@ -90,6 +96,18 @@ function TransactionList({ transactions }) {
                       ⚡ Pix
                     </span>
                   )}
+                  {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && (
+                    <span style={{
+                      fontSize: "10px", fontWeight: "600",
+                      padding: "2px 7px", borderRadius: "999px",
+                      backgroundColor: "rgba(234,179,8,0.12)",
+                      color: "#facc15",
+                      border: "1px solid rgba(234,179,8,0.3)",
+                      whiteSpace: "nowrap"
+                    }}>
+                      💳 Débito
+                    </span>
+                  )}
                   {t.banco?.toLowerCase().includes("fatura") && (
                     <span style={{
                       fontSize: "10px", fontWeight: "600",
@@ -99,7 +117,7 @@ function TransactionList({ transactions }) {
                       border: "1px solid rgba(59,130,246,0.3)",
                       whiteSpace: "nowrap"
                     }}>
-                      💳 Cartão
+                      💳 Crédito
                     </span>
                   )}
                   {t.data_original && (

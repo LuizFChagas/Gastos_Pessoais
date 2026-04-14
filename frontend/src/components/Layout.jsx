@@ -43,6 +43,7 @@ function Layout({ children, toggleTheme, darkMode }) {
           {[
             { to: "/app", icon: "📊", label: "Dashboard" },
             { to: "/app/transacoes", icon: "💳", label: "Transações" },
+            { to: "/app/relatorios", icon: "📈", label: "Relatórios" },
             { to: "/app/importar", icon: "📁", label: "Importar" }
           ].map(({ to, icon, label }) => (
             <Link

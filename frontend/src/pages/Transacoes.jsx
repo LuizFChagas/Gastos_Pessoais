@@ -1,19 +1,42 @@
 import { useEffect, useState } from "react";
-import { listarGastos, deletarGasto } from "../api/gastosApi";
+import { listarGastos, deletarGasto, editarGasto, recategorizarLote } from "../api/gastosApi";
 import AddTransactionForm from "../components/AddTransactionForm";
 import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
+
+const TIPO_FILTROS = [
+  { key: "todos",    label: "Todos" },
+  { key: "entradas", label: "Entradas" },
+  { key: "saidas",   label: "Saídas" },
+  { key: "pix",      label: "⚡ Pix" },
+  { key: "debito",   label: "💳 Débito" },
+  { key: "credito",  label: "💳 Crédito" },
+];
 
 function Transacoes() {
   const [transacoes, setTransacoes] = useState([]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
   const [busca, setBusca] = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState("todos");
   const [openModal, setOpenModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [gastoSelecionado, setGastoSelecionado] = useState(null);
 
-  useEffect(() => {
-    carregar();
-  }, []);
+  // Feature 2 — editar
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [gastoEditando, setGastoEditando] = useState(null);
+  const [editDescricao, setEditDescricao] = useState("");
+  const [editValor, setEditValor] = useState("");
+  const [editCategoria, setEditCategoria] = useState("outros");
+  const [editTipo, setEditTipo] = useState("saida");
+  const [editBanco, setEditBanco] = useState("");
+  const [editData, setEditData] = useState("");
+
+  // Feature 9 — seleção em lote
+  const [selecionados, setSelecionados] = useState(new Set());
+  const [openRecatModal, setOpenRecatModal] = useState(false);
+  const [novaCategoria, setNovaCategoria] = useState("outros");
+
+  useEffect(() => { carregar(); }, []);
 
   const carregar = async () => {
     try {
@@ -39,34 +62,81 @@ function Transacoes() {
     }
   };
 
+  // Feature 2 — abrir edição
+  const handleEditClick = (t) => {
+    setGastoEditando(t);
+    setEditDescricao(t.descricao || "");
+    setEditValor(String(Math.abs(t.valor)));
+    setEditCategoria(t.categoria || "outros");
+    setEditTipo(t.tipo || "saida");
+    setEditBanco(t.banco || "");
+    setEditData(t.data_hora ? t.data_hora.split("T")[0] : "");
+    setOpenEditModal(true);
+  };
+
+  const salvarEdicao = async () => {
+    try {
+      await editarGasto(gastoEditando.id, {
+        descricao: editDescricao,
+        valor: parseFloat(editValor),
+        categoria: editCategoria,
+        tipo: editTipo,
+        banco: editBanco,
+        data_hora: editData ? editData + "T00:00:00" : undefined,
+      });
+      setOpenEditModal(false);
+      carregar();
+    } catch {
+      alert("Erro ao editar");
+    }
+  };
+
+  // Feature 9 — seleção
+  const toggleSelecionado = (id) => {
+    setSelecionados(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const confirmarRecategorizar = async () => {
+    try {
+      await recategorizarLote([...selecionados], novaCategoria);
+      setSelecionados(new Set());
+      setOpenRecatModal(false);
+      carregar();
+    } catch {
+      alert("Erro ao recategorizar");
+    }
+  };
+
   const categorias = ["todos", ...CATEGORIAS];
 
-  const transacoesFiltradas = transacoes.filter((t) => {
-    const matchCategoria =
-      categoriaSelecionada === "todos" ||
-      (t.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase());
+  // Feature 8 — filtro por tipo
+  const matchTipo = (t) => {
+    if (tipoFiltro === "entradas") return t.tipo === "entrada";
+    if (tipoFiltro === "saidas")   return t.tipo === "saida";
+    if (tipoFiltro === "pix")      return t.descricao?.startsWith("Pix");
+    if (tipoFiltro === "debito")   return !t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix");
+    if (tipoFiltro === "credito")  return t.banco?.toLowerCase().includes("fatura");
+    return true;
+  };
 
+  const transacoesFiltradas = transacoes.filter((t) => {
+    const matchCategoria = categoriaSelecionada === "todos" ||
+      t.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase();
     const matchBusca =
       t.descricao?.toLowerCase().includes(busca.toLowerCase()) ||
       t.banco?.toLowerCase().includes(busca.toLowerCase());
-
-    return matchCategoria && matchBusca;
+    return matchCategoria && matchBusca && matchTipo(t);
   });
 
   const formatarDataBonita = (dataStr) => {
     const [ano, mes, dia] = dataStr.split("-");
     const data = new Date(ano, mes - 1, dia);
-
-    const dias = [
-      "domingo", "segunda-feira", "terça-feira",
-      "quarta-feira", "quinta-feira", "sexta-feira", "sábado"
-    ];
-    const meses = [
-      "janeiro", "fevereiro", "março", "abril",
-      "maio", "junho", "julho", "agosto",
-      "setembro", "outubro", "novembro", "dezembro"
-    ];
-
+    const dias = ["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
+    const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
     return `${dias[data.getDay()].toUpperCase()}, ${dia} DE ${meses[data.getMonth()].toUpperCase()}`;
   };
 
@@ -77,8 +147,16 @@ function Transacoes() {
     return acc;
   }, {});
 
-  const datasOrdenadas = Object.keys(agrupadoPorData)
-    .sort((a, b) => new Date(b) - new Date(a));
+  const datasOrdenadas = Object.keys(agrupadoPorData).sort((a, b) => new Date(b) - new Date(a));
+
+  const inputStyle = {
+    padding: "10px 12px", height: "42px", borderRadius: "10px",
+    border: "1px solid var(--border)", backgroundColor: "var(--input)",
+    color: "var(--text)", fontSize: "14px", outline: "none",
+    boxSizing: "border-box", width: "100%"
+  };
+
+  const accentEdit = editTipo === "saida" ? "#ef4444" : "#22c55e";
 
   return (
     <div>
@@ -91,7 +169,6 @@ function Transacoes() {
             {transacoes.length} registros encontrados
           </span>
         </div>
-
         <button
           onClick={() => setOpenModal(true)}
           style={{
@@ -106,158 +183,150 @@ function Transacoes() {
 
       {/* FILTROS */}
       <div style={{
-        display: "flex", gap: "10px", marginTop: "20px",
-        backgroundColor: "var(--card)", padding: "15px", borderRadius: "12px"
+        backgroundColor: "var(--card)", padding: "15px",
+        borderRadius: "12px", marginTop: "20px"
       }}>
-        <input
-          placeholder="🔍 Buscar..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          style={{
-            flex: 1, padding: "10px", borderRadius: "10px",
-            border: "1px solid var(--border)",
-            backgroundColor: "var(--input)", color: "var(--text)"
-          }}
-        />
+        <div style={{ display: "flex", gap: "10px" }}>
+          <input
+            placeholder="🔍 Buscar..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)" }}
+          />
+          <select
+            value={categoriaSelecionada}
+            onChange={(e) => setCategoriaSelecionada(e.target.value)}
+            style={{ padding: "10px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)" }}
+          >
+            {categorias.map((cat, i) => (
+              <option key={i} value={cat}>{cat === "todos" ? "Todas" : capitalizar(cat)}</option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          value={categoriaSelecionada}
-          onChange={(e) => setCategoriaSelecionada(e.target.value)}
-          style={{
-            padding: "10px", borderRadius: "10px",
-            border: "1px solid var(--border)",
-            backgroundColor: "var(--input)", color: "var(--text)"
-          }}
-        >
-          {categorias.map((cat, index) => (
-            <option key={index} value={cat}>
-              {cat === "todos" ? "Todas" : capitalizar(cat)}
-            </option>
+        {/* CHIPS DE TIPO — Feature 8 */}
+        <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
+          {TIPO_FILTROS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTipoFiltro(key)}
+              style={{
+                padding: "5px 14px", borderRadius: "999px", fontSize: "12px",
+                fontWeight: "600", cursor: "pointer", border: "1px solid",
+                borderColor: tipoFiltro === key ? "#10b981" : "var(--border)",
+                backgroundColor: tipoFiltro === key ? "rgba(16,185,129,0.12)" : "transparent",
+                color: tipoFiltro === key ? "#10b981" : "var(--subtext)",
+                transition: "all 0.15s"
+              }}
+            >
+              {label}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
-      {/* LISTA AGRUPADA POR DATA */}
+      {/* LISTA */}
       <div style={{ marginTop: "20px" }}>
         {datasOrdenadas.map((data, index) => (
           <div key={index}>
-            <div style={{
-              margin: "20px 0 10px", fontSize: "13px",
-              fontWeight: "700", color: "var(--subtext)"
-            }}>
+            <div style={{ margin: "20px 0 10px", fontSize: "13px", fontWeight: "700", color: "var(--subtext)" }}>
               {formatarDataBonita(data)}
             </div>
 
             {agrupadoPorData[data].map((t, i) => {
               const isEstorno = t.tipo === "saida" && t.valor < 0;
               const isEntrada = t.tipo === "entrada";
+              const isRecorrente = t.categoria?.toLowerCase() === "assinaturas";
               const style = getCategoriaStyle(t.categoria);
+              const isSelecionado = selecionados.has(t.id);
 
               return (
                 <div key={i} style={{
-                  backgroundColor: "var(--card)", padding: "15px",
-                  borderRadius: "12px", marginBottom: "10px",
-                  display: "flex", justifyContent: "space-between", alignItems: "center"
+                  backgroundColor: isSelecionado ? "rgba(16,185,129,0.06)" : "var(--card)",
+                  padding: "15px", borderRadius: "12px", marginBottom: "10px",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  border: isSelecionado ? "1px solid rgba(16,185,129,0.3)" : "1px solid transparent",
+                  transition: "all 0.15s"
                 }}>
+                  {/* ESQUERDA */}
                   <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    {/* Checkbox Feature 9 */}
+                    <input
+                      type="checkbox"
+                      checked={isSelecionado}
+                      onChange={() => toggleSelecionado(t.id)}
+                      style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#10b981" }}
+                    />
                     <div style={{
-                      backgroundColor: isEstorno
-                        ? "rgba(148,163,184,0.15)"
-                        : isEntrada
-                        ? "rgba(34,197,94,0.15)"
-                        : "rgba(239,68,68,0.15)",
+                      backgroundColor: isEstorno ? "rgba(148,163,184,0.15)" : isEntrada ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
                       padding: "10px", borderRadius: "10px", fontSize: "18px"
                     }}>
                       {isEstorno ? "↩️" : isEntrada ? "💰" : "💸"}
                     </div>
-
                     <div>
-                      <div style={{ fontWeight: "600", color: "var(--text)" }}>
-                        {t.descricao || "Sem descrição"}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "var(--subtext)" }}>
-                        {t.banco || "Banco"}
-                      </div>
+                      <div style={{ fontWeight: "600", color: "var(--text)" }}>{t.descricao || "Sem descrição"}</div>
+                      <div style={{ fontSize: "12px", color: "var(--subtext)" }}>{t.banco || "Banco"}</div>
                     </div>
                   </div>
 
+                  {/* DIREITA */}
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px", marginBottom: "5px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px", marginBottom: "5px", flexWrap: "wrap" }}>
                       {isEstorno && (
-                        <span style={{
-                          fontSize: "10px", fontWeight: "600",
-                          padding: "2px 7px", borderRadius: "999px",
-                          backgroundColor: "rgba(34,197,94,0.12)",
-                          color: "#22c55e",
-                          border: "1px solid rgba(34,197,94,0.3)",
-                          whiteSpace: "nowrap"
-                        }}>
+                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)", whiteSpace: "nowrap" }}>
                           ↩ Estorno
                         </span>
                       )}
+                      {isRecorrente && (
+                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}>
+                          🔁 Recorrente
+                        </span>
+                      )}
                       {t.descricao?.startsWith("Pix") && (
-                        <span style={{
-                          fontSize: "10px", fontWeight: "600",
-                          padding: "2px 7px", borderRadius: "999px",
-                          backgroundColor: "rgba(139,92,246,0.12)",
-                          color: "#a78bfa",
-                          border: "1px solid rgba(139,92,246,0.3)",
-                          whiteSpace: "nowrap"
-                        }}>
+                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.3)", whiteSpace: "nowrap" }}>
                           ⚡ Pix
                         </span>
                       )}
+                      {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && (
+                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}>
+                          💳 Débito
+                        </span>
+                      )}
                       {t.banco?.toLowerCase().includes("fatura") && (
-                        <span style={{
-                          fontSize: "10px", fontWeight: "600",
-                          padding: "2px 7px", borderRadius: "999px",
-                          backgroundColor: "rgba(59,130,246,0.12)",
-                          color: "#60a5fa",
-                          border: "1px solid rgba(59,130,246,0.3)",
-                          whiteSpace: "nowrap"
-                        }}>
-                          💳 Cartão
+                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", whiteSpace: "nowrap" }}>
+                          💳 Crédito
                         </span>
                       )}
                       {t.data_original && (
-                        <span style={{
-                          fontSize: "10px", fontWeight: "600",
-                          padding: "2px 7px", borderRadius: "999px",
-                          backgroundColor: "rgba(251,191,36,0.15)",
-                          color: "#f59e0b",
-                          border: "1px solid rgba(251,191,36,0.3)",
-                          whiteSpace: "nowrap"
-                        }}>
+                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(251,191,36,0.15)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)", whiteSpace: "nowrap" }}>
                           📅 {new Date(t.data_original).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                         </span>
                       )}
-                      <div style={{
-                        display: "inline-flex", alignItems: "center", gap: "6px",
-                        padding: "4px 10px", borderRadius: "999px",
-                        fontSize: "12px", fontWeight: "500",
-                        backgroundColor: style.bg, color: style.color
-                      }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "500", backgroundColor: style.bg, color: style.color }}>
                         {style.icon} {capitalizar(t.categoria)}
                       </div>
                     </div>
 
-                    <div style={{
-                      color: isEstorno ? "var(--subtext)" : isEntrada ? "#22c55e" : "#ef4444",
-                      fontWeight: "bold",
-                      textDecoration: isEstorno ? "line-through" : "none"
-                    }}>
+                    <div style={{ color: isEstorno ? "var(--subtext)" : isEntrada ? "#22c55e" : "#ef4444", fontWeight: "bold", textDecoration: isEstorno ? "line-through" : "none" }}>
                       R$ {Math.abs(t.valor).toFixed(2)}
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteClick(t.id)}
-                      style={{
-                        marginTop: "5px", background: "transparent",
-                        border: "none", cursor: "pointer", color: "#9ca3af"
-                      }}
-                    >
-                      🗑️
-                    </button>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "4px", marginTop: "5px" }}>
+                      <button
+                        onClick={() => handleEditClick(t)}
+                        style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: "14px" }}
+                        title="Editar"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(t.id)}
+                        style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af" }}
+                        title="Excluir"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -266,42 +335,135 @@ function Transacoes() {
         ))}
       </div>
 
+      {/* BARRA FLUTUANTE — Feature 9 */}
+      {selecionados.size > 0 && (
+        <div style={{
+          position: "fixed", bottom: "30px", left: "50%", transform: "translateX(-50%)",
+          backgroundColor: "var(--card)", border: "1px solid var(--border)",
+          borderRadius: "16px", padding: "14px 24px",
+          display: "flex", alignItems: "center", gap: "16px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.3)", zIndex: 100
+        }}>
+          <span style={{ color: "var(--text)", fontWeight: "600", fontSize: "14px" }}>
+            {selecionados.size} selecionado{selecionados.size > 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={() => setOpenRecatModal(true)}
+            style={{ padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: "#10b981", color: "white", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
+          >
+            Recategorizar
+          </button>
+          <button
+            onClick={() => setSelecionados(new Set())}
+            style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--subtext)", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
       {/* MODAL DELETE */}
       {openDeleteModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-          backgroundColor: "rgba(0,0,0,0.5)",
-          display: "flex", justifyContent: "center", alignItems: "center"
-        }}>
-          <div style={{
-            backgroundColor: "var(--card)", padding: "25px",
-            borderRadius: "16px", width: "350px", textAlign: "center"
-          }}>
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+          <div style={{ backgroundColor: "var(--card)", padding: "25px", borderRadius: "16px", width: "350px", textAlign: "center" }}>
             <h3 style={{ color: "var(--text)" }}>Excluir transação</h3>
-            <p style={{ color: "var(--subtext)" }}>
-              Tem certeza que deseja excluir essa transação?
-            </p>
+            <p style={{ color: "var(--subtext)" }}>Tem certeza que deseja excluir essa transação?</p>
             <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-              <button
-                onClick={() => setOpenDeleteModal(false)}
-                style={{
-                  flex: 1, padding: "10px", borderRadius: "10px",
-                  border: "none", backgroundColor: "var(--border)",
-                  color: "var(--text)", fontWeight: "600", cursor: "pointer"
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmarDelete}
-                style={{
-                  flex: 1, padding: "10px", borderRadius: "10px",
-                  border: "none", backgroundColor: "#dc2626",
-                  color: "white", fontWeight: "bold", cursor: "pointer"
-                }}
-              >
-                Excluir
-              </button>
+              <button onClick={() => setOpenDeleteModal(false)} style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", backgroundColor: "var(--border)", color: "var(--text)", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
+              <button onClick={confirmarDelete} style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", backgroundColor: "#dc2626", color: "white", fontWeight: "bold", cursor: "pointer" }}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR — Feature 2 */}
+      {openEditModal && gastoEditando && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setOpenEditModal(false); }}
+          style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}
+        >
+          <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "420px", border: "1px solid var(--border)", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ margin: 0, color: "var(--text)", fontSize: "18px" }}>Editar transação</h3>
+              <button onClick={() => setOpenEditModal(false)} style={{ border: "none", background: "var(--input)", cursor: "pointer", color: "var(--subtext)", width: "30px", height: "30px", borderRadius: "8px", fontSize: "14px" }}>✕</button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {/* Toggle tipo */}
+              <div style={{ position: "relative", display: "flex", backgroundColor: "var(--input)", borderRadius: "12px", padding: "4px" }}>
+                <div style={{ position: "absolute", top: "4px", left: editTipo === "saida" ? "4px" : "50%", width: "calc(50% - 4px)", height: "calc(100% - 8px)", backgroundColor: accentEdit, borderRadius: "10px", transition: "all 0.25s ease" }} />
+                {["saida", "entrada"].map((t) => (
+                  <div key={t} onClick={() => setEditTipo(t)} style={{ flex: 1, textAlign: "center", padding: "10px", cursor: "pointer", zIndex: 1, color: editTipo === t ? "white" : "var(--subtext)", fontWeight: "600", fontSize: "14px" }}>
+                    {t === "saida" ? "💸 Saída" : "💰 Entrada"}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Data</label>
+                  <input type="date" value={editData} onChange={(e) => setEditData(e.target.value)} style={{ ...inputStyle, marginTop: "6px" }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Valor (R$)</label>
+                  <input type="text" value={editValor} onChange={(e) => { if (/^\d*\.?\d*$/.test(e.target.value)) setEditValor(e.target.value); }} style={{ ...inputStyle, marginTop: "6px" }} />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Descrição</label>
+                <input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} style={{ ...inputStyle, marginTop: "6px" }} />
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Categoria</label>
+                  <div style={{ position: "relative", marginTop: "6px" }}>
+                    <select value={editCategoria} onChange={(e) => setEditCategoria(e.target.value)} style={{ ...inputStyle, paddingRight: "32px" }}>
+                      {CATEGORIAS.map((cat, i) => (
+                        <option key={i} value={cat}>{getCategoriaStyle(cat).icon} {capitalizar(cat)}</option>
+                      ))}
+                    </select>
+                    <svg style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--subtext)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Banco</label>
+                  <input value={editBanco} onChange={(e) => setEditBanco(e.target.value)} style={{ ...inputStyle, marginTop: "6px" }} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+                <button onClick={() => setOpenEditModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--subtext)", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
+                <button onClick={salvarEdicao} style={{ flex: 2, padding: "12px", borderRadius: "12px", border: "none", backgroundColor: accentEdit, color: "white", fontWeight: "700", cursor: "pointer" }}>Salvar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RECATEGORIZAR — Feature 9 */}
+      {openRecatModal && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setOpenRecatModal(false); }}
+          style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1001 }}
+        >
+          <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "360px", border: "1px solid var(--border)" }}>
+            <h3 style={{ margin: "0 0 6px", color: "var(--text)" }}>Recategorizar</h3>
+            <p style={{ margin: "0 0 20px", color: "var(--subtext)", fontSize: "14px" }}>
+              {selecionados.size} transação{selecionados.size > 1 ? "ões" : ""} selecionada{selecionados.size > 1 ? "s" : ""}
+            </p>
+            <div style={{ position: "relative" }}>
+              <select value={novaCategoria} onChange={(e) => setNovaCategoria(e.target.value)} style={{ width: "100%", padding: "10px 32px 10px 12px", height: "42px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)", fontSize: "14px", appearance: "none" }}>
+                {CATEGORIAS.map((cat, i) => (
+                  <option key={i} value={cat}>{getCategoriaStyle(cat).icon} {capitalizar(cat)}</option>
+                ))}
+              </select>
+              <svg style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--subtext)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+            </div>
+            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+              <button onClick={() => setOpenRecatModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--subtext)", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
+              <button onClick={confirmarRecategorizar} style={{ flex: 2, padding: "12px", borderRadius: "12px", border: "none", backgroundColor: "#10b981", color: "white", fontWeight: "700", cursor: "pointer" }}>Aplicar</button>
             </div>
           </div>
         </div>
@@ -309,15 +471,11 @@ function Transacoes() {
 
       {/* MODAL NOVA TRANSAÇÃO */}
       {openModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-          backgroundColor: "rgba(0,0,0,0.4)",
-          display: "flex", justifyContent: "center", alignItems: "center"
-        }}>
-          <div style={{
-            backgroundColor: "var(--card)", padding: "25px",
-            borderRadius: "16px", width: "420px"
-          }}>
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setOpenModal(false); }}
+          style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}
+        >
+          <div style={{ backgroundColor: "var(--card)", padding: "25px", borderRadius: "16px", width: "420px" }}>
             <AddTransactionForm
               onSuccess={() => { setOpenModal(false); carregar(); }}
               onCancel={() => setOpenModal(false)}
