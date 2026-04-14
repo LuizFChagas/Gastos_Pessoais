@@ -7,6 +7,7 @@ function Login() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [manterConectado, setManterConectado] = useState(false);
   const [darkMode, setDarkMode] = useState(
     () => document.body.classList.contains("dark")
   );
@@ -30,7 +31,7 @@ function Login() {
     setCarregando(true);
 
     try {
-      const data = await login(email, senha);
+      const data = await login(email, senha, manterConectado);
       localStorage.setItem("token", data.access_token);
       navigate("/app");
     } catch {
@@ -154,6 +155,19 @@ function Login() {
                 onFocus={(e) => e.target.style.borderColor = "#10b981"}
                 onBlur={(e) => e.target.style.borderColor = "var(--border)"}
               />
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                type="checkbox"
+                id="manterConectado"
+                checked={manterConectado}
+                onChange={(e) => setManterConectado(e.target.checked)}
+                style={{ accentColor: "#10b981", width: "16px", height: "16px", cursor: "pointer" }}
+              />
+              <label htmlFor="manterConectado" style={{ fontSize: "13px", color: "var(--subtext)", cursor: "pointer" }}>
+                Manter conectado
+              </label>
             </div>
 
             {erro && (

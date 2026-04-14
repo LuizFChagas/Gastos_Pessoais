@@ -19,14 +19,18 @@ if not SECRET_KEY:
 ALGORITHM = "HS256"
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_DAYS_REMEMBER = 30
 
 
 security = HTTPBearer()
 
 
-def criar_token(usuario_id: int):
+def criar_token(usuario_id: int, remember_me: bool = False):
 
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    if remember_me:
+        expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS_REMEMBER)
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     payload = {
         "sub": str(usuario_id),

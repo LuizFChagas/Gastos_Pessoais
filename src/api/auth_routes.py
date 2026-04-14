@@ -23,6 +23,7 @@ class CadastroRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     senha: str
+    remember_me: bool = False
 
 
 @router.post("/cadastro")
@@ -72,7 +73,7 @@ def login(dados: LoginRequest, db: Session = Depends(get_db)):
             detail="Email ou senha incorretos"
         )
 
-    token = criar_token(usuario.id)
+    token = criar_token(usuario.id, remember_me=dados.remember_me)
 
     logger.info(f"Usuário logado: {email}")
 

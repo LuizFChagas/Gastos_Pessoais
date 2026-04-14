@@ -1,10 +1,11 @@
 import api from "./api";
 
 // LOGIN
-export const login = async (email, senha) => {
+export const login = async (email, senha, rememberMe = false) => {
   const response = await api.post("/auth/login", {
     email,
-    senha
+    senha,
+    remember_me: rememberMe
   });
 
   return response.data;

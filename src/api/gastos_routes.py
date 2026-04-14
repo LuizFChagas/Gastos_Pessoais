@@ -168,7 +168,8 @@ def listar_gastos(
             "banco": g.banco,
             "tipo": g.tipo,
             "data_hora": g.data_hora,
-            "data_original": g.data_original
+            "data_original": g.data_original,
+            "parcela": g.parcela
         }
         for g in gastos
     ]
@@ -272,7 +273,8 @@ def gastos_por_mes(
             "banco": g.banco,
             "tipo": g.tipo,
             "data_hora": g.data_hora,
-            "data_original": g.data_original
+            "data_original": g.data_original,
+            "parcela": g.parcela
         }
         for g in gastos
     ]
@@ -307,7 +309,8 @@ def gastos_por_intervalo(
             "banco": g.banco,
             "tipo": g.tipo,
             "data_hora": g.data_hora,
-            "data_original": g.data_original
+            "data_original": g.data_original,
+            "parcela": g.parcela
         }
         for g in gastos
     ]
@@ -336,7 +339,8 @@ def top_maiores_gastos(
             "banco": g.banco,
             "tipo": g.tipo,
             "data_hora": g.data_hora,
-            "data_original": g.data_original
+            "data_original": g.data_original,
+            "parcela": g.parcela
         }
         for g in gastos
     ]

@@ -40,6 +40,7 @@ class Gasto(Base):
     tipo = Column(String, index=True)
     data_hora = Column(DateTime, default=datetime.utcnow, index=True)
     data_original = Column(DateTime, nullable=True)
+    parcela = Column(String, nullable=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
     extrato_id = Column(Integer, ForeignKey("extratos.id"), nullable=True, index=True)
 

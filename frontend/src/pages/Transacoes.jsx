@@ -4,12 +4,13 @@ import AddTransactionForm from "../components/AddTransactionForm";
 import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
 
 const TIPO_FILTROS = [
-  { key: "todos",    label: "Todos" },
-  { key: "entradas", label: "Entradas" },
-  { key: "saidas",   label: "Saídas" },
-  { key: "pix",      label: "⚡ Pix" },
-  { key: "debito",   label: "💳 Débito" },
-  { key: "credito",  label: "💳 Crédito" },
+  { key: "todos",       label: "Todos",      icon: "≡",  iconColor: null },
+  { key: "entradas",    label: "Entradas",   icon: "↑",  iconColor: "#22c55e" },
+  { key: "saidas",      label: "Saídas",     icon: "↓",  iconColor: "#ef4444" },
+  { key: "pix",         label: "Pix",        icon: "⚡", iconColor: null },
+  { key: "debito",      label: "Débito",     icon: "💳", iconColor: null },
+  { key: "credito",     label: "Crédito",    icon: "💳", iconColor: null },
+  { key: "parcelados",  label: "Parcelados", icon: "🔄", iconColor: null },
 ];
 
 function Transacoes() {
@@ -32,9 +33,15 @@ function Transacoes() {
   const [editData, setEditData] = useState("");
 
   // Feature 9 — seleção em lote
+  const [modoSelecao, setModoSelecao] = useState(false);
   const [selecionados, setSelecionados] = useState(new Set());
   const [openRecatModal, setOpenRecatModal] = useState(false);
   const [novaCategoria, setNovaCategoria] = useState("outros");
+
+  const cancelarModoSelecao = () => {
+    setModoSelecao(false);
+    setSelecionados(new Set());
+  };
 
   useEffect(() => { carregar(); }, []);
 
@@ -103,7 +110,7 @@ function Transacoes() {
   const confirmarRecategorizar = async () => {
     try {
       await recategorizarLote([...selecionados], novaCategoria);
-      setSelecionados(new Set());
+      cancelarModoSelecao();
       setOpenRecatModal(false);
       carregar();
     } catch {
@@ -119,7 +126,8 @@ function Transacoes() {
     if (tipoFiltro === "saidas")   return t.tipo === "saida";
     if (tipoFiltro === "pix")      return t.descricao?.startsWith("Pix");
     if (tipoFiltro === "debito")   return !t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix");
-    if (tipoFiltro === "credito")  return t.banco?.toLowerCase().includes("fatura");
+    if (tipoFiltro === "credito")    return t.banco?.toLowerCase().includes("fatura");
+    if (tipoFiltro === "parcelados") return !!t.parcela;
     return true;
   };
 
@@ -169,16 +177,30 @@ function Transacoes() {
             {transacoes.length} registros encontrados
           </span>
         </div>
-        <button
-          onClick={() => setOpenModal(true)}
-          style={{
-            backgroundColor: "#10b981", color: "white", border: "none",
-            padding: "10px 20px", borderRadius: "10px",
-            fontWeight: "bold", cursor: "pointer"
-          }}
-        >
-          + Nova
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            onClick={() => modoSelecao ? cancelarModoSelecao() : setModoSelecao(true)}
+            style={{
+              backgroundColor: modoSelecao ? "rgba(16,185,129,0.12)" : "transparent",
+              color: modoSelecao ? "#10b981" : "var(--subtext)",
+              border: `1px solid ${modoSelecao ? "#10b981" : "var(--border)"}`,
+              padding: "10px 20px", borderRadius: "10px",
+              fontWeight: "600", cursor: "pointer", fontSize: "14px"
+            }}
+          >
+            {modoSelecao ? "✕ Cancelar" : "☑ Recategorizar"}
+          </button>
+          <button
+            onClick={() => setOpenModal(true)}
+            style={{
+              backgroundColor: "#10b981", color: "white", border: "none",
+              padding: "10px 20px", borderRadius: "10px",
+              fontWeight: "bold", cursor: "pointer"
+            }}
+          >
+            + Nova
+          </button>
+        </div>
       </div>
 
       {/* FILTROS */}
@@ -206,22 +228,29 @@ function Transacoes() {
 
         {/* CHIPS DE TIPO — Feature 8 */}
         <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
-          {TIPO_FILTROS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setTipoFiltro(key)}
-              style={{
-                padding: "5px 14px", borderRadius: "999px", fontSize: "12px",
-                fontWeight: "600", cursor: "pointer", border: "1px solid",
-                borderColor: tipoFiltro === key ? "#10b981" : "var(--border)",
-                backgroundColor: tipoFiltro === key ? "rgba(16,185,129,0.12)" : "transparent",
-                color: tipoFiltro === key ? "#10b981" : "var(--subtext)",
-                transition: "all 0.15s"
-              }}
-            >
-              {label}
-            </button>
-          ))}
+          {TIPO_FILTROS.map(({ key, label, icon, iconColor }) => {
+            const ativo = tipoFiltro === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setTipoFiltro(key)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "4px",
+                  padding: "5px 14px", borderRadius: "999px", fontSize: "12px",
+                  fontWeight: "600", cursor: "pointer", border: "1px solid",
+                  borderColor: ativo ? "#10b981" : "var(--border)",
+                  backgroundColor: ativo ? "rgba(16,185,129,0.12)" : "transparent",
+                  color: ativo ? "#10b981" : "var(--subtext)",
+                  transition: "all 0.15s"
+                }}
+              >
+                <span style={{ color: iconColor || (ativo ? "#10b981" : "inherit") }}>
+                  {icon}
+                </span>
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -251,12 +280,14 @@ function Transacoes() {
                   {/* ESQUERDA */}
                   <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                     {/* Checkbox Feature 9 */}
-                    <input
-                      type="checkbox"
-                      checked={isSelecionado}
-                      onChange={() => toggleSelecionado(t.id)}
-                      style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#10b981" }}
-                    />
+                    {modoSelecao && (
+                      <input
+                        type="checkbox"
+                        checked={isSelecionado}
+                        onChange={() => toggleSelecionado(t.id)}
+                        style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#10b981" }}
+                      />
+                    )}
                     <div style={{
                       backgroundColor: isEstorno ? "rgba(148,163,184,0.15)" : isEntrada ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
                       padding: "10px", borderRadius: "10px", fontSize: "18px"
@@ -264,7 +295,14 @@ function Transacoes() {
                       {isEstorno ? "↩️" : isEntrada ? "💰" : "💸"}
                     </div>
                     <div>
-                      <div style={{ fontWeight: "600", color: "var(--text)" }}>{t.descricao || "Sem descrição"}</div>
+                      <div style={{ fontWeight: "600", color: "var(--text)", display: "flex", alignItems: "baseline", gap: "6px" }}>
+                        {t.descricao || "Sem descrição"}
+                        {t.parcela && (
+                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", letterSpacing: "0.02em" }}>
+                            {t.parcela}
+                          </span>
+                        )}
+                      </div>
                       <div style={{ fontSize: "12px", color: "var(--subtext)" }}>{t.banco || "Banco"}</div>
                     </div>
                   </div>
@@ -287,9 +325,14 @@ function Transacoes() {
                           ⚡ Pix
                         </span>
                       )}
-                      {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && (
+                      {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo !== "entrada" && (
                         <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}>
                           💳 Débito
+                        </span>
+                      )}
+                      {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo === "entrada" && (
+                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)", whiteSpace: "nowrap" }}>
+                          🏦 Conta
                         </span>
                       )}
                       {t.banco?.toLowerCase().includes("fatura") && (
@@ -354,7 +397,7 @@ function Transacoes() {
             Recategorizar
           </button>
           <button
-            onClick={() => setSelecionados(new Set())}
+            onClick={cancelarModoSelecao}
             style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--subtext)", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
           >
             Cancelar

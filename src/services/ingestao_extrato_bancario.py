@@ -4,6 +4,7 @@ from datetime import datetime
 from collections import Counter
 import calendar
 import unicodedata
+import re
 import pandas as pd
 import logging
 
@@ -16,7 +17,12 @@ logger = logging.getLogger(__name__)
 
 KEYWORDS_ESTORNO = ["estorno", "reembolso", "devolução", "devolucao", "chargeback", "cancelamento"]
 
-KEYWORDS_PAGAMENTO_FATURA = ["pagamento recebido", "pagamento de fatura", "pagamento fatura"]
+KEYWORDS_PAGAMENTO_FATURA = [
+    "pagamento recebido",
+    "pagamento de fatura",
+    "pagamento fatura",
+    "pgto fat cartao",      # C6 Bank
+]
 
 KEYWORDS_IGNORAR_CONTA = [
     "valor adicionado na conta por cartão",
@@ -38,6 +44,21 @@ def _normalizar(texto: str) -> str:
     return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii").lower().strip()
 
 
+def _detectar_skiprows(caminho: str, encoding: str, sep: str) -> int:
+    """Detecta linhas de metadados iniciais (ex: C6 que tem cabeçalho antes dos dados)."""
+    try:
+        with open(caminho, encoding=encoding, errors="replace") as f:
+            for i, linha in enumerate(f):
+                partes = linha.strip().split(sep)
+                if len(partes) >= 4:
+                    linha_norm = _normalizar(linha)
+                    if "entrada" in linha_norm and "saida" in linha_norm:
+                        return i
+    except Exception:
+        pass
+    return 0
+
+
 def _detectar_formato(df):
     """Detecta o formato do CSV."""
     colunas_raw = list(df.columns.str.strip())
@@ -52,6 +73,16 @@ def _detectar_formato(df):
     if {"data", "valor", "identificador"}.issubset(colunas_norm.keys()):
         return "nubank_conta"
 
+    # C6 conta corrente: Entrada(R$) e Saída(R$) separadas
+    if "entrada(r$)" in colunas_norm and "saida(r$)" in colunas_norm:
+        return "c6_conta"
+
+    # C6 fatura: tem coluna Parcela + colunas exclusivas do C6
+    if "parcela" in colunas_norm and (
+        "nome no cartao" in colunas_norm or "final do cartao" in colunas_norm
+    ):
+        return "c6_fatura"
+
     # Formato legado: Data de Compra, Descrição, Valor (em R$)
     if {"Data de Compra", "Descrição", "Valor (em R$)"}.issubset(colunas_set):
         return "legado"
@@ -59,11 +90,26 @@ def _detectar_formato(df):
     return None
 
 
+def _extrair_parcela(titulo: str):
+    """Extrai parcela embutida no título. Ex: 'Netflix 2/12' → ('Netflix', '2/12')"""
+    # Padrão "X/Y" no final do título
+    match = re.search(r'\s+(\d+/\d+)$', titulo)
+    if match:
+        return titulo[:match.start()].strip(), match.group(1)
+    # Padrão "Parcela X/Y" ou "Parcela X de Y"
+    match = re.search(r'\s*-?\s*[Pp]arcela\s+(\d+)(?:/| de )(\d+)', titulo)
+    if match:
+        parcela = f"{match.group(1)}/{match.group(2)}"
+        return titulo[:match.start()].strip(), parcela
+    return titulo, None
+
+
 def _processar_linha_nubank_fatura(linha):
-    descricao = str(linha["title"]).strip()
+    titulo = str(linha["title"]).strip()
     valor = float(linha["amount"])
     data_hora = datetime.strptime(str(linha["date"]).strip(), "%Y-%m-%d")
-    return descricao, valor, data_hora
+    descricao, parcela = _extrair_parcela(titulo)
+    return descricao, valor, data_hora, parcela
 
 
 def _processar_linha_nubank_conta(linha, colunas_map):
@@ -100,6 +146,51 @@ def _limpar_descricao_conta(desc: str) -> str:
     return tipo
 
 
+def _processar_linha_c6_conta(linha, colunas_map):
+    """Processa linha do extrato de conta corrente C6 Bank."""
+    col_data   = colunas_map.get("data lancamento", "Data Lançamento")
+    col_titulo = colunas_map.get("titulo", "Título")
+    col_desc   = colunas_map.get("descricao", "Descrição")
+    col_entrada = colunas_map.get("entrada(r$)", "Entrada(R$)")
+    col_saida   = colunas_map.get("saida(r$)", "Saída(R$)")
+
+    data_hora = datetime.strptime(str(linha[col_data]).strip(), "%d/%m/%Y")
+    titulo = str(linha[col_titulo]).strip()
+    desc   = str(linha[col_desc]).strip()
+
+    entrada = float(str(linha[col_entrada]).replace(",", "."))
+    saida   = float(str(linha[col_saida]).replace(",", "."))
+
+    # Débito no cartão: usa descrição (nome do estabelecimento)
+    # Pix e demais: usa título (tem o nome da pessoa/operação)
+    if "DEBITO" in titulo.upper():
+        descricao = desc
+    else:
+        descricao = titulo
+
+    # Positivo = entrada, negativo = saída (mesmo padrão do nubank_conta)
+    valor = entrada if entrada > 0 else -saida
+
+    return descricao, valor, data_hora
+
+
+def _processar_linha_c6_fatura(linha, colunas_map):
+    """Processa linha da fatura C6 Bank (cartão de crédito)."""
+    col_data  = colunas_map.get("data de compra", "Data de Compra")
+    col_desc  = colunas_map.get("descricao", "Descrição")
+    col_valor = colunas_map.get("valor (em r$)", "Valor (em R$)")
+    col_parc  = colunas_map.get("parcela", "Parcela")
+
+    descricao = str(linha[col_desc]).strip()
+    valor     = float(str(linha[col_valor]).replace(",", "."))
+    data_hora = datetime.strptime(str(linha[col_data]).strip(), "%d/%m/%Y")
+
+    parcela_raw = str(linha[col_parc]).strip()
+    parcela = None if parcela_raw.lower() in ("única", "unica", "nan", "") else parcela_raw
+
+    return descricao, valor, data_hora, parcela
+
+
 def _processar_linha_legado(linha):
     descricao = str(linha["Descrição"]).strip()
     valor = float(linha["Valor (em R$)"])
@@ -133,17 +224,28 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
     formato = None
     df = None
 
-    for encoding in ["utf-8", "latin1", "utf-8-sig"]:
+    for encoding in ["utf-8-sig", "utf-8", "latin1"]:
         for sep in [",", ";"]:
-            try:
-                df_tentativa = pd.read_csv(caminho_extrato, sep=sep, encoding=encoding)
-                fmt = _detectar_formato(df_tentativa)
-                if fmt:
-                    df = df_tentativa
-                    formato = fmt
-                    break
-            except Exception:
-                continue
+            skip_candidates = {0}
+            extra = _detectar_skiprows(caminho_extrato, encoding, sep)
+            if extra > 0:
+                skip_candidates.add(extra)
+
+            for skiprows in sorted(skip_candidates):
+                try:
+                    df_tentativa = pd.read_csv(
+                        caminho_extrato, sep=sep, encoding=encoding,
+                        skiprows=skiprows if skiprows > 0 else None
+                    )
+                    fmt = _detectar_formato(df_tentativa)
+                    if fmt:
+                        df = df_tentativa
+                        formato = fmt
+                        break
+                except Exception:
+                    continue
+            if formato:
+                break
         if formato:
             break
 
@@ -173,10 +275,15 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
     transacoes = []
     for _, linha in df.iterrows():
         try:
+            parcela = None
             if formato == "nubank_fatura":
-                descricao, valor, data_hora = _processar_linha_nubank_fatura(linha)
+                descricao, valor, data_hora, parcela = _processar_linha_nubank_fatura(linha)
             elif formato == "nubank_conta":
                 descricao, valor, data_hora = _processar_linha_nubank_conta(linha, colunas_map)
+            elif formato == "c6_conta":
+                descricao, valor, data_hora = _processar_linha_c6_conta(linha, colunas_map)
+            elif formato == "c6_fatura":
+                descricao, valor, data_hora, parcela = _processar_linha_c6_fatura(linha, colunas_map)
             else:
                 descricao, valor, data_hora = _processar_linha_legado(linha)
 
@@ -196,16 +303,16 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
                     continue
 
             # Lógica de tipo por formato:
-            # - Fatura: positivo = saída, negativo = entrada/estorno
+            # - Fatura (nubank/c6): positivo = saída, negativo = entrada/estorno
             # - Conta:  positivo = entrada, negativo = saída/estorno
-            if formato == "nubank_fatura":
+            if formato in ("nubank_fatura", "c6_fatura"):
                 if valor < 0 and _is_estorno(descricao):
                     tipo = "saida"
                     valor_abs = -abs(valor)
                 else:
                     tipo = "saida" if valor > 0 else "entrada"
                     valor_abs = abs(valor)
-            else:  # nubank_conta e legado
+            else:  # nubank_conta, c6_conta e legado
                 if valor < 0 and _is_estorno(descricao):
                     tipo = "saida"
                     valor_abs = -abs(valor)
@@ -214,7 +321,7 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
                     valor_abs = abs(valor)
 
             categoria = categorizar(descricao)
-            transacoes.append((descricao, valor_abs, data_hora, tipo, categoria))
+            transacoes.append((descricao, valor_abs, data_hora, tipo, categoria, parcela))
 
         except Exception:
             continue
@@ -225,7 +332,7 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
     if mes_dominante:
         ano_alvo, mes_alvo = mes_dominante
         transacoes_ajustadas = []
-        for descricao, valor_abs, data_hora, tipo, categoria in transacoes:
+        for descricao, valor_abs, data_hora, tipo, categoria, parcela in transacoes:
             data_original = None
             if (data_hora.year, data_hora.month) != (ano_alvo, mes_alvo):
                 logger.info(
@@ -234,16 +341,16 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
                 )
                 data_original = data_hora
                 data_hora = _ajustar_data(data_hora, ano_alvo, mes_alvo)
-            transacoes_ajustadas.append((descricao, valor_abs, data_hora, tipo, categoria, data_original))
+            transacoes_ajustadas.append((descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela))
     else:
         transacoes_ajustadas = [
-            (d, v, dh, t, c, None) for d, v, dh, t, c in transacoes
+            (d, v, dh, t, c, None, p) for d, v, dh, t, c, p in transacoes
         ]
 
     # Segunda passada: persiste no banco
     db: Session = SessionLocal()
 
-    for descricao, valor_abs, data_hora, tipo, categoria, data_original in transacoes_ajustadas:
+    for descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela in transacoes_ajustadas:
         existe = db.query(Gasto).filter(
             Gasto.usuario_id == usuario_id,
             Gasto.descricao == descricao,
@@ -261,6 +368,7 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
             tipo=tipo,
             data_hora=data_hora,
             data_original=data_original,
+            parcela=parcela,
             banco=banco,
             usuario_id=usuario_id,
             extrato_id=extrato_id
