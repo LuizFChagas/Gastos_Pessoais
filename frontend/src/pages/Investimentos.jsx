@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  AreaChart, Area, XAxis, YAxis, defs, linearGradient,
+  AreaChart, Area, XAxis, YAxis,
 } from "recharts";
 import {
   listarInvestimentos,
