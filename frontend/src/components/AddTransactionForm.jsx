@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../api/api";
 import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
+import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 
 function AddTransactionForm({ onSuccess, onCancel }) {
   const [tipo, setTipo] = useState("saida");
@@ -101,7 +102,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
             transition: "color 0.2s"
           }}
         >
-          💸 Saída
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><ArrowUpCircle size={14} /> Saída</span>
         </div>
 
         <div
@@ -114,7 +115,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
             transition: "color 0.2s"
           }}
         >
-          💰 Entrada
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><ArrowDownCircle size={14} /> Entrada</span>
         </div>
       </div>
 
@@ -171,7 +172,7 @@ function AddTransactionForm({ onSuccess, onCancel }) {
             >
               {CATEGORIAS.map((cat, index) => (
                 <option key={index} value={cat}>
-                  {getCategoriaStyle(cat).icon} {capitalizar(cat)}
+                  {capitalizar(cat)}
                 </option>
               ))}
             </select>

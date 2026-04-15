@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cadastro } from "../api/authApi";
 import { useNavigate, Link } from "react-router-dom";
+import { Wallet, Bot, Zap, TrendingUp, ShoppingBag, Car, Bell, Home, Gamepad2, Target } from "lucide-react";
 
 function Cadastro() {
   const [nome, setNome] = useState("");
@@ -148,12 +149,12 @@ function Cadastro() {
       }}>
         <div style={{ fontSize: "10px", color: "#4a5568", textTransform: "uppercase", letterSpacing: "1px" }}>Últimas transações</div>
         {[
-          { icon: "💰", name: "Salário",  cat: "Entrada",     value: "+R$ 7.132", color: "#10b981" },
-          { icon: "🍔", name: "iFood",    cat: "Alimentação", value: "-R$ 45,90", color: "#ef4444" },
-          { icon: "🔔", name: "Netflix",  cat: "Assinaturas", value: "-R$ 39,90", color: "#ef4444" },
-        ].map(item => (
+          { Icon: Wallet,      name: "Salário",   cat: "Entrada",     value: "+R$ 7.132", color: "#10b981" },
+          { Icon: ShoppingBag, name: "iFood",     cat: "Alimentação", value: "-R$ 45,90", color: "#ef4444" },
+          { Icon: Bell,        name: "Netflix",   cat: "Assinaturas", value: "-R$ 39,90", color: "#ef4444" },
+        ].map((item) => (
           <div key={item.name} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", flexShrink: 0 }}>{item.icon}</div>
+            <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><item.Icon size={14} color="#7d8fa8" /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "12px", fontWeight: "600", color: "#c8d0de" }}>{item.name}</div>
               <div style={{ fontSize: "10px", color: "#4a5568" }}>{item.cat}</div>
@@ -175,13 +176,13 @@ function Cadastro() {
       }}>
         <div style={{ fontSize: "10px", color: "#4a5568", textTransform: "uppercase", letterSpacing: "1px" }}>Por categoria</div>
         {[
-          { icon: "🍔", label: "Alimentação", pct: 32, color: "#f97316" },
-          { icon: "🚗", label: "Transporte",  pct: 18, color: "#3b82f6" },
-          { icon: "🎮", label: "Lazer",        pct: 24, color: "#8b5cf6" },
-          { icon: "🔔", label: "Assinaturas",  pct: 14, color: "#0ea5e9" },
-        ].map(item => (
+          { Icon: ShoppingBag, label: "Alimentação", pct: 32, color: "#f97316" },
+          { Icon: Car,         label: "Transporte",  pct: 18, color: "#3b82f6" },
+          { Icon: Gamepad2,    label: "Lazer",        pct: 24, color: "#8b5cf6" },
+          { Icon: Bell,        label: "Assinaturas",  pct: 14, color: "#0ea5e9" },
+        ].map((item) => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "13px", width: "18px" }}>{item.icon}</span>
+            <item.Icon size={13} color={item.color} style={{ flexShrink: 0 }} />
             <div style={{ flex: 1, height: "4px", background: "rgba(255,255,255,0.07)", borderRadius: "2px", overflow: "hidden" }}>
               <div style={{ width: `${item.pct}%`, height: "100%", background: item.color, borderRadius: "2px" }} />
             </div>
@@ -201,7 +202,7 @@ function Cadastro() {
         pointerEvents: "none"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "28px", height: "28px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>🤖</div>
+          <div style={{ width: "28px", height: "28px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><Bot size={14} color="#34d399" /></div>
           <span style={{ fontSize: "12px", fontWeight: "600", color: "#34d399" }}>IA Ativa</span>
         </div>
         <div style={{ fontSize: "11px", color: "#4a5568", lineHeight: 1.5 }}>
@@ -231,7 +232,7 @@ function Cadastro() {
         <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: "4px", height: "6px", overflow: "hidden" }}>
           <div style={{ width: "64%", height: "100%", background: "linear-gradient(90deg, #10b981, #34d399)", borderRadius: "4px" }} />
         </div>
-        <div style={{ fontSize: "10px", color: "#4a5568" }}>Você está no caminho certo 🎯</div>
+        <div style={{ fontSize: "10px", color: "#4a5568", display: "flex", alignItems: "center", gap: "4px" }}><Target size={10} color="#4a5568" /> Você está no caminho certo</div>
       </div>
 
       {/* Card notificação — top center */}
@@ -244,7 +245,7 @@ function Cadastro() {
         display: "flex", alignItems: "center", gap: "10px",
         pointerEvents: "none"
       }}>
-        <div style={{ fontSize: "18px" }}>⚡</div>
+        <div style={{ display: "flex", alignItems: "center" }}><Zap size={18} color="#fbbf24" /></div>
         <div>
           <div style={{ fontSize: "12px", fontWeight: "600", color: "#fbbf24" }}>Novo extrato importado</div>
           <div style={{ fontSize: "10px", color: "#4a5568" }}>47 transações processadas</div>
@@ -263,13 +264,13 @@ function Cadastro() {
       }}>
         <div style={{ fontSize: "10px", color: "#4a5568", textTransform: "uppercase", letterSpacing: "1px" }}>Top gastos</div>
         {[
-          { icon: "🏠", name: "Aluguel",      value: "R$ 1.800", w: "72%" },
-          { icon: "🚗", name: "Combustível",  value: "R$ 420",   w: "35%" },
-          { icon: "🛒", name: "Mercado",      value: "R$ 380",   w: "30%" },
-        ].map(item => (
+          { Icon: Home,        name: "Aluguel",     value: "R$ 1.800", w: "72%" },
+          { Icon: Car,         name: "Combustível", value: "R$ 420",   w: "35%" },
+          { Icon: ShoppingBag, name: "Mercado",     value: "R$ 380",   w: "30%" },
+        ].map((item) => (
           <div key={item.name} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "11px", color: "#7d8fa8" }}>{item.icon} {item.name}</span>
+              <span style={{ fontSize: "11px", color: "#7d8fa8", display: "flex", alignItems: "center", gap: "4px" }}><item.Icon size={11} /> {item.name}</span>
               <span style={{ fontSize: "11px", fontWeight: "700", color: "#f0f4ff" }}>{item.value}</span>
             </div>
             <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: "3px", height: "3px" }}>
@@ -289,7 +290,7 @@ function Cadastro() {
         display: "flex", alignItems: "center", gap: "14px",
         pointerEvents: "none"
       }}>
-        <div style={{ fontSize: "22px" }}>💹</div>
+        <div style={{ display: "flex", alignItems: "center" }}><TrendingUp size={22} color="#60a5fa" /></div>
         <div>
           <div style={{ fontSize: "12px", fontWeight: "600", color: "#60a5fa" }}>Economia vs mês anterior</div>
           <div style={{ fontSize: "16px", fontWeight: "800", color: "#10b981" }}>+R$ 430,00 <span style={{ fontSize: "11px", color: "#34d399" }}>↑ 12%</span></div>
@@ -337,7 +338,7 @@ function Cadastro() {
             borderRadius: "16px", fontSize: "26px", marginBottom: "16px",
             boxShadow: "0 8px 24px rgba(16,185,129,0.35)"
           }}>
-            💰
+            <Wallet size={26} color="white" />
           </div>
           <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "700", color: "#f0f4ff" }}>
             FinanceIA

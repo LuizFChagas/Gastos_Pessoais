@@ -1,5 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard, CreditCard, BarChart2, TrendingUp, FolderOpen,
+  LogOut, Moon, Sun, Lightbulb,
+} from "lucide-react";
 
 const DICAS = [
   "Acompanhe seus gastos diariamente para manter o controle financeiro.",
@@ -15,11 +19,11 @@ const DICAS = [
 ];
 
 const MENU = [
-  { to: "/app",                icon: "📊", label: "Dashboard"     },
-  { to: "/app/transacoes",     icon: "💳", label: "Transações"    },
-  { to: "/app/relatorios",     icon: "📈", label: "Relatórios"    },
-  { to: "/app/investimentos",  icon: "💹", label: "Investimentos" },
-  { to: "/app/importar",       icon: "📁", label: "Importar"      },
+  { to: "/app",                Icon: LayoutDashboard, label: "Dashboard"     },
+  { to: "/app/transacoes",     Icon: CreditCard,      label: "Transações"    },
+  { to: "/app/relatorios",     Icon: BarChart2,        label: "Relatórios"    },
+  { to: "/app/investimentos",  Icon: TrendingUp,       label: "Investimentos" },
+  { to: "/app/importar",       Icon: FolderOpen,       label: "Importar"      },
 ];
 
 function Layout({ children, toggleTheme, darkMode }) {
@@ -62,9 +66,9 @@ function Layout({ children, toggleTheme, darkMode }) {
           </h2>
           <button
             onClick={toggleTheme}
-            style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "20px" }}
+            style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--subtext)", display: "flex", alignItems: "center" }}
           >
-            {darkMode ? "🌙" : "☀️"}
+            {darkMode ? <Moon size={20} /> : <Sun size={20} />}
           </button>
         </div>
 
@@ -89,7 +93,7 @@ function Layout({ children, toggleTheme, darkMode }) {
           borderTop: "1px solid var(--border)",
           display: "flex"
         }}>
-          {MENU.map(({ to, icon, label }) => (
+          {MENU.map(({ to, Icon, label }) => (
             <Link
               key={to}
               to={to}
@@ -107,7 +111,7 @@ function Layout({ children, toggleTheme, darkMode }) {
                 transition: "all 0.15s"
               }}
             >
-              <span style={{ fontSize: "18px" }}>{icon}</span>
+              <Icon size={20} />
               {label}
             </Link>
           ))}
@@ -125,7 +129,7 @@ function Layout({ children, toggleTheme, darkMode }) {
               gap: "3px", cursor: "pointer"
             }}
           >
-            <span style={{ fontSize: "18px" }}>🚪</span>
+            <LogOut size={20} />
             Sair
           </button>
         </div>
@@ -151,14 +155,14 @@ function Layout({ children, toggleTheme, darkMode }) {
           <h2 style={{ color: "#22c55e", fontWeight: "bold", margin: 0 }}>FinanceIA</h2>
           <button
             onClick={toggleTheme}
-            style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "18px" }}
+            style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--subtext)", display: "flex", alignItems: "center" }}
           >
-            {darkMode ? "🌙" : "☀️"}
+            {darkMode ? <Moon size={18} /> : <Sun size={18} />}
           </button>
         </div>
 
         <div style={{ marginTop: "40px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
-          {MENU.map(({ to, icon, label }) => (
+          {MENU.map(({ to, Icon, label }) => (
             <Link
               key={to}
               to={to}
@@ -174,7 +178,7 @@ function Layout({ children, toggleTheme, darkMode }) {
                 transition: "background 0.15s, color 0.15s"
               }}
             >
-              <span>{icon}</span> {label}
+              <Icon size={18} /> {label}
             </Link>
           ))}
         </div>
@@ -188,7 +192,7 @@ function Layout({ children, toggleTheme, darkMode }) {
           marginBottom: "12px",
           color: "white",
         }}>
-          <div style={{ fontSize: "18px", marginBottom: "8px" }}>↗</div>
+          <div style={{ marginBottom: "8px" }}><Lightbulb size={18} /></div>
           <div style={{ fontWeight: "700", fontSize: "13px", marginBottom: "6px" }}>Dica do dia</div>
           <div style={{ fontSize: "12px", lineHeight: "1.5", opacity: 0.9 }}>{dica}</div>
         </div>
@@ -202,7 +206,7 @@ function Layout({ children, toggleTheme, darkMode }) {
             cursor: "pointer", fontWeight: "500", fontSize: "14px", textAlign: "left"
           }}
         >
-          🚪 Sair
+          <LogOut size={16} style={{ marginRight: "6px" }} /> Sair
         </button>
       </div>
 

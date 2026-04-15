@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getCategoriaStyle, capitalizar } from "../utils/categorias";
+import { ArrowDownCircle, ArrowUpCircle, CornerUpLeft, Zap, CreditCard, RefreshCw, CalendarDays } from "lucide-react";
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -45,37 +46,37 @@ function TransactionList({ transactions }) {
           const tags = (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
               {isEstorno && (
-                <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)", whiteSpace: "nowrap" }}>
-                  ↩ Estorno
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)", whiteSpace: "nowrap" }}>
+                  <CornerUpLeft size={10} /> Estorno
                 </span>
               )}
               {isRecorrente && (
-                <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}>
-                  🔁 Recorrente
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}>
+                  <RefreshCw size={10} /> Recorrente
                 </span>
               )}
               {t.descricao?.startsWith("Pix") && (
-                <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.3)", whiteSpace: "nowrap" }}>
-                  ⚡ Pix
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.3)", whiteSpace: "nowrap" }}>
+                  <Zap size={10} /> Pix
                 </span>
               )}
               {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && (
-                <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}>
-                  💳 Débito
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}>
+                  <CreditCard size={10} /> Débito
                 </span>
               )}
               {t.banco?.toLowerCase().includes("fatura") && (
-                <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", whiteSpace: "nowrap" }}>
-                  💳 Crédito
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", whiteSpace: "nowrap" }}>
+                  <CreditCard size={10} /> Crédito
                 </span>
               )}
               {t.data_original && (
-                <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(251,191,36,0.15)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)", whiteSpace: "nowrap" }}>
-                  📅 {new Date(t.data_original).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(251,191,36,0.15)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)", whiteSpace: "nowrap" }}>
+                  <CalendarDays size={10} /> {new Date(t.data_original).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                 </span>
               )}
               <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "500", backgroundColor: style.bg, color: style.color }}>
-                {style.icon} {capitalizar(t.categoria)}
+                {style.Icon && <style.Icon size={12} />} {capitalizar(t.categoria)}
               </div>
             </div>
           );
@@ -100,7 +101,7 @@ function TransactionList({ transactions }) {
                   fontSize: "16px",
                   flexShrink: 0
                 }}>
-                  {isEstorno ? "↩️" : isEntrada ? "💰" : "💸"}
+                  {isEstorno ? <CornerUpLeft size={16} /> : isEntrada ? <ArrowDownCircle size={16} /> : <ArrowUpCircle size={16} />}
                 </div>
 
                 {/* Conteúdo */}
@@ -150,7 +151,7 @@ function TransactionList({ transactions }) {
                   borderRadius: "12px",
                   fontSize: "18px"
                 }}>
-                  {isEstorno ? "↩️" : isEntrada ? "💰" : "💸"}
+                  {isEstorno ? <CornerUpLeft size={16} /> : isEntrada ? <ArrowDownCircle size={16} /> : <ArrowUpCircle size={16} />}
                 </div>
 
                 <div>

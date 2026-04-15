@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { listarGastos, deletarGasto, editarGasto, recategorizarLote } from "../api/gastosApi";
 import AddTransactionForm from "../components/AddTransactionForm";
 import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
+import {
+  AlignJustify, ArrowUp, ArrowDown, Zap, CreditCard, RefreshCw, ArrowLeftRight,
+  ArrowDownCircle, ArrowUpCircle, CornerUpLeft, Pencil, Trash2, Landmark, CalendarDays,
+} from "lucide-react";
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -14,14 +18,14 @@ const useIsMobile = () => {
 };
 
 const TIPO_FILTROS = [
-  { key: "todos",       label: "Todos",      icon: "≡",  iconColor: null },
-  { key: "entradas",    label: "Entradas",   icon: "↑",  iconColor: "#22c55e" },
-  { key: "saidas",      label: "Saídas",     icon: "↓",  iconColor: "#ef4444" },
-  { key: "pix",         label: "Pix",        icon: "⚡", iconColor: null },
-  { key: "debito",      label: "Débito",     icon: "💳", iconColor: null },
-  { key: "credito",     label: "Crédito",    icon: "💳", iconColor: null },
-  { key: "parcelados",  label: "Parcelados",   icon: "🔄", iconColor: null },
-  { key: "internas",    label: "Internas",     icon: "↔",  iconColor: "#94a3b8" },
+  { key: "todos",      label: "Todos",      Icon: AlignJustify,  iconColor: null },
+  { key: "entradas",   label: "Entradas",   Icon: ArrowDown,     iconColor: "#22c55e" },
+  { key: "saidas",     label: "Saídas",     Icon: ArrowUp,       iconColor: "#ef4444" },
+  { key: "pix",        label: "Pix",        Icon: Zap,           iconColor: null },
+  { key: "debito",     label: "Débito",     Icon: CreditCard,    iconColor: null },
+  { key: "credito",    label: "Crédito",    Icon: CreditCard,    iconColor: null },
+  { key: "parcelados", label: "Parcelados", Icon: RefreshCw,     iconColor: null },
+  { key: "internas",   label: "Internas",   Icon: ArrowLeftRight, iconColor: "#94a3b8" },
 ];
 
 function Transacoes() {
@@ -249,7 +253,7 @@ function Transacoes() {
 
         {/* CHIPS DE TIPO — Feature 8 */}
         <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
-          {TIPO_FILTROS.map(({ key, label, icon, iconColor }) => {
+          {TIPO_FILTROS.map(({ key, label, Icon, iconColor }) => {
             const ativo = tipoFiltro === key;
             return (
               <button
@@ -265,9 +269,7 @@ function Transacoes() {
                   transition: "all 0.15s"
                 }}
               >
-                <span style={{ color: iconColor || (ativo ? "#10b981" : "inherit") }}>
-                  {icon}
-                </span>
+                <Icon size={12} color={iconColor || (ativo ? "#10b981" : "currentColor")} />
                 {label}
               </button>
             );
@@ -299,27 +301,27 @@ function Transacoes() {
                     <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)", whiteSpace: "nowrap" }}>↩ Estorno</span>
                   )}
                   {isRecorrente && (
-                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}>🔁 Recorrente</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}><RefreshCw size={10} /> Recorrente</span>
                   )}
                   {t.descricao?.startsWith("Pix") && (
-                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.3)", whiteSpace: "nowrap" }}>⚡ Pix</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.3)", whiteSpace: "nowrap" }}><Zap size={10} /> Pix</span>
                   )}
                   {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo !== "entrada" && (
-                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}>💳 Débito</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}><CreditCard size={10} /> Débito</span>
                   )}
                   {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo === "entrada" && (
-                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)", whiteSpace: "nowrap" }}>🏦 Conta</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)", whiteSpace: "nowrap" }}><Landmark size={10} /> Conta</span>
                   )}
                   {t.banco?.toLowerCase().includes("fatura") && (
-                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", whiteSpace: "nowrap" }}>💳 Crédito</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", whiteSpace: "nowrap" }}><CreditCard size={10} /> Crédito</span>
                   )}
                   {t.data_original && (
-                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(251,191,36,0.15)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)", whiteSpace: "nowrap" }}>
-                      📅 {new Date(t.data_original).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(251,191,36,0.15)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)", whiteSpace: "nowrap" }}>
+                      <CalendarDays size={10} /> {new Date(t.data_original).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                     </span>
                   )}
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "500", backgroundColor: style.bg, color: style.color }}>
-                    {style.icon} {capitalizar(t.categoria)}
+                    {style.Icon && <style.Icon size={12} />} {capitalizar(t.categoria)}
                   </div>
                 </div>
               );
@@ -341,7 +343,7 @@ function Transacoes() {
                       backgroundColor: isEstorno ? "rgba(148,163,184,0.15)" : isEntrada ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
                       padding: "8px", borderRadius: "10px", fontSize: "16px", flexShrink: 0
                     }}>
-                      {isEstorno ? "↩️" : isEntrada ? "💰" : "💸"}
+                      {isEstorno ? <CornerUpLeft size={16} /> : isEntrada ? <ArrowDownCircle size={16} /> : <ArrowUpCircle size={16} />}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
@@ -358,8 +360,8 @@ function Transacoes() {
                       <div style={{ fontSize: "11px", color: "var(--subtext)", margin: "2px 0 6px" }}>{t.banco || "Banco"}</div>
                       {tags}
                       <div style={{ display: "flex", gap: "4px", marginTop: "6px" }}>
-                        <button onClick={() => handleEditClick(t)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "14px", padding: "2px 4px" }} title="Editar">✏️</button>
-                        <button onClick={() => handleDeleteClick(t.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "14px", padding: "2px 4px" }} title="Excluir">🗑️</button>
+                        <button onClick={() => handleEditClick(t)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--subtext)", display: "flex" }} title="Editar"><Pencil size={14} /></button>
+                        <button onClick={() => handleDeleteClick(t.id)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: "2px 4px", color: "#ef4444", display: "flex" }} title="Excluir"><Trash2 size={14} /></button>
                       </div>
                     </div>
                   </div>
@@ -384,7 +386,7 @@ function Transacoes() {
                       backgroundColor: isEstorno ? "rgba(148,163,184,0.15)" : isEntrada ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
                       padding: "10px", borderRadius: "10px", fontSize: "18px"
                     }}>
-                      {isEstorno ? "↩️" : isEntrada ? "💰" : "💸"}
+                      {isEstorno ? <CornerUpLeft size={16} /> : isEntrada ? <ArrowDownCircle size={16} /> : <ArrowUpCircle size={16} />}
                     </div>
                     <div>
                       <div style={{ fontWeight: "600", color: "var(--text)", display: "flex", alignItems: "baseline", gap: "6px" }}>
@@ -405,8 +407,8 @@ function Transacoes() {
                       R$ {Math.abs(t.valor).toFixed(2)}
                     </div>
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "4px", marginTop: "5px" }}>
-                      <button onClick={() => handleEditClick(t)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: "14px" }} title="Editar">✏️</button>
-                      <button onClick={() => handleDeleteClick(t.id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af" }} title="Excluir">🗑️</button>
+                      <button onClick={() => handleEditClick(t)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", display: "flex" }} title="Editar"><Pencil size={14} /></button>
+                      <button onClick={() => handleDeleteClick(t.id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", display: "flex" }} title="Excluir"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -475,7 +477,7 @@ function Transacoes() {
                 <div style={{ position: "absolute", top: "4px", left: editTipo === "saida" ? "4px" : "50%", width: "calc(50% - 4px)", height: "calc(100% - 8px)", backgroundColor: accentEdit, borderRadius: "10px", transition: "all 0.25s ease" }} />
                 {["saida", "entrada"].map((t) => (
                   <div key={t} onClick={() => setEditTipo(t)} style={{ flex: 1, textAlign: "center", padding: "10px", cursor: "pointer", zIndex: 1, color: editTipo === t ? "white" : "var(--subtext)", fontWeight: "600", fontSize: "14px" }}>
-                    {t === "saida" ? "💸 Saída" : "💰 Entrada"}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>{t === "saida" ? <><ArrowUpCircle size={14} /> Saída</> : <><ArrowDownCircle size={14} /> Entrada</>}</span>
                   </div>
                 ))}
               </div>
@@ -502,7 +504,7 @@ function Transacoes() {
                   <div style={{ position: "relative", marginTop: "6px" }}>
                     <select value={editCategoria} onChange={(e) => setEditCategoria(e.target.value)} style={{ ...inputStyle, paddingRight: "32px", appearance: "none" }}>
                       {CATEGORIAS.map((cat, i) => (
-                        <option key={i} value={cat}>{getCategoriaStyle(cat).icon} {capitalizar(cat)}</option>
+                        <option key={i} value={cat}>{capitalizar(cat)}</option>
                       ))}
                     </select>
                     <svg style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--subtext)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>

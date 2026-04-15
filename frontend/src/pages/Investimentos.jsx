@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -465,17 +466,17 @@ export default function Investimentos() {
                         style={{
                           padding: "6px 10px", borderRadius: "8px",
                           border: "1px solid var(--border)", backgroundColor: "transparent",
-                          color: "var(--subtext)", cursor: "pointer", fontSize: "13px"
+                          color: "var(--subtext)", cursor: "pointer", display: "flex", alignItems: "center"
                         }}
-                      >✏️</button>
+                      ><Pencil size={14} /></button>
                       <button
                         onClick={() => setConfirmDelete(p.id)}
                         style={{
                           padding: "6px 10px", borderRadius: "8px",
                           border: "1px solid var(--border)", backgroundColor: "transparent",
-                          color: "#ef4444", cursor: "pointer", fontSize: "13px"
+                          color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center"
                         }}
-                      >🗑️</button>
+                      ><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
