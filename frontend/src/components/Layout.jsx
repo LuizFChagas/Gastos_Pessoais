@@ -23,6 +23,8 @@ function Layout({ children, toggleTheme, darkMode }) {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("token_expiry");
+    sessionStorage.removeItem("token");
     navigate("/");
   };
 

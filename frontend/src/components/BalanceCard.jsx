@@ -1,4 +1,4 @@
-function BalanceCard({ title, value, color, extraStyle = {} }) {
+function BalanceCard({ title, value, color, extraStyle = {}, isMobile = false }) {
 
   const formatar = (v) =>
     Number(v || 0).toLocaleString("pt-BR", {
@@ -11,13 +11,14 @@ function BalanceCard({ title, value, color, extraStyle = {} }) {
       style={{
         backgroundColor: "var(--card)",
         borderRadius: "12px",
-        padding: "20px",
+        padding: isMobile ? "16px" : "28px 24px",
+        flex: 1,
         minWidth: 0,
         overflow: "hidden",
         boxSizing: "border-box",
         boxShadow: "var(--shadow-md)",
         borderLeft: `4px solid ${color}`,
-        minHeight: "100px",
+        minHeight: isMobile ? "80px" : "130px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",

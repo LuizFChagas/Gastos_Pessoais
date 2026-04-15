@@ -11,6 +11,8 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     senha = Column(String)
+    nome = Column(String, nullable=True)
+    data_nascimento = Column(String, nullable=True)  # formato "YYYY-MM-DD"
 
     gastos = relationship("Gasto", back_populates="usuario")
     extratos = relationship("Extrato", back_populates="usuario")
@@ -42,6 +44,7 @@ class Gasto(Base):
     data_original = Column(DateTime, nullable=True)
     parcela = Column(String, nullable=True)
     transferencia_interna = Column(Boolean, default=False, nullable=True)
+    categoria_manual = Column(Boolean, default=False, nullable=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
     extrato_id = Column(Integer, ForeignKey("extratos.id"), nullable=True, index=True)
 

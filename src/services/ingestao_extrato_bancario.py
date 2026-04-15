@@ -265,18 +265,66 @@ def _ajustar_data(data_hora, ano_alvo, mes_alvo):
     return data_hora.replace(year=ano_alvo, month=mes_alvo, day=dia)
 
 
-def _detectar_transferencias_internas(usuario_id: int, extrato_id: int):
-    """Detecta e marca pares entrada↔saída entre extratos diferentes como transferência interna."""
+def _extrair_nome_pix(descricao: str) -> str | None:
+    """Extrai o nome da pessoa de uma descrição de Pix. Ex: 'Pix Recebido - JOAO SILVA' → 'joao silva'"""
+    desc = descricao.strip()
+    if desc.upper().startswith("PIX RECEBIDO - ") or desc.upper().startswith("PIX ENVIADO - "):
+        partes = desc.split(" - ", 1)
+        if len(partes) > 1:
+            return _normalizar(partes[1])
+    return None
+
+
+def _nome_pix_bate_usuario(nome_pix: str, nome_usuario_norm: str) -> bool:
+    """Verifica se o nome do Pix pertence ao próprio usuário usando bigramas (evita falsos positivos).
+    Ex: 'luiz antonio chagas' NÃO bate com 'luiz felipe chagas' mesmo compartilhando 'luiz' e 'chagas'."""
+    partes = [p for p in nome_usuario_norm.split() if len(p) > 2]
+    for i in range(len(partes) - 1):
+        bigrama = partes[i] + " " + partes[i + 1]
+        if bigrama in nome_pix:
+            return True
+    return False
+
+
+def _detectar_transferencias_internas(usuario_id: int, extrato_id: int, nome_usuario: str | None = None):
+    """Detecta e marca pares entrada↔saída entre extratos diferentes como transferência interna.
+    Ao importar um novo extrato, re-verifica TODOS os extratos do mesmo mês para garantir que
+    pares já existentes também sejam detectados retroativamente."""
     if not extrato_id:
         return
 
+    nome_usuario_norm = _normalizar(nome_usuario) if nome_usuario else None
+
     db = SessionLocal()
     try:
-        novas = db.query(Gasto).filter(Gasto.extrato_id == extrato_id).all()
+        # Descobre o mês/ano do novo extrato para escanear todo o período
+        referencia = db.query(Gasto).filter(Gasto.extrato_id == extrato_id).first()
+        if not referencia:
+            return
 
-        for nova in novas:
+        mes_ref = referencia.data_hora.month
+        ano_ref = referencia.data_hora.year
+
+        # Busca TODAS as transações não-internas do usuário naquele mês (todos os extratos)
+        from sqlalchemy import extract as sa_extract
+        candidatas = db.query(Gasto).filter(
+            Gasto.usuario_id == usuario_id,
+            Gasto.transferencia_interna.isnot(True),
+            sa_extract("month", Gasto.data_hora) == mes_ref,
+            sa_extract("year",  Gasto.data_hora) == ano_ref,
+        ).all()
+
+        for nova in candidatas:
             if nova.transferencia_interna:
                 continue
+
+            # Pix com nome → valida se é o próprio usuário (bigrama)
+            nome_pix = _extrair_nome_pix(nova.descricao or "")
+            if nome_pix is not None:
+                if not nome_usuario_norm:
+                    continue
+                if not _nome_pix_bate_usuario(nome_pix, nome_usuario_norm):
+                    continue
 
             tipo_oposto = "saida" if nova.tipo == "entrada" else "entrada"
             data_min = nova.data_hora - timedelta(days=1)
@@ -288,7 +336,7 @@ def _detectar_transferencias_internas(usuario_id: int, extrato_id: int):
                 Gasto.valor.between(nova.valor - 0.01, nova.valor + 0.01),
                 Gasto.data_hora >= data_min,
                 Gasto.data_hora <= data_max,
-                Gasto.extrato_id != extrato_id,
+                Gasto.extrato_id != nova.extrato_id,
                 Gasto.transferencia_interna.isnot(True),
                 Gasto.id != nova.id
             ).first()
@@ -308,23 +356,36 @@ def _detectar_transferencias_internas(usuario_id: int, extrato_id: int):
 
 def _buscar_historico_categorias(usuario_id: int) -> dict:
     """Retorna mapa {descricao_normalizada: categoria} com base no histórico do usuário.
-    Em caso de descrições com categorias diferentes, usa a mais recente."""
+    Prioridade: categorias marcadas manualmente > mais recente por data."""
     db = SessionLocal()
     try:
+        # Primeira passada: categorias automáticas (por data crescente, a mais recente vence)
         resultados = db.query(Gasto.descricao, Gasto.categoria, Gasto.data_hora).filter(
-            Gasto.usuario_id == usuario_id
+            Gasto.usuario_id == usuario_id,
+            Gasto.categoria_manual.isnot(True)
         ).order_by(Gasto.data_hora.asc()).all()
 
         historico = {}
         for r in resultados:
             if r.descricao and r.categoria:
                 historico[_normalizar(r.descricao)] = r.categoria
+
+        # Segunda passada: categorias manuais sobrescrevem sempre
+        manuais = db.query(Gasto.descricao, Gasto.categoria).filter(
+            Gasto.usuario_id == usuario_id,
+            Gasto.categoria_manual == True
+        ).all()
+
+        for r in manuais:
+            if r.descricao and r.categoria:
+                historico[_normalizar(r.descricao)] = r.categoria
+
         return historico
     finally:
         db.close()
 
 
-def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
+def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, nome_usuario=None):
 
     formato = None
     df = None
@@ -500,4 +561,4 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
     )
 
     # Detecta transferências internas entre contas do mesmo usuário
-    _detectar_transferencias_internas(usuario_id, extrato_id)
+    _detectar_transferencias_internas(usuario_id, extrato_id, nome_usuario=nome_usuario)

@@ -3,6 +3,8 @@ import { cadastro } from "../api/authApi";
 import { useNavigate, Link } from "react-router-dom";
 
 function Cadastro() {
+  const [nome, setNome] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
@@ -11,9 +13,33 @@ function Cadastro() {
 
   const navigate = useNavigate();
 
+  const calcularIdade = (dataNasc) => {
+    const hoje = new Date();
+    const nasc = new Date(dataNasc);
+    let idade = hoje.getFullYear() - nasc.getFullYear();
+    const m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+    return idade;
+  };
+
   const handleCadastro = async (e) => {
     e.preventDefault();
     setErro("");
+
+    if (!nome.trim()) {
+      setErro("Informe seu nome completo");
+      return;
+    }
+
+    if (!dataNascimento) {
+      setErro("Informe sua data de nascimento");
+      return;
+    }
+
+    if (calcularIdade(dataNascimento) < 18) {
+      setErro("Você precisa ter pelo menos 18 anos para se cadastrar");
+      return;
+    }
 
     if (senha !== confirmarSenha) {
       setErro("As senhas não coincidem");
@@ -28,10 +54,11 @@ function Cadastro() {
     setCarregando(true);
 
     try {
-      await cadastro(email, senha);
+      await cadastro(email, senha, nome.trim(), dataNascimento);
       navigate("/login");
-    } catch {
-      setErro("Erro ao criar conta. Tente novamente.");
+    } catch (err) {
+      const msg = err?.response?.data?.detail || "Erro ao criar conta. Tente novamente.";
+      setErro(msg);
     } finally {
       setCarregando(false);
     }
@@ -334,6 +361,40 @@ function Cadastro() {
           </h2>
 
           <form onSubmit={handleCadastro} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
+                Nome completo
+              </label>
+              <input
+                type="text"
+                placeholder="Seu nome completo"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                required
+                style={inputStyle}
+                onFocus={(e) => e.target.style.borderColor = "#10b981"}
+                onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
+                Data de nascimento
+              </label>
+              <input
+                type="date"
+                value={dataNascimento}
+                onChange={(e) => setDataNascimento(e.target.value)}
+                required
+                style={{
+                  ...inputStyle,
+                  colorScheme: "dark"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#10b981"}
+                onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+              />
+            </div>
 
             <div>
               <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>

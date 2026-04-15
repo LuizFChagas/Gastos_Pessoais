@@ -12,10 +12,12 @@ export const login = async (email, senha, rememberMe = false) => {
 };
 
 // CADASTRO
-export const cadastro = async (email, senha) => {
+export const cadastro = async (email, senha, nome, dataNascimento) => {
   const response = await api.post("/auth/cadastro", {
     email,
-    senha
+    senha,
+    nome,
+    data_nascimento: dataNascimento
   });
 
   return response.data;

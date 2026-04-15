@@ -32,7 +32,13 @@ function Login() {
 
     try {
       const data = await login(email, senha, manterConectado);
-      localStorage.setItem("token", data.access_token);
+      if (manterConectado) {
+        const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 dias
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("token_expiry", expiry);
+      } else {
+        sessionStorage.setItem("token", data.access_token);
+      }
       navigate("/app");
     } catch {
       setErro("Email ou senha inválidos");
