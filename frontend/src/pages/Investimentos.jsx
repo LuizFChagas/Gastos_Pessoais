@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import {
   listarInvestimentos,
@@ -368,13 +368,12 @@ export default function Investimentos() {
           <p style={{ color: "var(--subtext)", fontSize: "14px", marginTop: "16px" }}>Nenhum dado encontrado.</p>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={saldoMensal} margin={{ top: 10, right: 4, left: 0, bottom: 0 }} barCategoryGap="30%">
-              <defs>
-                <linearGradient id="gradBarSobra" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor="#10b981" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#059669" stopOpacity={0.7} />
-                </linearGradient>
-              </defs>
+            <BarChart data={saldoMensal} margin={{ top: 10, right: 8, left: 0, bottom: 0 }} barCategoryGap="35%">
+              <CartesianGrid
+                vertical={false}
+                stroke="var(--border)"
+                strokeOpacity={0.5}
+              />
               <XAxis
                 dataKey="mes"
                 tick={{ fill: "var(--subtext)", fontSize: 12 }}
@@ -390,13 +389,16 @@ export default function Investimentos() {
                   color: "var(--text)",
                   fontSize: "13px"
                 }}
-                cursor={{ fill: "rgba(16,185,129,0.08)" }}
+                cursor={{ fill: "rgba(255,255,255,0.04)" }}
               />
-              <Bar
-                dataKey="saldo"
-                fill="url(#gradBarSobra)"
-                radius={[6, 6, 0, 0]}
-              />
+              <Bar dataKey="saldo" radius={[6, 6, 0, 0]}>
+                {saldoMensal.map((_, i) => (
+                  <Cell
+                    key={i}
+                    fill={i === saldoMensal.length - 1 ? "#10b981" : "#1e3a5f"}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         )}
