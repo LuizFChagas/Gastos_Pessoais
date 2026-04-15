@@ -151,13 +151,15 @@ export default function Investimentos() {
     try { setPosicoes(await listarInvestimentos()); } catch { }
   };
 
-  /* Busca os últimos 12 meses de gastos e calcula saldo livre por mês */
+  /* Busca o ano atual e calcula saldo livre por mês (Janeiro → mês atual) */
   const carregarSaldoMensal = async () => {
     try {
-      const fim = new Date();
-      const inicio = new Date();
-      inicio.setMonth(inicio.getMonth() - 11);
-      inicio.setDate(1);
+      const agora = new Date();
+      const anoAtual = agora.getFullYear();
+      const mesAtual = agora.getMonth(); // 0-indexed
+
+      const inicio = new Date(anoAtual, 0, 1);  // 1 de Janeiro
+      const fim    = new Date(agora);
 
       const gastos = await gastosPorIntervalo(inicio.toISOString(), fim.toISOString());
 
@@ -172,14 +174,12 @@ export default function Investimentos() {
 
       const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
-      /* Sempre gera os 12 meses (zeros para meses sem dados) */
-      const dados = Array.from({ length: 12 }, (_, i) => {
-        const d = new Date(inicio);
-        d.setMonth(d.getMonth() + i);
-        const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      /* Janeiro até o mês atual, zeros para meses sem dados */
+      const dados = Array.from({ length: mesAtual + 1 }, (_, i) => {
+        const chave = `${anoAtual}-${String(i + 1).padStart(2, "0")}`;
         const v = porMes[chave] || { entradas: 0, saidas: 0 };
         return {
-          mes: MESES[d.getMonth()],
+          mes: MESES[i],
           saldo: Math.max(0, v.entradas - v.saidas),
           entradas: v.entradas,
           saidas: v.saidas,
