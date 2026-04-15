@@ -8,6 +8,7 @@ function Login() {
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [manterConectado, setManterConectado] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [darkMode, setDarkMode] = useState(
     () => document.body.classList.contains("dark")
   );
@@ -369,16 +370,30 @@ function Login() {
               <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
                 Senha
               </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                required
-                style={inputStyle}
-                onFocus={(e) => e.target.style.borderColor = "#10b981"}
-                onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={mostrarSenha ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  required
+                  style={{ ...inputStyle, paddingRight: "42px" }}
+                  onFocus={(e) => e.target.style.borderColor = "#10b981"}
+                  onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(!mostrarSenha)}
+                  style={{
+                    position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+                    background: "transparent", border: "none", cursor: "pointer",
+                    color: "#7d8fa8", fontSize: "16px", padding: "0", lineHeight: 1,
+                    display: "flex", alignItems: "center"
+                  }}
+                >
+                  {mostrarSenha ? "🙈" : "👁️"}
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
