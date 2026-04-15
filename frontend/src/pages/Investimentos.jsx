@@ -171,17 +171,20 @@ export default function Investimentos() {
       });
 
       const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-      const dados = Object.entries(porMes)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([chave, v]) => {
-          const [, mes] = chave.split("-");
-          return {
-            mes: MESES[Number(mes) - 1],
-            saldo: Math.max(0, v.entradas - v.saidas),
-            entradas: v.entradas,
-            saidas: v.saidas,
-          };
-        });
+
+      /* Sempre gera os 12 meses (zeros para meses sem dados) */
+      const dados = Array.from({ length: 12 }, (_, i) => {
+        const d = new Date(inicio);
+        d.setMonth(d.getMonth() + i);
+        const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const v = porMes[chave] || { entradas: 0, saidas: 0 };
+        return {
+          mes: MESES[d.getMonth()],
+          saldo: Math.max(0, v.entradas - v.saidas),
+          entradas: v.entradas,
+          saidas: v.saidas,
+        };
+      });
 
       setSaldoMensal(dados);
     } catch { }
