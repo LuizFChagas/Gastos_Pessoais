@@ -257,19 +257,24 @@ function Dashboard() {
       </div>
 
       {/* CARDS */}
-      <div style={{
+      <div style={isMobile ? {
         display: "grid",
-        gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr",
+        gridTemplateColumns: "1fr 1fr",
         gap: "12px",
         marginTop: "20px",
         width: "100%"
+      } : {
+        display: "flex",
+        gap: "20px",
+        marginTop: "20px"
       }}>
-        <BalanceCard title="Entradas" value={resumo.entradas || 0} color="#22c55e" />
-        <BalanceCard title="Saídas"   value={resumo.saidas   || 0} color="#ef4444" />
+        <BalanceCard title="Entradas" value={resumo.entradas || 0} color="#22c55e" isMobile={isMobile} />
+        <BalanceCard title="Saídas"   value={resumo.saidas   || 0} color="#ef4444" isMobile={isMobile} />
         <BalanceCard
           title="Saldo"
           value={resumo.saldo || 0}
           color="#3b82f6"
+          isMobile={isMobile}
           extraStyle={isMobile ? { gridColumn: "1 / -1" } : {}}
         />
       </div>

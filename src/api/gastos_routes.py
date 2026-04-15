@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, extract
 
 from src.database.deps import get_db
-from src.database.models import Gasto, Extrato
+from src.database.models import Gasto, Extrato, Usuario
 
 from src.services.ingestao_manual import adicionar_gasto_manual
 from src.services.ingestao_extrato_bancario import importar_extrato
@@ -79,7 +79,9 @@ def importar_extrato_bancario(
     db.commit()
     db.refresh(extrato)
 
-    importar_extrato(caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco)
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    nome_usuario = usuario.nome if usuario else None
+    importar_extrato(caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco, nome_usuario=nome_usuario)
 
     logger.info(f"Usuário {usuario_id} importou arquivo: {file.filename}")
 
@@ -378,7 +380,7 @@ def recategorizar_lote(
     db.query(Gasto).filter(
         Gasto.id.in_(request.ids),
         Gasto.usuario_id == usuario_id
-    ).update({"categoria": request.categoria}, synchronize_session=False)
+    ).update({"categoria": request.categoria, "categoria_manual": True}, synchronize_session=False)
     db.commit()
     return {"message": f"{len(request.ids)} transações recategorizadas"}
 
@@ -405,6 +407,7 @@ def editar_gasto(
         gasto.valor = request.valor
     if request.categoria is not None:
         gasto.categoria = request.categoria
+        gasto.categoria_manual = True
     if request.tipo is not None:
         gasto.tipo = request.tipo
     if request.banco is not None:
