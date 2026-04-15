@@ -1,5 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+
+const DICAS = [
+  "Acompanhe seus gastos diariamente para manter o controle financeiro.",
+  "Reserve pelo menos 10% da sua renda todo mês.",
+  "Evite parcelamentos longos — juros corroem seu orçamento.",
+  "Revise suas assinaturas mensais e cancele o que não usa.",
+  "Tenha uma reserva de emergência de 3 a 6 meses de despesas.",
+  "Prefira pagar à vista e negocie desconto.",
+  "Invista o dinheiro que sobra antes de gastar o resto.",
+  "Pequenos gastos diários somam muito no fim do mês.",
+  "Compare preços antes de comprar — todo real conta.",
+  "Defina metas financeiras claras para se manter motivada.",
+];
 
 const MENU = [
   { to: "/app",                icon: "📊", label: "Dashboard"     },
@@ -13,6 +26,8 @@ function Layout({ children, toggleTheme, darkMode }) {
   const location  = useLocation();
   const navigate  = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  const dica = useMemo(() => DICAS[new Date().getDate() % DICAS.length], []);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -164,10 +179,24 @@ function Layout({ children, toggleTheme, darkMode }) {
           ))}
         </div>
 
+        {/* DICA DO DIA */}
+        <div style={{
+          marginTop: "auto",
+          background: "linear-gradient(135deg, #059669, #10b981)",
+          borderRadius: "14px",
+          padding: "16px",
+          marginBottom: "12px",
+          color: "white",
+        }}>
+          <div style={{ fontSize: "18px", marginBottom: "8px" }}>↗</div>
+          <div style={{ fontWeight: "700", fontSize: "13px", marginBottom: "6px" }}>Dica do dia</div>
+          <div style={{ fontSize: "12px", lineHeight: "1.5", opacity: 0.9 }}>{dica}</div>
+        </div>
+
         <button
           onClick={handleLogout}
           style={{
-            marginTop: "auto", padding: "10px",
+            padding: "10px",
             borderRadius: "8px", border: "1px solid var(--border)",
             backgroundColor: "transparent", color: "#ef4444",
             cursor: "pointer", fontWeight: "500", fontSize: "14px", textAlign: "left"
