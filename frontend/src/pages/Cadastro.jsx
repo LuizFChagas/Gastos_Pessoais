@@ -475,15 +475,15 @@ function Cadastro() {
               {carregando ? "Criando conta..." : "Criar conta"}
             </button>
 
+            <p style={{ textAlign: "center", margin: "4px 0 0", fontSize: "14px", color: "#7d8fa8" }}>
+              Já tem conta?{" "}
+              <Link to="/login" style={{ color: "#10b981", fontWeight: "600", textDecoration: "none" }}>
+                Entrar
+              </Link>
+            </p>
+
           </form>
         </div>
-
-        <p style={{ textAlign: "center", marginTop: "20px", fontSize: "14px", color: "#7d8fa8" }}>
-          Já tem conta?{" "}
-          <Link to="/login" style={{ color: "#10b981", fontWeight: "600", textDecoration: "none" }}>
-            Entrar
-          </Link>
-        </p>
 
       </div>
     </div>
