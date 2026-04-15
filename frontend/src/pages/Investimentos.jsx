@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid
+  AreaChart, Area, XAxis, YAxis, defs, linearGradient,
 } from "recharts";
 import {
   listarInvestimentos,
@@ -336,38 +336,73 @@ export default function Investimentos() {
         </div>
       </div>
 
-      {/* ── SALDO LIVRE POR MÊS ── */}
+      {/* ── SOBRA MENSAL ── */}
       <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
           <div>
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "15px", fontWeight: "600" }}>
-              Saldo disponível para investir
+              Dinheiro não gasto por mês
             </h3>
             <span style={{ fontSize: "13px", color: "var(--subtext)" }}>
-              Dinheiro livre (entradas − saídas) por mês
+              O que sobrou de cada mês (ganhos − gastos) — potencial para investir
             </span>
           </div>
+          {saldoMensal.length > 0 && (() => {
+            const ultimo = saldoMensal[saldoMensal.length - 1]?.saldo || 0;
+            const penultimo = saldoMensal[saldoMensal.length - 2]?.saldo || 0;
+            const tendencia = penultimo > 0
+              ? (((ultimo - penultimo) / penultimo) * 100).toFixed(1)
+              : null;
+            return tendencia !== null ? (
+              <span style={{
+                fontSize: "15px", fontWeight: "700",
+                color: Number(tendencia) >= 0 ? "#10b981" : "#ef4444"
+              }}>
+                {Number(tendencia) >= 0 ? "+" : ""}{tendencia}%
+              </span>
+            ) : null;
+          })()}
         </div>
 
         {saldoMensal.length === 0 ? (
-          <p style={{ color: "var(--subtext)", fontSize: "14px" }}>Nenhum dado encontrado.</p>
+          <p style={{ color: "var(--subtext)", fontSize: "14px", marginTop: "16px" }}>Nenhum dado encontrado.</p>
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={saldoMensal} barSize={28}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="mes" tick={{ fill: "var(--subtext)", fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis
-                tick={{ fill: "var(--subtext)", fontSize: 11 }}
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={saldoMensal} margin={{ top: 20, right: 4, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradSobra" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="#10b981" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+
+              <XAxis
+                dataKey="mes"
+                tick={{ fill: "var(--subtext)", fontSize: 12 }}
                 axisLine={false} tickLine={false}
-                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
               />
+              <YAxis hide />
               <Tooltip
-                formatter={(v) => [fmt(v), "Saldo livre"]}
-                contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text)" }}
-                cursor={{ fill: "rgba(16,185,129,0.06)" }}
+                formatter={(v) => [fmt(v), "Sobrou"]}
+                contentStyle={{
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "10px",
+                  color: "var(--text)",
+                  fontSize: "13px"
+                }}
+                cursor={{ stroke: "rgba(16,185,129,0.3)", strokeWidth: 1 }}
               />
-              <Bar dataKey="saldo" fill="#10b981" radius={[6, 6, 0, 0]} />
-            </BarChart>
+              <Area
+                type="monotone"
+                dataKey="saldo"
+                stroke="#10b981"
+                strokeWidth={2.5}
+                fill="url(#gradSobra)"
+                dot={false}
+                activeDot={{ r: 5, fill: "#10b981", stroke: "var(--card)", strokeWidth: 2 }}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         )}
       </div>
