@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const MENU = [
-  { to: "/app",            icon: "📊", label: "Dashboard"  },
-  { to: "/app/transacoes", icon: "💳", label: "Transações" },
-  { to: "/app/relatorios", icon: "📈", label: "Relatórios" },
-  { to: "/app/importar",   icon: "📁", label: "Importar"   },
+  { to: "/app",                icon: "📊", label: "Dashboard"     },
+  { to: "/app/transacoes",     icon: "💳", label: "Transações"    },
+  { to: "/app/relatorios",     icon: "📈", label: "Relatórios"    },
+  { to: "/app/investimentos",  icon: "💹", label: "Investimentos" },
+  { to: "/app/importar",       icon: "📁", label: "Importar"      },
 ];
 
 function Layout({ children, toggleTheme, darkMode }) {
