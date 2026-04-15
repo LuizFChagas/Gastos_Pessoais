@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  AreaChart, Area, XAxis, YAxis,
+  BarChart, Bar, XAxis, YAxis,
 } from "recharts";
 import {
   listarInvestimentos,
@@ -338,7 +338,7 @@ export default function Investimentos() {
 
       {/* ── SOBRA MENSAL ── */}
       <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <div>
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "15px", fontWeight: "600" }}>
               Dinheiro não gasto por mês
@@ -367,15 +367,14 @@ export default function Investimentos() {
         {saldoMensal.length === 0 ? (
           <p style={{ color: "var(--subtext)", fontSize: "14px", marginTop: "16px" }}>Nenhum dado encontrado.</p>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={saldoMensal} margin={{ top: 20, right: 4, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={saldoMensal} margin={{ top: 10, right: 4, left: 0, bottom: 0 }} barCategoryGap="30%">
               <defs>
-                <linearGradient id="gradSobra" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor="#10b981" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                <linearGradient id="gradBarSobra" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="#10b981" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#059669" stopOpacity={0.7} />
                 </linearGradient>
               </defs>
-
               <XAxis
                 dataKey="mes"
                 tick={{ fill: "var(--subtext)", fontSize: 12 }}
@@ -391,18 +390,14 @@ export default function Investimentos() {
                   color: "var(--text)",
                   fontSize: "13px"
                 }}
-                cursor={{ stroke: "rgba(16,185,129,0.3)", strokeWidth: 1 }}
+                cursor={{ fill: "rgba(16,185,129,0.08)" }}
               />
-              <Area
-                type="monotone"
+              <Bar
                 dataKey="saldo"
-                stroke="#10b981"
-                strokeWidth={2.5}
-                fill="url(#gradSobra)"
-                dot={false}
-                activeDot={{ r: 5, fill: "#10b981", stroke: "var(--card)", strokeWidth: 2 }}
+                fill="url(#gradBarSobra)"
+                radius={[6, 6, 0, 0]}
               />
-            </AreaChart>
+            </BarChart>
           </ResponsiveContainer>
         )}
       </div>
