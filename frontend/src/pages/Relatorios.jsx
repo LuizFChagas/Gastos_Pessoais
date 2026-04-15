@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
 import { gastosPorIntervalo } from "../api/gastosApi";
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+};
 import { CATEGORIA_STYLE, getCategoriaStyle, capitalizar } from "../utils/categorias";
 import {
   BarChart, Bar, AreaChart, Area, LineChart, Line,
@@ -70,6 +80,7 @@ const Vazio = () => (
 );
 
 function Relatorios() {
+  const isMobile = useIsMobile();
   const [periodo, setPeriodo] = useState("6");
   const [transacoes, setTransacoes] = useState([]);
   const [activeCat, setActiveCat] = useState(null);
@@ -219,14 +230,21 @@ function Relatorios() {
     <div style={{ paddingBottom: "40px" }}>
 
       {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between",
+        alignItems: isMobile ? "flex-start" : "center",
+        flexDirection: isMobile ? "column" : "row",
+        gap: isMobile ? "12px" : 0,
+        marginBottom: "24px"
+      }}>
         <div>
           <h1 style={{ margin: 0, color: "var(--text)" }}>Relatórios</h1>
           <span style={{ color: "var(--subtext)" }}>Análise detalhada dos seus gastos</span>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", width: isMobile ? "100%" : "auto" }}>
           {["3","6","12"].map(p => (
             <button key={p} onClick={() => setPeriodo(p)} style={{
+              flex: isMobile ? 1 : "none",
               padding: "8px 16px", borderRadius: "8px", fontSize: "13px",
               fontWeight: "600", cursor: "pointer", border: "1px solid",
               borderColor: periodo === p ? "#10b981" : "var(--border)",
@@ -258,7 +276,7 @@ function Relatorios() {
       </div>
 
       {/* ROW 2 — Saldo histórico + Evolução por categoria */}
-      <div style={{ display: "flex", gap: "24px", marginBottom: "24px" }}>
+      <div style={{ display: "flex", gap: "24px", marginBottom: "24px", flexDirection: isMobile ? "column" : "row" }}>
         <div style={{ ...cardStyle, flex: 1 }}>
           <h3 style={{ color: "var(--text)", margin: "0 0 16px" }}>Saldo histórico</h3>
           {saldoHistorico.length === 0 ? <Vazio /> : (
@@ -303,12 +321,12 @@ function Relatorios() {
       </div>
 
       {/* ROW 3 — Donut categorias + Donut tipo pagamento */}
-      <div style={{ display: "flex", gap: "24px", marginBottom: "24px" }}>
+      <div style={{ display: "flex", gap: "24px", marginBottom: "24px", flexDirection: isMobile ? "column" : "row" }}>
 
         <div style={{ ...cardStyle, flex: 1 }}>
           <h3 style={{ color: "var(--text)", margin: "0 0 12px" }}>Gastos por categoria</h3>
           {donutCategorias.length === 0 ? <Vazio /> : (
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: isMobile ? "center" : "center", flexDirection: isMobile ? "column" : "row", gap: "16px" }}>
               <div style={{ position: "relative", width: 180, height: 180, flexShrink: 0 }}>
                 <PieChart width={180} height={180}>
                   <Pie data={donutCategorias} dataKey="value" innerRadius={48} outerRadius={76}
@@ -337,7 +355,7 @@ function Relatorios() {
                   )}
                 </div>
               </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ flex: 1, width: isMobile ? "100%" : "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
                 {donutCategorias.map((item, i) => {
                   const s = getCategoriaStyle(item.name);
                   return (
@@ -361,7 +379,7 @@ function Relatorios() {
         <div style={{ ...cardStyle, flex: 1 }}>
           <h3 style={{ color: "var(--text)", margin: "0 0 12px" }}>Tipo de pagamento</h3>
           {donutTipo.length === 0 ? <Vazio /> : (
-            <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+            <div style={{ display: "flex", alignItems: isMobile ? "center" : "center", flexDirection: isMobile ? "column" : "row", gap: "24px" }}>
               <div style={{ position: "relative", width: 180, height: 180, flexShrink: 0 }}>
                 <PieChart width={180} height={180}>
                   <Pie data={donutTipo} dataKey="value" innerRadius={48} outerRadius={76}
@@ -408,7 +426,7 @@ function Relatorios() {
       </div>
 
       {/* ROW 4 — Dia da semana + Ticket médio */}
-      <div style={{ display: "flex", gap: "24px", marginBottom: "24px" }}>
+      <div style={{ display: "flex", gap: "24px", marginBottom: "24px", flexDirection: isMobile ? "column" : "row" }}>
 
         <div style={{ ...cardStyle, flex: 1 }}>
           <h3 style={{ color: "var(--text)", margin: "0 0 16px" }}>Gastos por dia da semana</h3>
@@ -451,7 +469,7 @@ function Relatorios() {
       </div>
 
       {/* ROW 5 — Top 5 + Projeção */}
-      <div style={{ display: "flex", gap: "24px" }}>
+      <div style={{ display: "flex", gap: "24px", flexDirection: isMobile ? "column" : "row" }}>
 
         <div style={{ ...cardStyle, flex: 1 }}>
           <h3 style={{ color: "var(--text)", margin: "0 0 16px" }}>Top 5 maiores gastos</h3>

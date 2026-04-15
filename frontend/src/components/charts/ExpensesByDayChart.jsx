@@ -181,8 +181,8 @@ function ExpensesByDayChart({ periodo, mesSelecionado, anoSelecionado }) {
           Nenhuma movimentação encontrada
         </div>
       ) : (
-        <div style={{ flex: 1 }}>
-          <ResponsiveContainer width="100%" height="100%">
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <ResponsiveContainer width="100%" height="100%" minHeight={200}>
             {periodo === "ano" ? (
               <BarChart data={data} barGap={10}
                 margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>

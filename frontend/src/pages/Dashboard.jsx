@@ -6,6 +6,16 @@ import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChar
 import ExpensesByDayChart from "../components/charts/ExpensesByDayChart";
 import { gastosPorIntervalo, listarMesesDisponiveis } from "../api/gastosApi";
 
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+};
+
 const NOMES_MESES = [
   "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
@@ -17,6 +27,7 @@ const NOMES_MESES_MIN = [
 ];
 
 function Dashboard() {
+  const isMobile = useIsMobile();
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
@@ -142,13 +153,19 @@ function Dashboard() {
     <div>
 
       {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: isMobile ? "flex-start" : "center",
+        flexDirection: isMobile ? "column" : "row",
+        gap: isMobile ? "12px" : 0
+      }}>
         <div>
           <h1 style={{ margin: 0, color: "var(--text)" }}>Dashboard</h1>
           <span style={{ color: "var(--subtext)" }}>{getSubtitulo()}</span>
         </div>
 
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
 
           <select
             value={periodo}
@@ -156,7 +173,6 @@ function Dashboard() {
               const novoPeriodo = e.target.value;
               setPeriodo(novoPeriodo);
               if (novoPeriodo === "mes_custom") {
-                // Usa o mês mais recente com dados, senão o mês atual
                 if (mesesComDados.length > 0) {
                   const ultimo = mesesComDados[mesesComDados.length - 1];
                   setAnoSelecionado(ultimo.ano);
@@ -171,7 +187,8 @@ function Dashboard() {
             style={{
               padding: "8px 12px", borderRadius: "8px",
               border: "1px solid var(--border)",
-              backgroundColor: "var(--card)", color: "var(--text)"
+              backgroundColor: "var(--card)", color: "var(--text)",
+              flex: isMobile ? "1 1 auto" : "none"
             }}
           >
             <option value="semana">Últimos 7 dias</option>
@@ -187,7 +204,8 @@ function Dashboard() {
                 style={{
                   padding: "8px", borderRadius: "8px",
                   border: "1px solid var(--border)",
-                  backgroundColor: "var(--card)", color: "var(--text)"
+                  backgroundColor: "var(--card)", color: "var(--text)",
+                  flex: isMobile ? "1 1 auto" : "none"
                 }}
               >
                 {mesesDoAno.length > 0 ? (
@@ -207,7 +225,8 @@ function Dashboard() {
                 style={{
                   padding: "8px", borderRadius: "8px",
                   border: "1px solid var(--border)",
-                  backgroundColor: "var(--card)", color: "var(--text)"
+                  backgroundColor: "var(--card)", color: "var(--text)",
+                  flex: isMobile ? "0 0 auto" : "none"
                 }}
               >
                 {anosDisponiveis.length > 0 ? (
@@ -228,7 +247,8 @@ function Dashboard() {
             style={{
               backgroundColor: "#10b981", color: "white", border: "none",
               padding: "10px 20px", borderRadius: "10px",
-              fontWeight: "bold", cursor: "pointer"
+              fontWeight: "bold", cursor: "pointer",
+              flexShrink: 0
             }}
           >
             + Nova
@@ -237,18 +257,35 @@ function Dashboard() {
       </div>
 
       {/* CARDS */}
-      <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr",
+        gap: "12px",
+        marginTop: "20px",
+        width: "100%"
+      }}>
         <BalanceCard title="Entradas" value={resumo.entradas || 0} color="#22c55e" />
         <BalanceCard title="Saídas"   value={resumo.saidas   || 0} color="#ef4444" />
-        <BalanceCard title="Saldo"    value={resumo.saldo    || 0} color="#3b82f6" />
+        <BalanceCard
+          title="Saldo"
+          value={resumo.saldo || 0}
+          color="#3b82f6"
+          extraStyle={isMobile ? { gridColumn: "1 / -1" } : {}}
+        />
       </div>
 
       {/* GRÁFICOS */}
-      <div style={{ display: "flex", gap: "30px", marginTop: "30px", alignItems: "stretch" }}>
-        <div style={{ flex: 1 }}>
-          <ExpensesByCategoryChart data={gastos} />
+      <div style={{
+        display: "flex",
+        gap: "20px",
+        marginTop: "24px",
+        alignItems: "stretch",
+        flexDirection: isMobile ? "column" : "row"
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <ExpensesByCategoryChart data={gastos} isMobile={isMobile} />
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <ExpensesByDayChart
             periodo={periodo === "mes_custom" ? "mes" : periodo}
             mesSelecionado={mesSelecionado}
@@ -276,7 +313,7 @@ function Dashboard() {
             backgroundColor: "var(--card)",
             padding: "28px",
             borderRadius: "20px",
-            width: "440px",
+            width: "min(440px, calc(100vw - 32px))",
             color: "var(--text)",
             boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
             border: "1px solid var(--border)"
