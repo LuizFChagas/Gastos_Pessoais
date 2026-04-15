@@ -257,19 +257,23 @@ function Importar() {
                 border: "1px solid var(--border)"
               }}
             >
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center", flex: 1, minWidth: 0 }}>
                 <div style={{
                   backgroundColor: "var(--input)",
                   padding: "8px",
                   borderRadius: "8px",
                   fontSize: "18px",
-                  lineHeight: 1
+                  lineHeight: 1,
+                  flexShrink: 0
                 }}>
                   📄
                 </div>
 
-                <div>
-                  <div style={{ fontWeight: "500", color: "var(--text)", fontSize: "14px" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{
+                    fontWeight: "500", color: "var(--text)", fontSize: "14px",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                  }}>
                     {item.nome_arquivo}
                   </div>
                   <div style={{ fontSize: "12px", color: "var(--subtext)", marginTop: "2px" }}>

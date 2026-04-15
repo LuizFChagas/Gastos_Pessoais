@@ -780,3 +780,48 @@
   .cta-title { font-size: 40px; letter-spacing: -1.5px; }
   .landing-footer { padding: 24px; flex-direction: column; gap: 10px; text-align: center; }
 }
+
+@media (max-width: 480px) {
+  /* Navbar — esconde texto do logo, mantém ícone + botões */
+  .landing-nav { padding: 12px 16px; }
+  .landing-logo { font-size: 16px; gap: 8px; }
+  .nav-btn-outline { padding: 7px 14px; font-size: 13px; }
+  .nav-btn-green  { padding: 7px 14px; font-size: 13px; }
+
+  /* Hero */
+  .hero { padding: 80px 16px 48px; }
+  .hero-inner { gap: 36px; }
+  .hero-title { font-size: 36px; letter-spacing: -1.2px; }
+  .hero-subtitle { font-size: 15px; }
+  .hero-buttons { gap: 10px; }
+  .btn-primary, .btn-ghost { padding: 12px 22px; font-size: 14px; width: 100%; justify-content: center; box-sizing: border-box; }
+
+  /* Preview card — limita altura e esconde transações extras */
+  .preview-main { padding: 16px; }
+  .preview-balance-value { font-size: 12px; }
+  .preview-balance-card  { padding: 10px 8px; }
+  .preview-transactions .preview-tx:nth-child(n+4) { display: none; }
+
+  /* Features */
+  .features-wrapper { padding: 50px 0; }
+  .features-inner   { padding: 0 16px; }
+  .section-heading  { font-size: 30px; letter-spacing: -1px; }
+  .section-sub      { font-size: 15px; }
+  .feature-card     { padding: 24px; }
+
+  /* Story */
+  .story-section { padding: 50px 0; }
+  .story-inner   { padding: 0 16px; gap: 36px; }
+
+  /* CTA */
+  .cta-section   { padding: 60px 16px; }
+  .cta-title     { font-size: 32px; letter-spacing: -1px; }
+  .cta-subtitle  { font-size: 15px; }
+  .cta-buttons   { flex-direction: column; align-items: stretch; }
+  .cta-buttons .btn-primary,
+  .cta-buttons .btn-ghost  { width: 100%; justify-content: center; }
+
+  /* Footer */
+  .landing-footer { padding: 20px 16px; }
+  .footer-text    { font-size: 12px; }
+}

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -41,6 +41,7 @@ class Gasto(Base):
     data_hora = Column(DateTime, default=datetime.utcnow, index=True)
     data_original = Column(DateTime, nullable=True)
     parcela = Column(String, nullable=True)
+    transferencia_interna = Column(Boolean, default=False, nullable=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
     extrato_id = Column(Integer, ForeignKey("extratos.id"), nullable=True, index=True)
 

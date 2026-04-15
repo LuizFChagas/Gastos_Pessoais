@@ -1,8 +1,23 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
+const MENU = [
+  { to: "/app",            icon: "📊", label: "Dashboard"  },
+  { to: "/app/transacoes", icon: "💳", label: "Transações" },
+  { to: "/app/relatorios", icon: "📈", label: "Relatórios" },
+  { to: "/app/importar",   icon: "📁", label: "Importar"   },
+];
+
 function Layout({ children, toggleTheme, darkMode }) {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location  = useLocation();
+  const navigate  = useNavigate();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const isActive = (path) => location.pathname === path;
 
@@ -11,6 +26,96 @@ function Layout({ children, toggleTheme, darkMode }) {
     navigate("/");
   };
 
+  /* ── MOBILE ── */
+  if (isMobile) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", maxWidth: "100vw", overflowX: "hidden" }}>
+
+        {/* TOP BAR */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 50,
+          backgroundColor: "var(--card)",
+          borderBottom: "1px solid var(--border)",
+          padding: "12px 16px",
+          display: "flex", alignItems: "center", justifyContent: "space-between"
+        }}>
+          <h2 style={{ color: "#22c55e", fontWeight: "700", margin: 0, fontSize: "18px" }}>
+            FinanceIA
+          </h2>
+          <button
+            onClick={toggleTheme}
+            style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "20px" }}
+          >
+            {darkMode ? "🌙" : "☀️"}
+          </button>
+        </div>
+
+        {/* CONTEÚDO */}
+        <div style={{
+          flex: 1,
+          backgroundColor: "var(--bg)",
+          padding: "16px",
+          paddingBottom: "80px",
+          overflowY: "auto",
+          overflowX: "hidden",
+          width: "100%",
+          boxSizing: "border-box"
+        }}>
+          {children}
+        </div>
+
+        {/* BOTTOM NAV */}
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
+          backgroundColor: "var(--card)",
+          borderTop: "1px solid var(--border)",
+          display: "flex"
+        }}>
+          {MENU.map(({ to, icon, label }) => (
+            <Link
+              key={to}
+              to={to}
+              style={{
+                flex: 1,
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                padding: "8px 2px 10px",
+                textDecoration: "none",
+                color: isActive(to) ? "#10b981" : "var(--subtext)",
+                fontSize: "10px",
+                fontWeight: isActive(to) ? "600" : "400",
+                gap: "3px",
+                borderTop: isActive(to) ? "2px solid #10b981" : "2px solid transparent",
+                transition: "all 0.15s"
+              }}
+            >
+              <span style={{ fontSize: "18px" }}>{icon}</span>
+              {label}
+            </Link>
+          ))}
+          <button
+            onClick={handleLogout}
+            style={{
+              flex: 1,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              padding: "8px 2px 10px",
+              border: "none", borderTop: "2px solid transparent",
+              background: "transparent",
+              color: "#ef4444",
+              fontSize: "10px", fontWeight: "400",
+              gap: "3px", cursor: "pointer"
+            }}
+          >
+            <span style={{ fontSize: "18px" }}>🚪</span>
+            Sair
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── DESKTOP ── */
   return (
     <div style={{ display: "flex", height: "100vh" }}>
 
@@ -24,12 +129,8 @@ function Layout({ children, toggleTheme, darkMode }) {
         flexDirection: "column",
         boxShadow: "var(--shadow)"
       }}>
-
-        {/* HEADER */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ color: "#22c55e", fontWeight: "bold", margin: 0 }}>
-            FinanceIA
-          </h2>
+          <h2 style={{ color: "#22c55e", fontWeight: "bold", margin: 0 }}>FinanceIA</h2>
           <button
             onClick={toggleTheme}
             style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "18px" }}
@@ -38,14 +139,8 @@ function Layout({ children, toggleTheme, darkMode }) {
           </button>
         </div>
 
-        {/* MENU */}
         <div style={{ marginTop: "40px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
-          {[
-            { to: "/app", icon: "📊", label: "Dashboard" },
-            { to: "/app/transacoes", icon: "💳", label: "Transações" },
-            { to: "/app/relatorios", icon: "📈", label: "Relatórios" },
-            { to: "/app/importar", icon: "📁", label: "Importar" }
-          ].map(({ to, icon, label }) => (
+          {MENU.map(({ to, icon, label }) => (
             <Link
               key={to}
               to={to}
@@ -57,9 +152,7 @@ function Layout({ children, toggleTheme, darkMode }) {
                 textDecoration: "none",
                 fontWeight: isActive(to) ? "600" : "400",
                 fontSize: "14px",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
+                display: "flex", alignItems: "center", gap: "10px",
                 transition: "background 0.15s, color 0.15s"
               }}
             >
@@ -68,25 +161,17 @@ function Layout({ children, toggleTheme, darkMode }) {
           ))}
         </div>
 
-        {/* BOTÃO SAIR */}
         <button
           onClick={handleLogout}
           style={{
-            marginTop: "auto",
-            padding: "10px",
-            borderRadius: "8px",
-            border: "1px solid var(--border)",
-            backgroundColor: "transparent",
-            color: "#ef4444",
-            cursor: "pointer",
-            fontWeight: "500",
-            fontSize: "14px",
-            textAlign: "left"
+            marginTop: "auto", padding: "10px",
+            borderRadius: "8px", border: "1px solid var(--border)",
+            backgroundColor: "transparent", color: "#ef4444",
+            cursor: "pointer", fontWeight: "500", fontSize: "14px", textAlign: "left"
           }}
         >
           🚪 Sair
         </button>
-
       </div>
 
       {/* CONTEÚDO */}

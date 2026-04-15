@@ -3,6 +3,16 @@ import { listarGastos, deletarGasto, editarGasto, recategorizarLote } from "../a
 import AddTransactionForm from "../components/AddTransactionForm";
 import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
 
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+};
+
 const TIPO_FILTROS = [
   { key: "todos",       label: "Todos",      icon: "≡",  iconColor: null },
   { key: "entradas",    label: "Entradas",   icon: "↑",  iconColor: "#22c55e" },
@@ -10,10 +20,12 @@ const TIPO_FILTROS = [
   { key: "pix",         label: "Pix",        icon: "⚡", iconColor: null },
   { key: "debito",      label: "Débito",     icon: "💳", iconColor: null },
   { key: "credito",     label: "Crédito",    icon: "💳", iconColor: null },
-  { key: "parcelados",  label: "Parcelados", icon: "🔄", iconColor: null },
+  { key: "parcelados",  label: "Parcelados",   icon: "🔄", iconColor: null },
+  { key: "internas",    label: "Internas",     icon: "↔",  iconColor: "#94a3b8" },
 ];
 
 function Transacoes() {
+  const isMobile = useIsMobile();
   const [transacoes, setTransacoes] = useState([]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
   const [busca, setBusca] = useState("");
@@ -128,6 +140,7 @@ function Transacoes() {
     if (tipoFiltro === "debito")   return !t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix");
     if (tipoFiltro === "credito")    return t.banco?.toLowerCase().includes("fatura");
     if (tipoFiltro === "parcelados") return !!t.parcela;
+    if (tipoFiltro === "internas")   return !!t.transferencia_interna;
     return true;
   };
 
@@ -170,21 +183,28 @@ function Transacoes() {
     <div>
 
       {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: isMobile ? "flex-start" : "center",
+        flexDirection: isMobile ? "column" : "row",
+        gap: isMobile ? "12px" : 0
+      }}>
         <div>
           <h1 style={{ margin: 0, color: "var(--text)" }}>Transações</h1>
           <span style={{ color: "var(--subtext)" }}>
             {transacoes.length} registros encontrados
           </span>
         </div>
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "8px", width: isMobile ? "100%" : "auto" }}>
           <button
             onClick={() => modoSelecao ? cancelarModoSelecao() : setModoSelecao(true)}
             style={{
+              flex: isMobile ? 1 : "none",
               backgroundColor: modoSelecao ? "rgba(16,185,129,0.12)" : "transparent",
               color: modoSelecao ? "#10b981" : "var(--subtext)",
               border: `1px solid ${modoSelecao ? "#10b981" : "var(--border)"}`,
-              padding: "10px 20px", borderRadius: "10px",
+              padding: "10px 16px", borderRadius: "10px",
               fontWeight: "600", cursor: "pointer", fontSize: "14px"
             }}
           >
@@ -193,8 +213,9 @@ function Transacoes() {
           <button
             onClick={() => setOpenModal(true)}
             style={{
+              flex: isMobile ? 1 : "none",
               backgroundColor: "#10b981", color: "white", border: "none",
-              padding: "10px 20px", borderRadius: "10px",
+              padding: "10px 16px", borderRadius: "10px",
               fontWeight: "bold", cursor: "pointer"
             }}
           >
@@ -269,6 +290,82 @@ function Transacoes() {
               const style = getCategoriaStyle(t.categoria);
               const isSelecionado = selecionados.has(t.id);
 
+              const tags = (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+                  {t.transferencia_interna && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(148,163,184,0.12)", color: "#94a3b8", border: "1px solid rgba(148,163,184,0.3)", whiteSpace: "nowrap" }}>↔ Interna</span>
+                  )}
+                  {isEstorno && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)", whiteSpace: "nowrap" }}>↩ Estorno</span>
+                  )}
+                  {isRecorrente && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}>🔁 Recorrente</span>
+                  )}
+                  {t.descricao?.startsWith("Pix") && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.3)", whiteSpace: "nowrap" }}>⚡ Pix</span>
+                  )}
+                  {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo !== "entrada" && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}>💳 Débito</span>
+                  )}
+                  {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo === "entrada" && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)", whiteSpace: "nowrap" }}>🏦 Conta</span>
+                  )}
+                  {t.banco?.toLowerCase().includes("fatura") && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", whiteSpace: "nowrap" }}>💳 Crédito</span>
+                  )}
+                  {t.data_original && (
+                    <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(251,191,36,0.15)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)", whiteSpace: "nowrap" }}>
+                      📅 {new Date(t.data_original).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                    </span>
+                  )}
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "500", backgroundColor: style.bg, color: style.color }}>
+                    {style.icon} {capitalizar(t.categoria)}
+                  </div>
+                </div>
+              );
+
+              if (isMobile) {
+                return (
+                  <div key={i} style={{
+                    backgroundColor: isSelecionado ? "rgba(16,185,129,0.06)" : "var(--card)",
+                    padding: "12px", borderRadius: "12px", marginBottom: "10px",
+                    display: "flex", alignItems: "flex-start", gap: "10px",
+                    border: isSelecionado ? "1px solid rgba(16,185,129,0.3)" : "1px solid transparent",
+                    transition: "all 0.15s"
+                  }}>
+                    {modoSelecao && (
+                      <input type="checkbox" checked={isSelecionado} onChange={() => toggleSelecionado(t.id)}
+                        style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#10b981", marginTop: "4px", flexShrink: 0 }} />
+                    )}
+                    <div style={{
+                      backgroundColor: isEstorno ? "rgba(148,163,184,0.15)" : isEntrada ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+                      padding: "8px", borderRadius: "10px", fontSize: "16px", flexShrink: 0
+                    }}>
+                      {isEstorno ? "↩️" : isEntrada ? "💰" : "💸"}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
+                        <div style={{ fontWeight: "600", color: "var(--text)", fontSize: "14px", wordBreak: "break-word", flex: 1 }}>
+                          {t.descricao || "Sem descrição"}
+                          {t.parcela && (
+                            <span style={{ marginLeft: "6px", fontSize: "11px", fontWeight: "700", color: "#10b981" }}>{t.parcela}</span>
+                          )}
+                        </div>
+                        <div style={{ color: isEstorno ? "var(--subtext)" : isEntrada ? "#22c55e" : "#ef4444", fontWeight: "700", fontSize: "14px", whiteSpace: "nowrap", flexShrink: 0 }}>
+                          R$ {Math.abs(t.valor).toFixed(2)}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--subtext)", margin: "2px 0 6px" }}>{t.banco || "Banco"}</div>
+                      {tags}
+                      <div style={{ display: "flex", gap: "4px", marginTop: "6px" }}>
+                        <button onClick={() => handleEditClick(t)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "14px", padding: "2px 4px" }} title="Editar">✏️</button>
+                        <button onClick={() => handleDeleteClick(t.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "14px", padding: "2px 4px" }} title="Excluir">🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={i} style={{
                   backgroundColor: isSelecionado ? "rgba(16,185,129,0.06)" : "var(--card)",
@@ -279,14 +376,9 @@ function Transacoes() {
                 }}>
                   {/* ESQUERDA */}
                   <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                    {/* Checkbox Feature 9 */}
                     {modoSelecao && (
-                      <input
-                        type="checkbox"
-                        checked={isSelecionado}
-                        onChange={() => toggleSelecionado(t.id)}
-                        style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#10b981" }}
-                      />
+                      <input type="checkbox" checked={isSelecionado} onChange={() => toggleSelecionado(t.id)}
+                        style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#10b981" }} />
                     )}
                     <div style={{
                       backgroundColor: isEstorno ? "rgba(148,163,184,0.15)" : isEntrada ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
@@ -298,77 +390,23 @@ function Transacoes() {
                       <div style={{ fontWeight: "600", color: "var(--text)", display: "flex", alignItems: "baseline", gap: "6px" }}>
                         {t.descricao || "Sem descrição"}
                         {t.parcela && (
-                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", letterSpacing: "0.02em" }}>
-                            {t.parcela}
-                          </span>
+                          <span style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", letterSpacing: "0.02em" }}>{t.parcela}</span>
                         )}
                       </div>
                       <div style={{ fontSize: "12px", color: "var(--subtext)" }}>{t.banco || "Banco"}</div>
                     </div>
                   </div>
-
                   {/* DIREITA */}
                   <div style={{ textAlign: "right" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px", marginBottom: "5px", flexWrap: "wrap" }}>
-                      {isEstorno && (
-                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)", whiteSpace: "nowrap" }}>
-                          ↩ Estorno
-                        </span>
-                      )}
-                      {isRecorrente && (
-                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}>
-                          🔁 Recorrente
-                        </span>
-                      )}
-                      {t.descricao?.startsWith("Pix") && (
-                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.3)", whiteSpace: "nowrap" }}>
-                          ⚡ Pix
-                        </span>
-                      )}
-                      {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo !== "entrada" && (
-                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}>
-                          💳 Débito
-                        </span>
-                      )}
-                      {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo === "entrada" && (
-                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)", whiteSpace: "nowrap" }}>
-                          🏦 Conta
-                        </span>
-                      )}
-                      {t.banco?.toLowerCase().includes("fatura") && (
-                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", whiteSpace: "nowrap" }}>
-                          💳 Crédito
-                        </span>
-                      )}
-                      {t.data_original && (
-                        <span style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(251,191,36,0.15)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)", whiteSpace: "nowrap" }}>
-                          📅 {new Date(t.data_original).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                        </span>
-                      )}
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "500", backgroundColor: style.bg, color: style.color }}>
-                        {style.icon} {capitalizar(t.categoria)}
-                      </div>
+                      {tags}
                     </div>
-
                     <div style={{ color: isEstorno ? "var(--subtext)" : isEntrada ? "#22c55e" : "#ef4444", fontWeight: "bold", textDecoration: isEstorno ? "line-through" : "none" }}>
                       R$ {Math.abs(t.valor).toFixed(2)}
                     </div>
-
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "4px", marginTop: "5px" }}>
-                      <button
-                        onClick={() => handleEditClick(t)}
-                        style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: "14px" }}
-                        title="Editar"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(t.id)}
-                        style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af" }}
-                        title="Excluir"
-                      >
-                        🗑️
-                      </button>
+                      <button onClick={() => handleEditClick(t)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: "14px" }} title="Editar">✏️</button>
+                      <button onClick={() => handleDeleteClick(t.id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af" }} title="Excluir">🗑️</button>
                     </div>
                   </div>
                 </div>
@@ -380,7 +418,7 @@ function Transacoes() {
 
       {/* BARRA FLUTUANTE — Feature 9 */}
       {selecionados.size > 0 && (
-        <div style={{
+        <div className="floating-bar" style={{
           position: "fixed", bottom: "30px", left: "50%", transform: "translateX(-50%)",
           backgroundColor: "var(--card)", border: "1px solid var(--border)",
           borderRadius: "16px", padding: "14px 24px",
@@ -408,7 +446,7 @@ function Transacoes() {
       {/* MODAL DELETE */}
       {openDeleteModal && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-          <div style={{ backgroundColor: "var(--card)", padding: "25px", borderRadius: "16px", width: "350px", textAlign: "center" }}>
+          <div style={{ backgroundColor: "var(--card)", padding: "25px", borderRadius: "16px", width: "min(350px, calc(100vw - 32px))", textAlign: "center" }}>
             <h3 style={{ color: "var(--text)" }}>Excluir transação</h3>
             <p style={{ color: "var(--subtext)" }}>Tem certeza que deseja excluir essa transação?</p>
             <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
@@ -425,7 +463,7 @@ function Transacoes() {
           onClick={(e) => { if (e.target === e.currentTarget) setOpenEditModal(false); }}
           style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}
         >
-          <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "420px", border: "1px solid var(--border)", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
+          <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "min(420px, calc(100vw - 32px))", border: "1px solid var(--border)", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h3 style={{ margin: 0, color: "var(--text)", fontSize: "18px" }}>Editar transação</h3>
               <button onClick={() => setOpenEditModal(false)} style={{ border: "none", background: "var(--input)", cursor: "pointer", color: "var(--subtext)", width: "30px", height: "30px", borderRadius: "8px", fontSize: "14px" }}>✕</button>
@@ -462,7 +500,7 @@ function Transacoes() {
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Categoria</label>
                   <div style={{ position: "relative", marginTop: "6px" }}>
-                    <select value={editCategoria} onChange={(e) => setEditCategoria(e.target.value)} style={{ ...inputStyle, paddingRight: "32px" }}>
+                    <select value={editCategoria} onChange={(e) => setEditCategoria(e.target.value)} style={{ ...inputStyle, paddingRight: "32px", appearance: "none" }}>
                       {CATEGORIAS.map((cat, i) => (
                         <option key={i} value={cat}>{getCategoriaStyle(cat).icon} {capitalizar(cat)}</option>
                       ))}
@@ -491,7 +529,7 @@ function Transacoes() {
           onClick={(e) => { if (e.target === e.currentTarget) setOpenRecatModal(false); }}
           style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1001 }}
         >
-          <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "360px", border: "1px solid var(--border)" }}>
+          <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "min(360px, calc(100vw - 32px))", border: "1px solid var(--border)" }}>
             <h3 style={{ margin: "0 0 6px", color: "var(--text)" }}>Recategorizar</h3>
             <p style={{ margin: "0 0 20px", color: "var(--subtext)", fontSize: "14px" }}>
               {selecionados.size} transação{selecionados.size > 1 ? "ões" : ""} selecionada{selecionados.size > 1 ? "s" : ""}
@@ -518,7 +556,7 @@ function Transacoes() {
           onClick={(e) => { if (e.target === e.currentTarget) setOpenModal(false); }}
           style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}
         >
-          <div style={{ backgroundColor: "var(--card)", padding: "25px", borderRadius: "16px", width: "420px" }}>
+          <div style={{ backgroundColor: "var(--card)", padding: "25px", borderRadius: "16px", width: "min(420px, calc(100vw - 32px))" }}>
             <AddTransactionForm
               onSuccess={() => { setOpenModal(false); carregar(); }}
               onCancel={() => setOpenModal(false)}

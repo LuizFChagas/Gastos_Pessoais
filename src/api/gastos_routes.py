@@ -169,7 +169,8 @@ def listar_gastos(
             "tipo": g.tipo,
             "data_hora": g.data_hora,
             "data_original": g.data_original,
-            "parcela": g.parcela
+            "parcela": g.parcela,
+            "transferencia_interna": g.transferencia_interna or False
         }
         for g in gastos
     ]
@@ -186,7 +187,8 @@ def gastos_por_dia(
         func.sum(Gasto.valor).label("total")
     ).filter(
         Gasto.usuario_id == usuario_id,
-        Gasto.tipo == "saida"  # 👈 FILTRO
+        Gasto.tipo == "saida",
+        Gasto.transferencia_interna.isnot(True)
     ).group_by(
         func.date(Gasto.data_hora)
     ).all()
@@ -205,7 +207,8 @@ def gastos_por_categoria(
         func.sum(Gasto.valor).label("total")
     ).filter(
         Gasto.usuario_id == usuario_id,
-        Gasto.tipo == "saida"  # 👈 FILTRO
+        Gasto.tipo == "saida",
+        Gasto.transferencia_interna.isnot(True)
     ).group_by(
         Gasto.categoria
     ).all()
@@ -219,7 +222,8 @@ def resumo_dashboard(
     db: Session = Depends(get_db)
 ):
     gastos = db.query(Gasto).filter(
-        Gasto.usuario_id == usuario_id
+        Gasto.usuario_id == usuario_id,
+        Gasto.transferencia_interna.isnot(True)
     ).all()
 
     entradas = 0
@@ -274,7 +278,8 @@ def gastos_por_mes(
             "tipo": g.tipo,
             "data_hora": g.data_hora,
             "data_original": g.data_original,
-            "parcela": g.parcela
+            "parcela": g.parcela,
+            "transferencia_interna": g.transferencia_interna or False
         }
         for g in gastos
     ]
@@ -310,7 +315,8 @@ def gastos_por_intervalo(
             "tipo": g.tipo,
             "data_hora": g.data_hora,
             "data_original": g.data_original,
-            "parcela": g.parcela
+            "parcela": g.parcela,
+            "transferencia_interna": g.transferencia_interna or False
         }
         for g in gastos
     ]
@@ -325,7 +331,8 @@ def top_maiores_gastos(
 ):
     gastos = db.query(Gasto).filter(
         Gasto.usuario_id == usuario_id,
-        Gasto.tipo == "saida"  # 👈 IMPORTANTE
+        Gasto.tipo == "saida",
+        Gasto.transferencia_interna.isnot(True)
     ).order_by(
         desc(Gasto.valor)
     ).limit(limite).all()
@@ -340,7 +347,8 @@ def top_maiores_gastos(
             "tipo": g.tipo,
             "data_hora": g.data_hora,
             "data_original": g.data_original,
-            "parcela": g.parcela
+            "parcela": g.parcela,
+            "transferencia_interna": g.transferencia_interna or False
         }
         for g in gastos
     ]

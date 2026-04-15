@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import Counter
 import calendar
 import unicodedata
@@ -22,6 +22,13 @@ KEYWORDS_PAGAMENTO_FATURA = [
     "pagamento de fatura",
     "pagamento fatura",
     "pgto fat cartao",      # C6 Bank
+    "pgto fatura",          # Bradesco
+    "pag fatura",           # Bradesco variação
+]
+
+KEYWORDS_SKIP_BRADESCO = [
+    "filtro de result", "os dados acima", "ultimos lancamentos",
+    "nao ha lancamentos", "cod. lanc.", "total",
 ]
 
 KEYWORDS_IGNORAR_CONTA = [
@@ -45,14 +52,18 @@ def _normalizar(texto: str) -> str:
 
 
 def _detectar_skiprows(caminho: str, encoding: str, sep: str) -> int:
-    """Detecta linhas de metadados iniciais (ex: C6 que tem cabeçalho antes dos dados)."""
+    """Detecta a linha do cabeçalho real em CSVs com metadados iniciais (C6, Bradesco)."""
     try:
         with open(caminho, encoding=encoding, errors="replace") as f:
             for i, linha in enumerate(f):
                 partes = linha.strip().split(sep)
                 if len(partes) >= 4:
                     linha_norm = _normalizar(linha)
+                    # C6 conta
                     if "entrada" in linha_norm and "saida" in linha_norm:
+                        return i
+                    # Bradesco conta
+                    if "credito" in linha_norm and "debito" in linha_norm and "historico" in linha_norm:
                         return i
     except Exception:
         pass
@@ -76,6 +87,10 @@ def _detectar_formato(df):
     # C6 conta corrente: Entrada(R$) e Saída(R$) separadas
     if "entrada(r$)" in colunas_norm and "saida(r$)" in colunas_norm:
         return "c6_conta"
+
+    # Bradesco conta: Histórico + Crédito (R$) + Débito (R$)
+    if "historico" in colunas_norm and "credito (r$)" in colunas_norm and "debito (r$)" in colunas_norm:
+        return "bradesco_conta"
 
     # C6 fatura: tem coluna Parcela + colunas exclusivas do C6
     if "parcela" in colunas_norm and (
@@ -174,6 +189,37 @@ def _processar_linha_c6_conta(linha, colunas_map):
     return descricao, valor, data_hora
 
 
+def _processar_linha_bradesco_conta(linha, colunas_map):
+    """Processa linha do extrato de conta corrente Bradesco."""
+    col_data    = colunas_map.get("data", "Data")
+    col_hist    = colunas_map.get("historico", "Histórico")
+    col_credito = colunas_map.get("credito (r$)", "Crédito (R$)")
+    col_debito  = colunas_map.get("debito (r$)", "Débito (R$)")
+
+    data_str = str(linha[col_data]).strip()
+    if not data_str or data_str.lower() == "nan":
+        raise ValueError("linha sem data")
+
+    descricao = str(linha[col_hist]).strip()
+    if any(k in _normalizar(descricao) for k in KEYWORDS_SKIP_BRADESCO):
+        raise ValueError("linha de metadado")
+
+    def _parse_valor(v):
+        s = str(v).strip().replace(".", "").replace(",", ".")
+        return float(s) if s and s.lower() != "nan" else 0.0
+
+    credito = _parse_valor(linha[col_credito])
+    debito  = _parse_valor(linha[col_debito])
+
+    if credito == 0.0 and debito == 0.0:
+        raise ValueError("linha sem movimento")
+
+    data_hora = datetime.strptime(data_str, "%d/%m/%Y")
+    valor = credito if credito > 0 else -debito
+
+    return descricao, valor, data_hora
+
+
 def _processar_linha_c6_fatura(linha, colunas_map):
     """Processa linha da fatura C6 Bank (cartão de crédito)."""
     col_data  = colunas_map.get("data de compra", "Data de Compra")
@@ -217,6 +263,65 @@ def _ajustar_data(data_hora, ano_alvo, mes_alvo):
     ultimo_dia = calendar.monthrange(ano_alvo, mes_alvo)[1]
     dia = min(data_hora.day, ultimo_dia)
     return data_hora.replace(year=ano_alvo, month=mes_alvo, day=dia)
+
+
+def _detectar_transferencias_internas(usuario_id: int, extrato_id: int):
+    """Detecta e marca pares entrada↔saída entre extratos diferentes como transferência interna."""
+    if not extrato_id:
+        return
+
+    db = SessionLocal()
+    try:
+        novas = db.query(Gasto).filter(Gasto.extrato_id == extrato_id).all()
+
+        for nova in novas:
+            if nova.transferencia_interna:
+                continue
+
+            tipo_oposto = "saida" if nova.tipo == "entrada" else "entrada"
+            data_min = nova.data_hora - timedelta(days=1)
+            data_max = nova.data_hora + timedelta(days=1)
+
+            par = db.query(Gasto).filter(
+                Gasto.usuario_id == usuario_id,
+                Gasto.tipo == tipo_oposto,
+                Gasto.valor.between(nova.valor - 0.01, nova.valor + 0.01),
+                Gasto.data_hora >= data_min,
+                Gasto.data_hora <= data_max,
+                Gasto.extrato_id != extrato_id,
+                Gasto.transferencia_interna.isnot(True),
+                Gasto.id != nova.id
+            ).first()
+
+            if par:
+                nova.transferencia_interna = True
+                par.transferencia_interna = True
+                logger.info(
+                    f"Transferência interna: R${nova.valor:.2f} "
+                    f"({nova.banco} ↔ {par.banco}) em {nova.data_hora.date()}"
+                )
+
+        db.commit()
+    finally:
+        db.close()
+
+
+def _buscar_historico_categorias(usuario_id: int) -> dict:
+    """Retorna mapa {descricao_normalizada: categoria} com base no histórico do usuário.
+    Em caso de descrições com categorias diferentes, usa a mais recente."""
+    db = SessionLocal()
+    try:
+        resultados = db.query(Gasto.descricao, Gasto.categoria, Gasto.data_hora).filter(
+            Gasto.usuario_id == usuario_id
+        ).order_by(Gasto.data_hora.asc()).all()
+
+        historico = {}
+        for r in resultados:
+            if r.descricao and r.categoria:
+                historico[_normalizar(r.descricao)] = r.categoria
+        return historico
+    finally:
+        db.close()
 
 
 def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
@@ -271,6 +376,9 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
             except Exception:
                 continue
 
+    # Carrega histórico de categorias do usuário para herdar correções em meses futuros
+    historico_categorias = _buscar_historico_categorias(usuario_id)
+
     # Primeira passada: coleta todas as transações válidas
     transacoes = []
     for _, linha in df.iterrows():
@@ -282,6 +390,8 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
                 descricao, valor, data_hora = _processar_linha_nubank_conta(linha, colunas_map)
             elif formato == "c6_conta":
                 descricao, valor, data_hora = _processar_linha_c6_conta(linha, colunas_map)
+            elif formato == "bradesco_conta":
+                descricao, valor, data_hora = _processar_linha_bradesco_conta(linha, colunas_map)
             elif formato == "c6_fatura":
                 descricao, valor, data_hora, parcela = _processar_linha_c6_fatura(linha, colunas_map)
             else:
@@ -312,7 +422,7 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
                 else:
                     tipo = "saida" if valor > 0 else "entrada"
                     valor_abs = abs(valor)
-            else:  # nubank_conta, c6_conta e legado
+            else:  # nubank_conta, c6_conta, bradesco_conta e legado
                 if valor < 0 and _is_estorno(descricao):
                     tipo = "saida"
                     valor_abs = -abs(valor)
@@ -321,6 +431,12 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
                     valor_abs = abs(valor)
 
             categoria = categorizar(descricao)
+
+            # Se o usuário já corrigiu a categoria dessa descrição antes, usa a do histórico
+            categoria_historica = historico_categorias.get(_normalizar(descricao))
+            if categoria_historica:
+                categoria = categoria_historica
+
             transacoes.append((descricao, valor_abs, data_hora, tipo, categoria, parcela))
 
         except Exception:
@@ -382,3 +498,6 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None):
         f"Importação finalizada para usuário {usuario_id} "
         f"(formato: {formato}, mês dominante: {mes_dominante})"
     )
+
+    # Detecta transferências internas entre contas do mesmo usuário
+    _detectar_transferencias_internas(usuario_id, extrato_id)

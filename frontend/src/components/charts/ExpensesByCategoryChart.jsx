@@ -18,7 +18,7 @@ const renderActiveShape = (props) => {
   );
 };
 
-function ExpensesByCategoryChart({ data }) {
+function ExpensesByCategoryChart({ data, isMobile = false }) {
   const [activeIndex, setActiveIndex] = useState(null);
 
   const dadosFiltrados = data
@@ -52,8 +52,8 @@ function ExpensesByCategoryChart({ data }) {
       backgroundColor: "var(--card)",
       padding: "20px",
       borderRadius: "16px",
-      height: "359px",
-      minHeight: "350px",
+      minHeight: isMobile ? "auto" : "350px",
+      height: isMobile ? "auto" : "359px",
       display: "flex",
       flexDirection: "column",
       boxShadow: "var(--shadow-md)"
@@ -73,18 +73,20 @@ function ExpensesByCategoryChart({ data }) {
       ) : (
         <div style={{
           display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          flex: 1
+          alignItems: isMobile ? "center" : "center",
+          justifyContent: isMobile ? "center" : "flex-start",
+          flexDirection: isMobile ? "column" : "row",
+          flex: 1,
+          gap: isMobile ? "12px" : 0
         }}>
           {/* Donut chart com total no centro */}
-          <div style={{ position: "relative", width: 220, height: 220, flexShrink: 0 }}>
-            <PieChart width={220} height={220}>
+          <div style={{ position: "relative", width: isMobile ? 180 : 220, height: isMobile ? 180 : 220, flexShrink: 0 }}>
+            <PieChart width={isMobile ? 180 : 220} height={isMobile ? 180 : 220}>
               <Pie
                 data={dadosFiltrados}
                 dataKey="value"
-                innerRadius={58}
-                outerRadius={90}
+                innerRadius={isMobile ? 46 : 58}
+                outerRadius={isMobile ? 72 : 90}
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
                 onMouseEnter={(_, index) => setActiveIndex(index)}
@@ -147,7 +149,7 @@ function ExpensesByCategoryChart({ data }) {
             gap: "6px",
             flex: 1,
             alignItems: "center",
-            marginLeft: "0px"
+            width: isMobile ? "100%" : "auto"
           }}>
             {dadosFiltrados.map((item, index) => {
               const style = getCategoriaStyle(item.name);
@@ -163,7 +165,7 @@ function ExpensesByCategoryChart({ data }) {
                     display: "flex",
                     alignItems: "center",
                     gap: "6px",
-                    width: "240px",
+                    width: isMobile ? "100%" : "240px",
                     padding: "4px 6px",
                     borderRadius: "6px",
                     cursor: "pointer",

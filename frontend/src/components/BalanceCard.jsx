@@ -1,4 +1,4 @@
-function BalanceCard({ title, value, color }) {
+function BalanceCard({ title, value, color, extraStyle = {} }) {
 
   const formatar = (v) =>
     Number(v || 0).toLocaleString("pt-BR", {
@@ -12,13 +12,16 @@ function BalanceCard({ title, value, color }) {
         backgroundColor: "var(--card)",
         borderRadius: "12px",
         padding: "20px",
-        flex: 1,
+        minWidth: 0,
+        overflow: "hidden",
+        boxSizing: "border-box",
         boxShadow: "var(--shadow-md)",
         borderLeft: `4px solid ${color}`,
         minHeight: "100px",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center"
+        justifyContent: "center",
+        ...extraStyle
       }}
     >
       <span
@@ -32,9 +35,10 @@ function BalanceCard({ title, value, color }) {
 
       <strong
         style={{
-          fontSize: "24px",
+          fontSize: "clamp(16px, 4vw, 24px)",
           marginTop: "8px",
-          color: "var(--text)"
+          color: "var(--text)",
+          wordBreak: "break-word"
         }}
       >
         {formatar(value)}
