@@ -1,7 +1,73 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../api/api";
 import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
-import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { ArrowUpCircle, ArrowDownCircle, ChevronDown } from "lucide-react";
+
+function CustomSelect({ value, onChange, options, inputStyle }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onScroll = () => setOpen(false);
+    document.addEventListener("mousedown", onClick);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          ...inputStyle,
+          marginTop: 0,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: "6px", cursor: "pointer", textAlign: "left",
+          transition: "border-color 0.2s", outline: "none",
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "#10b981"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}
+      >
+        <span>{selected?.label}</span>
+        <ChevronDown size={14} style={{ opacity: 0.6, flexShrink: 0, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+          zIndex: 200,
+          backgroundColor: "var(--card)", border: "1px solid var(--border)",
+          borderRadius: "10px", overflow: "hidden",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+        }}>
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              style={{
+                padding: "10px 14px", cursor: "pointer", fontSize: "14px",
+                color: opt.value === value ? "#10b981" : "var(--text)",
+                fontWeight: opt.value === value ? "600" : "400",
+                backgroundColor: opt.value === value ? "rgba(16,185,129,0.08)" : "transparent",
+                transition: "background-color 0.1s",
+              }}
+              onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = opt.value === value ? "rgba(16,185,129,0.08)" : "transparent"; }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AddTransactionForm({ onSuccess, onCancel }) {
   const [tipo, setTipo] = useState("saida");
@@ -164,33 +230,12 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       <div style={{ display: "flex", gap: "12px" }}>
         <div style={{ flex: 1 }}>
           <label style={labelStyle}>Categoria</label>
-          <div style={{ position: "relative", marginTop: "6px" }}>
-            <select
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
-              style={{ ...inputStyle, marginTop: 0, paddingRight: "32px" }}
-            >
-              {CATEGORIAS.map((cat, index) => (
-                <option key={index} value={cat}>
-                  {capitalizar(cat)}
-                </option>
-              ))}
-            </select>
-            <svg
-              style={{
-                position: "absolute",
-                right: "10px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                pointerEvents: "none"
-              }}
-              width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="var(--subtext)" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
+          <CustomSelect
+            value={categoria}
+            onChange={(v) => setCategoria(v)}
+            options={CATEGORIAS.map(cat => ({ value: cat, label: capitalizar(cat) }))}
+            inputStyle={inputStyle}
+          />
         </div>
         <div style={{ flex: 1 }}>
           <label style={labelStyle}>Banco</label>

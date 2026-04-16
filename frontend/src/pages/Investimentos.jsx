@@ -685,9 +685,6 @@ export default function Investimentos() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 
-      {/* ── MARKET TICKER ── */}
-      <MarketTicker posicoes={posicoes} />
-
       {/* ── HEADER ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
@@ -707,6 +704,9 @@ export default function Investimentos() {
           + Adicionar posição
         </button>
       </div>
+
+      {/* ── MARKET TICKER ── */}
+      <MarketTicker posicoes={posicoes} />
 
       {/* ── PATRIMÔNIO + ALOCAÇÃO ── */}
       <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
