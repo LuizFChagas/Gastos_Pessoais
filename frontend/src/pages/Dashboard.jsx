@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { ChevronDown } from "lucide-react";
 import BalanceCard from "../components/BalanceCard";
 import TransactionList from "../components/TransactionList";
 import AddTransactionForm from "../components/AddTransactionForm";
@@ -25,6 +26,74 @@ const NOMES_MESES_MIN = [
   "janeiro","fevereiro","março","abril","maio","junho",
   "julho","agosto","setembro","outubro","novembro","dezembro"
 ];
+
+function CustomSelect({ value, onChange, options, flex }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onScroll = () => setOpen(false);
+    document.addEventListener("mousedown", onClick);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flex: flex || "none" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: "6px",
+          padding: "8px 14px", borderRadius: "10px",
+          border: "1px solid var(--border)",
+          backgroundColor: "var(--card)", color: "var(--text)",
+          cursor: "pointer", fontSize: "14px", fontWeight: "500",
+          width: "100%", justifyContent: "space-between",
+          transition: "border-color 0.15s",
+          outline: "none",
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "#10b981"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}
+      >
+        <span>{selected?.label}</span>
+        <ChevronDown size={14} style={{ opacity: 0.6, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0,
+          minWidth: "100%", zIndex: 100,
+          backgroundColor: "var(--card)", border: "1px solid var(--border)",
+          borderRadius: "10px", overflow: "hidden",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+        }}>
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              style={{
+                padding: "10px 16px", cursor: "pointer", fontSize: "14px",
+                color: opt.value === value ? "#10b981" : "var(--text)",
+                fontWeight: opt.value === value ? "600" : "400",
+                backgroundColor: opt.value === value ? "rgba(16,185,129,0.08)" : "transparent",
+                transition: "background-color 0.1s",
+              }}
+              onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = opt.value === value ? "rgba(16,185,129,0.08)" : "transparent"; }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Dashboard() {
   const isMobile = useIsMobile();
@@ -175,10 +244,9 @@ function Dashboard() {
 
         <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
 
-          <select
+          <CustomSelect
             value={periodo}
-            onChange={(e) => {
-              const novoPeriodo = e.target.value;
+            onChange={(novoPeriodo) => {
               setPeriodo(novoPeriodo);
               if (novoPeriodo === "mes_custom") {
                 if (mesesComDados.length > 0) {
@@ -192,61 +260,35 @@ function Dashboard() {
                 }
               }
             }}
-            style={{
-              padding: "8px 12px", borderRadius: "8px",
-              border: "1px solid var(--border)",
-              backgroundColor: "var(--card)", color: "var(--text)",
-              flex: isMobile ? "1 1 auto" : "none"
-            }}
-          >
-            <option value="semana">Últimos 7 dias</option>
-            <option value="ano">Este ano</option>
-            <option value="mes_custom">Selecionar mês</option>
-          </select>
+            options={[
+              { value: "semana", label: "Últimos 7 dias" },
+              { value: "ano",    label: "Este ano" },
+              { value: "mes_custom", label: "Selecionar mês" },
+            ]}
+            flex={isMobile ? "1 1 auto" : "none"}
+          />
 
           {periodo === "mes_custom" && (
             <>
-              <select
+              <CustomSelect
                 value={mesSelecionado}
-                onChange={(e) => setMesSelecionado(Number(e.target.value))}
-                style={{
-                  padding: "8px", borderRadius: "8px",
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--card)", color: "var(--text)",
-                  flex: isMobile ? "1 1 auto" : "none"
-                }}
-              >
-                {mesesDoAno.length > 0 ? (
-                  mesesDoAno.map((mes) => (
-                    <option key={mes} value={mes}>{NOMES_MESES[mes]}</option>
-                  ))
-                ) : (
-                  NOMES_MESES.map((nome, index) => (
-                    <option key={index} value={index}>{nome}</option>
-                  ))
-                )}
-              </select>
+                onChange={(v) => setMesSelecionado(Number(v))}
+                options={
+                  (mesesDoAno.length > 0 ? mesesDoAno : NOMES_MESES.map((_, i) => i))
+                    .map((mes) => ({ value: mes, label: NOMES_MESES[mes] }))
+                }
+                flex={isMobile ? "1 1 auto" : "none"}
+              />
 
-              <select
+              <CustomSelect
                 value={anoSelecionado}
-                onChange={(e) => setAnoSelecionado(Number(e.target.value))}
-                style={{
-                  padding: "8px", borderRadius: "8px",
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--card)", color: "var(--text)",
-                  flex: isMobile ? "0 0 auto" : "none"
-                }}
-              >
-                {anosDisponiveis.length > 0 ? (
-                  anosDisponiveis.map((ano) => (
-                    <option key={ano} value={ano}>{ano}</option>
-                  ))
-                ) : (
-                  [2024, 2025, 2026].map((ano) => (
-                    <option key={ano} value={ano}>{ano}</option>
-                  ))
-                )}
-              </select>
+                onChange={(v) => setAnoSelecionado(Number(v))}
+                options={
+                  (anosDisponiveis.length > 0 ? anosDisponiveis : [2024, 2025, 2026])
+                    .map((ano) => ({ value: ano, label: String(ano) }))
+                }
+                flex={isMobile ? "0 0 auto" : "none"}
+              />
             </>
           )}
 

@@ -1,11 +1,79 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { listarGastos, deletarGasto, editarGasto, recategorizarLote } from "../api/gastosApi";
 import AddTransactionForm from "../components/AddTransactionForm";
 import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
 import {
   AlignJustify, ArrowUp, ArrowDown, Zap, CreditCard, RefreshCw, ArrowLeftRight,
   ArrowDownCircle, ArrowUpCircle, CornerUpLeft, Pencil, Trash2, Landmark, CalendarDays,
+  ChevronDown,
 } from "lucide-react";
+
+function CustomSelect({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onScroll = () => setOpen(false);
+    document.addEventListener("mousedown", onClick);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: "6px",
+          padding: "10px 14px", borderRadius: "10px",
+          border: "1px solid var(--border)",
+          backgroundColor: "var(--input)", color: "var(--text)",
+          cursor: "pointer", fontSize: "14px", fontWeight: "500",
+          whiteSpace: "nowrap", outline: "none",
+          transition: "border-color 0.15s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "#10b981"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}
+      >
+        <span>{selected?.label}</span>
+        <ChevronDown size={14} style={{ opacity: 0.6, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0,
+          minWidth: "100%", zIndex: 100,
+          backgroundColor: "var(--card)", border: "1px solid var(--border)",
+          borderRadius: "10px", overflow: "hidden",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+        }}>
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              style={{
+                padding: "10px 16px", cursor: "pointer", fontSize: "14px",
+                color: opt.value === value ? "#10b981" : "var(--text)",
+                fontWeight: opt.value === value ? "600" : "400",
+                backgroundColor: opt.value === value ? "rgba(16,185,129,0.08)" : "transparent",
+                transition: "background-color 0.1s",
+              }}
+              onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = opt.value === value ? "rgba(16,185,129,0.08)" : "transparent"; }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -240,15 +308,11 @@ function Transacoes() {
             onChange={(e) => setBusca(e.target.value)}
             style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)" }}
           />
-          <select
+          <CustomSelect
             value={categoriaSelecionada}
-            onChange={(e) => setCategoriaSelecionada(e.target.value)}
-            style={{ padding: "10px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)" }}
-          >
-            {categorias.map((cat, i) => (
-              <option key={i} value={cat}>{cat === "todos" ? "Todas" : capitalizar(cat)}</option>
-            ))}
-          </select>
+            onChange={(v) => setCategoriaSelecionada(v)}
+            options={categorias.map((cat) => ({ value: cat, label: cat === "todos" ? "Todas" : capitalizar(cat) }))}
+          />
         </div>
 
         {/* CHIPS DE TIPO — Feature 8 */}
