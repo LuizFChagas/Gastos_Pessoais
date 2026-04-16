@@ -101,21 +101,29 @@ def login(dados: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me")
-def me(usuario: Usuario = Depends(pegar_usuario_logado), db: Session = Depends(get_db)):
-    total_transacoes = db.query(func.count(Gasto.id)).filter(Gasto.usuario_id == usuario.id).scalar() or 0
+def me(usuario_id: int = Depends(pegar_usuario_logado), db: Session = Depends(get_db)):
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    total_transacoes = db.query(func.count(Gasto.id)).filter(Gasto.usuario_id == usuario_id).scalar() or 0
     total_entradas   = db.query(func.coalesce(func.sum(Gasto.valor), 0)).filter(
-        Gasto.usuario_id == usuario.id, Gasto.tipo == "entrada"
+        Gasto.usuario_id == usuario_id, Gasto.tipo == "entrada"
     ).scalar() or 0
     total_saidas     = db.query(func.coalesce(func.sum(Gasto.valor), 0)).filter(
-        Gasto.usuario_id == usuario.id, Gasto.tipo == "saida", Gasto.valor > 0
+        Gasto.usuario_id == usuario_id, Gasto.tipo == "saida", Gasto.valor > 0
     ).scalar() or 0
+
+    primeira_transacao = db.query(func.min(Gasto.data_hora)).filter(
+        Gasto.usuario_id == usuario_id
+    ).scalar()
 
     return {
         "id":               usuario.id,
         "nome":             usuario.nome,
         "email":            usuario.email,
         "data_nascimento":  usuario.data_nascimento,
-        "criado_em":        usuario.criado_em.isoformat() if usuario.criado_em else None,
+        "criado_em":        primeira_transacao.isoformat() if primeira_transacao else None,
         "total_transacoes": total_transacoes,
         "total_entradas":   float(total_entradas),
         "total_saidas":     float(total_saidas),
