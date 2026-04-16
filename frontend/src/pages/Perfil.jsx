@@ -5,10 +5,20 @@ import { User, Mail, Calendar, Clock, TrendingDown, TrendingUp, BarChart2 } from
 const fmt = (v) =>
   Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+function parsearData(str) {
+  if (!str) return null;
+  // DD/MM/YYYY
+  const br = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (br) return new Date(`${br[3]}-${br[2]}-${br[1]}`);
+  // YYYY-MM-DD ou ISO
+  return new Date(str);
+}
+
 function calcularIdade(dataNasc) {
   if (!dataNasc) return null;
+  const nasc = parsearData(dataNasc);
+  if (!nasc || isNaN(nasc)) return null;
   const hoje = new Date();
-  const nasc = new Date(dataNasc);
   let idade = hoje.getFullYear() - nasc.getFullYear();
   const m = hoje.getMonth() - nasc.getMonth();
   if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
@@ -35,8 +45,12 @@ function calcularTempoUsuario(criadoEm) {
 
 function formatarData(str) {
   if (!str) return "—";
-  const [ano, mes, dia] = str.split("T")[0].split("-");
-  return `${dia}/${mes}/${ano}`;
+  // já está em DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) return str.slice(0, 10);
+  // ISO: YYYY-MM-DD
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  return str;
 }
 
 export default function Perfil() {
@@ -92,7 +106,7 @@ export default function Perfil() {
     : "?";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "640px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "640px", margin: "0 auto" }}>
 
       {/* HEADER */}
       <div>

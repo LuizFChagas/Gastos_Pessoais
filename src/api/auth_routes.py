@@ -6,7 +6,7 @@ from datetime import date
 import logging
 
 from src.database.deps import get_db
-from src.database.models import Usuario, Gasto
+from src.database.models import Usuario, Gasto, Extrato
 
 from src.auth.security import criar_token, pegar_usuario_logado
 from src.auth.hash import gerar_hash, verificar_senha
@@ -114,16 +114,20 @@ def me(usuario_id: int = Depends(pegar_usuario_logado), db: Session = Depends(ge
         Gasto.usuario_id == usuario_id, Gasto.tipo == "saida", Gasto.valor > 0
     ).scalar() or 0
 
-    primeira_transacao = db.query(func.min(Gasto.data_hora)).filter(
-        Gasto.usuario_id == usuario_id
-    ).scalar()
+    # Para contas antigas sem criado_em, usa a data do primeiro extrato importado
+    criado_em = usuario.criado_em
+    if not criado_em:
+        primeiro_extrato = db.query(func.min(Extrato.data_importacao)).filter(
+            Extrato.usuario_id == usuario_id
+        ).scalar()
+        criado_em = primeiro_extrato
 
     return {
         "id":               usuario.id,
         "nome":             usuario.nome,
         "email":            usuario.email,
         "data_nascimento":  usuario.data_nascimento,
-        "criado_em":        primeira_transacao.isoformat() if primeira_transacao else None,
+        "criado_em":        criado_em.isoformat() if criado_em else None,
         "total_transacoes": total_transacoes,
         "total_entradas":   float(total_entradas),
         "total_saidas":     float(total_saidas),

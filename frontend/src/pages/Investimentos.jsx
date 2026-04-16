@@ -9,6 +9,9 @@ import {
   criarInvestimento,
   editarInvestimento,
   deletarInvestimento,
+  listarAportes,
+  criarAporte,
+  deletarAporte,
 } from "../api/investimentosApi";
 import { gastosPorIntervalo } from "../api/gastosApi";
 
@@ -18,6 +21,7 @@ const TIPOS = [
   { value: "acoes",      label: "Ações",      color: "#3b82f6" },
   { value: "fiis",       label: "FIIs",       color: "#f59e0b" },
   { value: "cripto",     label: "Cripto",     color: "#8b5cf6" },
+  { value: "moedas",     label: "Moedas",     color: "#06b6d4" },
   { value: "outros",     label: "Outros",     color: "#94a3b8" },
 ];
 
@@ -78,10 +82,10 @@ const CATALOGO = [
   { ticker: "RECR11", nome: "REC Recebíveis Imob.",    tipo: "fiis",  fonte: "brapi" },
   { ticker: "HCTR11", nome: "Hectare CE FII",          tipo: "fiis",  fonte: "brapi" },
   // Moedas
-  { ticker: "USD",    nome: "Dólar Americano",         tipo: "outros", fonte: "moeda", par: "USD-BRL" },
-  { ticker: "EUR",    nome: "Euro",                    tipo: "outros", fonte: "moeda", par: "EUR-BRL" },
-  { ticker: "GBP",    nome: "Libra Esterlina",         tipo: "outros", fonte: "moeda", par: "GBP-BRL" },
-  { ticker: "CHF",    nome: "Franco Suíço",            tipo: "outros", fonte: "moeda", par: "CHF-BRL" },
+  { ticker: "USD",    nome: "Dólar Americano",         tipo: "moedas", fonte: "moeda", par: "USD-BRL" },
+  { ticker: "EUR",    nome: "Euro",                    tipo: "moedas", fonte: "moeda", par: "EUR-BRL" },
+  { ticker: "GBP",    nome: "Libra Esterlina",         tipo: "moedas", fonte: "moeda", par: "GBP-BRL" },
+  { ticker: "CHF",    nome: "Franco Suíço",            tipo: "moedas", fonte: "moeda", par: "CHF-BRL" },
   // Cripto
   { ticker: "BTC",    nome: "Bitcoin",                 tipo: "cripto", fonte: "coingecko", id: "bitcoin" },
   { ticker: "ETH",    nome: "Ethereum",                tipo: "cripto", fonte: "coingecko", id: "ethereum" },
@@ -376,10 +380,10 @@ function Modal({ item, onSave, onClose }) {
 
 /* ── Painel de mercado ── */
 const QUOTES = [
-  { key: "USD-BRL", label: "Dólar",   symbol: "USD",  flag: "🇺🇸" },
-  { key: "EUR-BRL", label: "Euro",    symbol: "EUR",  flag: "🇪🇺" },
-  { key: "BTC-USD", label: "Bitcoin", symbol: "BTC",  flag: "₿"  },
-  { key: "ETH-USD", label: "Ethereum",symbol: "ETH",  flag: "Ξ"  },
+  { key: "USD-BRL", label: "Dólar",    symbol: "USD", flag: "🇺🇸" },
+  { key: "EUR-BRL", label: "Euro",     symbol: "EUR", flag: "🇪🇺" },
+  { key: "BTC-BRL", label: "Bitcoin",  symbol: "BTC", flag: "₿"  },
+  { key: "ETH-BRL", label: "Ethereum", symbol: "ETH", flag: "Ξ"  },
 ];
 
 function Sparkline({ data, isPositive }) {
@@ -419,6 +423,7 @@ function MarketTicker({ posicoes }) {
   const [cotacoes, setCotacoes] = useState({});
   const [historico, setHistorico] = useState({});
   const [carregando, setCarregando] = useState(true);
+  const [hovered, setHovered] = useState(null);
 
   const buscarCotacoes = async () => {
     try {
@@ -455,7 +460,7 @@ function MarketTicker({ posicoes }) {
     <div style={{
       display: "flex", gap: "16px", flexWrap: "wrap",
       backgroundColor: "var(--card)", borderRadius: "14px",
-      border: "1px solid var(--border)", overflow: "hidden",
+      border: "1px solid var(--border)",
       boxShadow: "var(--shadow-md)"
     }}>
 
@@ -476,18 +481,32 @@ function MarketTicker({ posicoes }) {
             const bid = q ? parseFloat(q.bid) : null;
             const isPositive = pct !== null && pct >= 0;
 
+            const hist = historico[key] || [];
+            const prev2 = hist.length >= 3 ? hist[hist.length - 3] : null;
+            const prev1 = hist.length >= 2 ? hist[hist.length - 2] : null;
+            const isBRL = key.endsWith("BRL");
+            const fmtVal = (v) => v == null ? "—" : (isBRL
+              ? `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : `$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            );
+
             return (
-              <div key={key} style={{
-                flex: 1,
-                minWidth: 0,
-                backgroundColor: "var(--input)",
-                borderRadius: "10px",
-                padding: "16px 16px",
-                border: "1px solid var(--border)",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between"
-              }}>
+              <div
+                key={key}
+                onMouseEnter={() => setHovered(key)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  flex: 1, minWidth: 0,
+                  backgroundColor: "var(--input)",
+                  borderRadius: "10px",
+                  padding: "16px",
+                  border: `1px solid ${hovered === key ? (isPositive ? "#10b981" : "#ef4444") : "var(--border)"}`,
+                  display: "flex", flexDirection: "column", justifyContent: "space-between",
+                  position: "relative",
+                  transition: "border-color 0.2s",
+                  cursor: "default"
+                }}
+              >
                 {/* Label topo */}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <span style={{ fontSize: "13px", lineHeight: 1 }}>{flag}</span>
@@ -503,10 +522,7 @@ function MarketTicker({ posicoes }) {
                 ) : (
                   <div>
                     <div style={{ fontSize: "17px", fontWeight: "700", color: "var(--text)", lineHeight: 1.2 }}>
-                      {key.endsWith("BRL")
-                        ? `R$ ${bid?.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                        : `$ ${bid?.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                      }
+                      {fmtVal(bid)}
                     </div>
                     <div style={{ fontSize: "12px", fontWeight: "600", color: isPositive ? "#10b981" : "#ef4444", marginTop: "4px" }}>
                       {isPositive ? "▲" : "▼"} {Math.abs(pct).toFixed(2)}%
@@ -516,8 +532,69 @@ function MarketTicker({ posicoes }) {
 
                 {/* Sparkline */}
                 <div style={{ marginTop: "4px" }}>
-                  <Sparkline data={historico[key]} isPositive={isPositive ?? true} />
+                  <Sparkline data={hist} isPositive={isPositive ?? true} />
                 </div>
+
+                {/* Tooltip hover */}
+                {hovered === key && !carregando && q && (prev1 != null || prev2 != null) && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 10px)", left: "50%",
+                    transform: "translateX(-50%)",
+                    backgroundColor: "#1e293b",
+                    border: "1px solid var(--border)",
+                    borderRadius: "10px",
+                    padding: "12px 14px",
+                    zIndex: 50,
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                    minWidth: "160px"
+                  }}>
+                    {/* seta apontando pra cima */}
+                    <div style={{
+                      position: "absolute", top: "-5px", left: "50%",
+                      transform: "translateX(-50%) rotate(45deg)",
+                      width: "10px", height: "10px",
+                      backgroundColor: "#1e293b",
+                      border: "1px solid var(--border)",
+                      borderBottom: "none", borderRight: "none",
+                    }} />
+
+                    <div style={{ fontSize: "10px", color: "var(--subtext)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>
+                      Histórico recente
+                    </div>
+
+                    {[
+                      { label: "Há 2 dias", val: prev2, next: prev1 },
+                      { label: "Ontem",    val: prev1, next: bid   },
+                      { label: "Agora",    val: bid,   next: null,  atual: true },
+                    ].map(({ label, val, next, atual }) => {
+                      if (val == null) return null;
+                      const subiu = next != null && next >= val;
+                      return (
+                        <div key={label} style={{
+                          display: "grid",
+                          gridTemplateColumns: "70px 1fr 16px",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "6px",
+                          padding: atual ? "6px 8px" : "2px 8px",
+                          borderRadius: atual ? "7px" : 0,
+                          backgroundColor: atual ? (isPositive ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.10)") : "transparent",
+                        }}>
+                          <span style={{ fontSize: "11px", fontWeight: atual ? "700" : "400", color: atual ? "var(--text)" : "var(--subtext)" }}>
+                            {label}
+                          </span>
+                          <span style={{ fontSize: atual ? "14px" : "13px", fontWeight: "700", color: atual ? (isPositive ? "#10b981" : "#ef4444") : "var(--text)", textAlign: "right" }}>
+                            {fmtVal(val)}
+                          </span>
+                          <span style={{ fontSize: "12px", fontWeight: "700", color: subiu ? "#10b981" : "#ef4444", textAlign: "center" }}>
+                            {!atual ? (subiu ? "▲" : "▼") : ""}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -583,17 +660,200 @@ function MarketTicker({ posicoes }) {
   );
 }
 
+/* ── Histórico de aportes de uma posição ── */
+function HistoricoAportes({ posicao, onClose }) {
+  const [aportes, setAportes] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [novoValor, setNovoValor] = useState("");
+  const [novaData, setNovaData] = useState(new Date().toISOString().slice(0, 10));
+  const [novaQtd, setNovaQtd] = useState("");
+  const [novoPreco, setNovoPreco] = useState("");
+  const [novaNota, setNovaNota] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => { buscar(); }, []);
+
+  const buscar = async () => {
+    setCarregando(true);
+    try { setAportes(await listarAportes(posicao.id)); } catch { }
+    setCarregando(false);
+  };
+
+  const handleAdicionar = async () => {
+    if (!novoValor) return;
+    setSalvando(true);
+    try {
+      await criarAporte(posicao.id, {
+        data: novaData,
+        valor: parseFloat(novoValor),
+        quantidade: novaQtd ? parseFloat(novaQtd) : null,
+        preco_unitario: novoPreco ? parseFloat(novoPreco) : null,
+        nota: novaNota || null,
+      });
+      setNovoValor(""); setNovaQtd(""); setNovoPreco(""); setNovaNota("");
+      await buscar();
+    } catch { }
+    setSalvando(false);
+  };
+
+  const handleDeletar = async (id) => {
+    try { await deletarAporte(id); await buscar(); } catch { }
+  };
+
+  const inputS = {
+    padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--border)",
+    backgroundColor: "var(--input)", color: "var(--text)", fontSize: "13px",
+    outline: "none", width: "100%", boxSizing: "border-box",
+  };
+  const tipo = TIPOS.find(t => t.value === posicao.tipo);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+      <div style={{ backgroundColor: "var(--card)", borderRadius: "20px", padding: "28px", width: "min(520px, calc(100vw - 32px))", maxHeight: "80vh", display: "flex", flexDirection: "column", border: "1px solid var(--border)", boxShadow: "0 24px 60px rgba(0,0,0,0.5)" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "12px", fontWeight: "700", backgroundColor: tipo?.color + "22", color: tipo?.color, padding: "2px 8px", borderRadius: "6px" }}>{posicao.ticker || posicao.nome}</span>
+              <h3 style={{ margin: 0, fontSize: "16px", color: "var(--text)" }}>Histórico de aportes</h3>
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--subtext)", marginTop: "4px" }}>
+              Total investido: <strong style={{ color: "var(--text)" }}>{fmt(posicao.valor_investido)}</strong>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ border: "none", background: "var(--input)", cursor: "pointer", color: "var(--subtext)", width: "30px", height: "30px", borderRadius: "8px", fontSize: "14px" }}>✕</button>
+        </div>
+
+        {/* Form novo aporte */}
+        <div style={{ backgroundColor: "var(--input)", borderRadius: "12px", padding: "16px", marginBottom: "16px", border: "1px solid var(--border)" }}>
+          <div style={{ fontSize: "11px", fontWeight: "600", color: "var(--subtext)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "12px" }}>Registrar aporte</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+            <div>
+              <div style={{ fontSize: "11px", color: "var(--subtext)", marginBottom: "4px" }}>Data *</div>
+              <input type="date" value={novaData} onChange={e => setNovaData(e.target.value)} style={inputS} />
+            </div>
+            <div>
+              <div style={{ fontSize: "11px", color: "var(--subtext)", marginBottom: "4px" }}>Valor (R$) *</div>
+              <input type="number" placeholder="0,00" value={novoValor} onChange={e => setNovoValor(e.target.value)} style={inputS} />
+            </div>
+            <div>
+              <div style={{ fontSize: "11px", color: "var(--subtext)", marginBottom: "4px" }}>Quantidade (opcional)</div>
+              <input type="number" placeholder="ex: 10" value={novaQtd} onChange={e => setNovaQtd(e.target.value)} style={inputS} />
+            </div>
+            <div>
+              <div style={{ fontSize: "11px", color: "var(--subtext)", marginBottom: "4px" }}>Preço unitário (opcional)</div>
+              <input type="number" placeholder="ex: 38,50" value={novoPreco} onChange={e => setNovoPreco(e.target.value)} style={inputS} />
+            </div>
+          </div>
+          <div style={{ marginBottom: "10px" }}>
+            <div style={{ fontSize: "11px", color: "var(--subtext)", marginBottom: "4px" }}>Nota (opcional)</div>
+            <input placeholder="ex: compra mensal" value={novaNota} onChange={e => setNovaNota(e.target.value)} style={inputS} />
+          </div>
+          <button
+            onClick={handleAdicionar}
+            disabled={!novoValor || salvando}
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "none", backgroundColor: !novoValor ? "var(--border)" : "#10b981", color: "white", fontWeight: "700", cursor: !novoValor ? "not-allowed" : "pointer", fontSize: "13px" }}
+          >
+            {salvando ? "Salvando..." : "+ Registrar aporte"}
+          </button>
+        </div>
+
+        {/* Lista de aportes */}
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {carregando ? (
+            <div style={{ color: "var(--subtext)", fontSize: "13px", textAlign: "center", padding: "20px" }}>Carregando...</div>
+          ) : aportes.length === 0 ? (
+            <div style={{ color: "var(--subtext)", fontSize: "13px", textAlign: "center", padding: "20px" }}>Nenhum aporte registrado ainda.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {aportes.map(a => {
+                const d = new Date(a.data);
+                const dataFmt = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+                return (
+                  <div key={a.id} style={{ display: "flex", alignItems: "center", gap: "12px", backgroundColor: "var(--input)", borderRadius: "10px", padding: "12px 14px", border: "1px solid var(--border)" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "13px", fontWeight: "700", color: "#10b981" }}>{fmt(a.valor)}</span>
+                        {a.quantidade && <span style={{ fontSize: "11px", color: "var(--subtext)" }}>{a.quantidade} un.</span>}
+                        {a.preco_unitario && <span style={{ fontSize: "11px", color: "var(--subtext)" }}>@ {fmt(a.preco_unitario)}</span>}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--subtext)", marginTop: "2px" }}>
+                        {dataFmt}{a.nota ? ` · ${a.nota}` : ""}
+                      </div>
+                    </div>
+                    <button onClick={() => handleDeletar(a.id)} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#ef4444", padding: "4px", fontSize: "14px" }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Página principal ── */
 export default function Investimentos() {
   const [posicoes, setPosicoes] = useState([]);
   const [saldoMensal, setSaldoMensal] = useState([]);
   const [modal, setModal] = useState(null); // null | "novo" | {item}
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [aportesModal, setAportesModal] = useState(null); // posição selecionada
+  const [atualizando, setAtualizando] = useState(false);
 
   useEffect(() => { carregar(); carregarSaldoMensal(); }, []);
 
   const carregar = async () => {
-    try { setPosicoes(await listarInvestimentos()); } catch { }
+    try {
+      const lista = await listarInvestimentos();
+      setPosicoes(lista);
+      atualizarPrecos(lista);
+    } catch { }
+  };
+
+  /* Auto-atualiza valor_atual de cada posição com preço de mercado */
+  const atualizarPrecos = async (lista) => {
+    setAtualizando(true);
+    const atualizadas = await Promise.all(lista.map(async (p) => {
+      const catalogEntry = CATALOGO.find(c => c.ticker === p.ticker);
+      if (!catalogEntry || catalogEntry.fonte === "manual") return p;
+      try {
+        const preco = await buscarPreco(catalogEntry);
+        if (!preco?.preco) return p;
+        const pm = p.valor_investido > 0 && p.valor_atual > 0
+          ? p.valor_atual / (p.valor_investido / (p.valor_atual || 1))
+          : null;
+        // Recalcula valor_atual se tiver preço médio implícito
+        const qtd = catalogEntry.fonte !== "manual" && p.valor_investido > 0 && p.rentabilidade_mes !== 0
+          ? null : null; // sem qtd armazenada, mantemos proporção
+        const novoValorAtual = p.valor_investido > 0 && p.valor_atual > 0
+          ? p.valor_atual * (preco.preco / (p.valor_atual / (p.valor_investido / p.valor_investido) || 1))
+          : p.valor_atual;
+
+        // Atualiza rentabilidade com variação do dia
+        const novaRentMes = preco.variacao_dia ?? p.rentabilidade_mes;
+        const novaRentAno = preco.variacao_ano ?? p.rentabilidade_ano;
+
+        const atualizado = {
+          ...p,
+          rentabilidade_mes: novaRentMes,
+          rentabilidade_ano: novaRentAno,
+        };
+        await editarInvestimento(p.id, {
+          nome: p.nome, ticker: p.ticker, tipo: p.tipo,
+          valor_investido: p.valor_investido, valor_atual: p.valor_atual,
+          rentabilidade_mes: novaRentMes,
+          rentabilidade_ano: novaRentAno,
+        });
+        return atualizado;
+      } catch { return p; }
+    }));
+    setPosicoes(atualizadas);
+    setAtualizando(false);
   };
 
   /* Busca o ano atual e calcula saldo livre por mês (Janeiro → mês atual) */
@@ -715,29 +975,36 @@ export default function Investimentos() {
         <div style={{
           flex: "1 1 280px",
           background: "linear-gradient(135deg, #059669 0%, #10b981 60%, #34d399 100%)",
-          borderRadius: "16px", padding: "28px 24px",
+          borderRadius: "16px", padding: "24px",
           color: "white", boxShadow: "0 8px 30px rgba(16,185,129,0.35)"
         }}>
-          <div style={{ fontSize: "13px", fontWeight: "500", opacity: 0.85, marginBottom: "8px" }}>
-            Patrimônio total
+          <div style={{ fontSize: "12px", fontWeight: "600", opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "6px" }}>
+            Patrimônio total {atualizando && <span style={{ opacity: 0.7, fontWeight: "400" }}>· atualizando...</span>}
           </div>
-          <div style={{ fontSize: "clamp(26px,4vw,36px)", fontWeight: "800", letterSpacing: "-1px", marginBottom: "20px" }}>
+          <div style={{ fontSize: "clamp(26px,4vw,34px)", fontWeight: "800", letterSpacing: "-1px", marginBottom: "20px" }}>
             {fmt(patrimonioTotal)}
           </div>
-          <div style={{ display: "flex", gap: "32px", flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontSize: "11px", opacity: 0.75, marginBottom: "4px" }}>Rentab. mês</div>
-              <div style={{ fontSize: "16px", fontWeight: "700" }}>{fmtPct(rentMediaMes)}</div>
+
+          {/* 3 métricas claras */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+            <div style={{ backgroundColor: "rgba(0,0,0,0.15)", borderRadius: "10px", padding: "10px 12px" }}>
+              <div style={{ fontSize: "10px", opacity: 0.75, marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.4px" }}>Investido</div>
+              <div style={{ fontSize: "14px", fontWeight: "700" }}>{fmt(totalInvestido)}</div>
             </div>
-            <div>
-              <div style={{ fontSize: "11px", opacity: 0.75, marginBottom: "4px" }}>Rentab. ano</div>
-              <div style={{ fontSize: "16px", fontWeight: "700" }}>{fmtPct(rentMediaAno)}</div>
+            <div style={{ backgroundColor: "rgba(0,0,0,0.15)", borderRadius: "10px", padding: "10px 12px" }}>
+              <div style={{ fontSize: "10px", opacity: 0.75, marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.4px" }}>Hoje vale</div>
+              <div style={{ fontSize: "14px", fontWeight: "700" }}>{fmt(patrimonioTotal)}</div>
             </div>
-            <div>
-              <div style={{ fontSize: "11px", opacity: 0.75, marginBottom: "4px" }}>Resultado total</div>
-              <div style={{ fontSize: "16px", fontWeight: "700", color: resultadoTotal >= 0 ? "#d1fae5" : "#fecaca" }}>
+            <div style={{ backgroundColor: resultadoTotal >= 0 ? "rgba(0,0,0,0.15)" : "rgba(220,38,38,0.3)", borderRadius: "10px", padding: "10px 12px" }}>
+              <div style={{ fontSize: "10px", opacity: 0.75, marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.4px" }}>Lucro/Prejuízo</div>
+              <div style={{ fontSize: "14px", fontWeight: "800", color: resultadoTotal >= 0 ? "#d1fae5" : "#fecaca" }}>
                 {resultadoTotal >= 0 ? "+" : ""}{fmt(resultadoTotal)}
               </div>
+              {totalInvestido > 0 && (
+                <div style={{ fontSize: "10px", opacity: 0.8, marginTop: "2px" }}>
+                  {((resultadoTotal / totalInvestido) * 100).toFixed(2)}%
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -925,6 +1192,15 @@ export default function Investimentos() {
 
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button
+                        onClick={() => setAportesModal(p)}
+                        title="Histórico de aportes"
+                        style={{
+                          padding: "6px 10px", borderRadius: "8px",
+                          border: "1px solid var(--border)", backgroundColor: "transparent",
+                          color: "#10b981", cursor: "pointer", fontSize: "12px", fontWeight: "700"
+                        }}
+                      >R$+</button>
+                      <button
                         onClick={() => setModal(p)}
                         style={{
                           padding: "6px 10px", borderRadius: "8px",
@@ -948,6 +1224,14 @@ export default function Investimentos() {
           </div>
         )}
       </div>
+
+      {/* ── MODAL HISTÓRICO APORTES ── */}
+      {aportesModal && (
+        <HistoricoAportes
+          posicao={aportesModal}
+          onClose={() => { setAportesModal(null); carregar(); }}
+        />
+      )}
 
       {/* ── MODAL ADICIONAR/EDITAR ── */}
       {modal && (

@@ -13,6 +13,7 @@ class Usuario(Base):
     senha = Column(String)
     nome = Column(String, nullable=True)
     data_nascimento = Column(String, nullable=True)  # formato "YYYY-MM-DD"
+    criado_em = Column(DateTime, default=datetime.utcnow, nullable=True)
 
     gastos = relationship("Gasto", back_populates="usuario")
     extratos = relationship("Extrato", back_populates="usuario")
@@ -66,4 +67,20 @@ class Investimento(Base):
     rentabilidade_ano = Column(Float, default=0) # % no ano
     criado_em         = Column(DateTime, default=datetime.utcnow)
 
-    usuario = relationship("Usuario")
+    usuario  = relationship("Usuario")
+    aportes  = relationship("Aporte", back_populates="investimento", cascade="all, delete-orphan")
+
+
+class Aporte(Base):
+    __tablename__ = "aportes"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    investimento_id = Column(Integer, ForeignKey("investimentos.id"), index=True)
+    usuario_id      = Column(Integer, ForeignKey("usuarios.id"), index=True)
+    data            = Column(DateTime, default=datetime.utcnow)
+    quantidade      = Column(Float, nullable=True)    # nº de ações/cotas (opcional)
+    preco_unitario  = Column(Float, nullable=True)    # preço por unidade (opcional)
+    valor           = Column(Float)                   # valor total do aporte
+    nota            = Column(String, nullable=True)
+
+    investimento = relationship("Investimento", back_populates="aportes")
