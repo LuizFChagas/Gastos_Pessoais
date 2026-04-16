@@ -221,7 +221,7 @@ function Layout({ children, toggleTheme, darkMode }) {
 
                 {/* Tema */}
                 <button
-                  onClick={() => { toggleTheme(); setMenuPerfil(false); }}
+                  onClick={toggleTheme}
                   style={{
                     width: "100%", display: "flex", alignItems: "center", gap: "10px",
                     padding: "12px 14px", border: "none", background: "transparent",
