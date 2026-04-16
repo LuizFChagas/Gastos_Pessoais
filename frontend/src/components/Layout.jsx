@@ -210,12 +210,15 @@ function Layout({ children, toggleTheme, darkMode }) {
                 zIndex: 100
               }}>
                 {/* Perfil */}
-                <button style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: "10px",
-                  padding: "12px 14px", border: "none", background: "transparent",
-                  color: "var(--text)", cursor: "pointer", fontSize: "13px", fontWeight: "500",
-                  borderBottom: "1px solid var(--border)"
-                }}>
+                <button
+                  onClick={() => { navigate("/app/perfil"); setMenuPerfil(false); }}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                    padding: "12px 14px", border: "none", background: "transparent",
+                    color: "var(--text)", cursor: "pointer", fontSize: "13px", fontWeight: "500",
+                    borderBottom: "1px solid var(--border)"
+                  }}
+                >
                   <User size={15} /> Perfil
                 </button>
 

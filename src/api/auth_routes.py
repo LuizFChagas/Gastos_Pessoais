@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import date
 import logging
 
 from src.database.deps import get_db
-from src.database.models import Usuario
+from src.database.models import Usuario, Gasto
 
-from src.auth.security import criar_token
+from src.auth.security import criar_token, pegar_usuario_logado
 from src.auth.hash import gerar_hash, verificar_senha
 
 
@@ -96,4 +97,26 @@ def login(dados: LoginRequest, db: Session = Depends(get_db)):
     return {
         "access_token": token,
         "token_type": "bearer"
+    }
+
+
+@router.get("/me")
+def me(usuario: Usuario = Depends(pegar_usuario_logado), db: Session = Depends(get_db)):
+    total_transacoes = db.query(func.count(Gasto.id)).filter(Gasto.usuario_id == usuario.id).scalar() or 0
+    total_entradas   = db.query(func.coalesce(func.sum(Gasto.valor), 0)).filter(
+        Gasto.usuario_id == usuario.id, Gasto.tipo == "entrada"
+    ).scalar() or 0
+    total_saidas     = db.query(func.coalesce(func.sum(Gasto.valor), 0)).filter(
+        Gasto.usuario_id == usuario.id, Gasto.tipo == "saida", Gasto.valor > 0
+    ).scalar() or 0
+
+    return {
+        "id":               usuario.id,
+        "nome":             usuario.nome,
+        "email":            usuario.email,
+        "data_nascimento":  usuario.data_nascimento,
+        "criado_em":        usuario.criado_em.isoformat() if usuario.criado_em else None,
+        "total_transacoes": total_transacoes,
+        "total_entradas":   float(total_entradas),
+        "total_saidas":     float(total_saidas),
     }

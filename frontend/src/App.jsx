@@ -9,6 +9,7 @@ import Transacoes from "./pages/Transacoes";
 import Importar from "./pages/Importar";
 import Relatorios from "./pages/Relatorios";
 import Investimentos from "./pages/Investimentos";
+import Perfil from "./pages/Perfil";
 
 import PrivateRoute from "./components/PrivateRoute";
 import Layout from "./components/Layout";
@@ -88,6 +89,17 @@ function App() {
             <PrivateRoute>
               <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
                 <Investimentos />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/app/perfil"
+          element={
+            <PrivateRoute>
+              <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
+                <Perfil />
               </Layout>
             </PrivateRoute>
           }

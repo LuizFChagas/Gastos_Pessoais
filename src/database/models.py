@@ -13,6 +13,7 @@ class Usuario(Base):
     senha = Column(String)
     nome = Column(String, nullable=True)
     data_nascimento = Column(String, nullable=True)  # formato "YYYY-MM-DD"
+    criado_em = Column(DateTime, default=datetime.utcnow)
 
     gastos = relationship("Gasto", back_populates="usuario")
     extratos = relationship("Extrato", back_populates="usuario")
