@@ -50,3 +50,20 @@ class Gasto(Base):
 
     usuario = relationship("Usuario", back_populates="gastos")
     extrato = relationship("Extrato", back_populates="gastos")
+
+
+class Investimento(Base):
+    __tablename__ = "investimentos"
+
+    id                = Column(Integer, primary_key=True, index=True)
+    usuario_id        = Column(Integer, ForeignKey("usuarios.id"), index=True)
+    nome              = Column(String)
+    ticker            = Column(String, nullable=True)
+    tipo              = Column(String)           # renda_fixa | acoes | fiis | cripto | outros
+    valor_investido   = Column(Float, default=0)
+    valor_atual       = Column(Float, default=0)
+    rentabilidade_mes = Column(Float, default=0) # % no mês
+    rentabilidade_ano = Column(Float, default=0) # % no ano
+    criado_em         = Column(DateTime, default=datetime.utcnow)
+
+    usuario = relationship("Usuario")

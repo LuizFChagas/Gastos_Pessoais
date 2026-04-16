@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.auth_routes import router as auth_router
 from src.api.gastos_routes import router as gastos_router
+from src.api.investimentos_routes import router as investimentos_router
 
 from src.database.database import engine
 from src.database.models import Base
@@ -27,8 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router, prefix="/auth", tags=["Auth"])
-app.include_router(gastos_router, prefix="/gastos", tags=["Gastos"])
+app.include_router(auth_router,         prefix="/auth",         tags=["Auth"])
+app.include_router(gastos_router,       prefix="/gastos",       tags=["Gastos"])
+app.include_router(investimentos_router,prefix="/investimentos", tags=["Investimentos"])
 
 
 @app.get("/")

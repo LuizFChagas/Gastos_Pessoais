@@ -1,17 +1,38 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard, CreditCard, BarChart2, TrendingUp, FolderOpen,
+  LogOut, Moon, Sun, Lightbulb, User, ChevronUp,
+} from "lucide-react";
+
+const DICAS = [
+  "Acompanhe seus gastos diariamente para manter o controle financeiro.",
+  "Reserve pelo menos 10% da sua renda todo mês.",
+  "Evite parcelamentos longos — juros corroem seu orçamento.",
+  "Revise suas assinaturas mensais e cancele o que não usa.",
+  "Tenha uma reserva de emergência de 3 a 6 meses de despesas.",
+  "Prefira pagar à vista e negocie desconto.",
+  "Invista o dinheiro que sobra antes de gastar o resto.",
+  "Pequenos gastos diários somam muito no fim do mês.",
+  "Compare preços antes de comprar — todo real conta.",
+  "Defina metas financeiras claras para se manter motivada.",
+];
 
 const MENU = [
-  { to: "/app",            icon: "📊", label: "Dashboard"  },
-  { to: "/app/transacoes", icon: "💳", label: "Transações" },
-  { to: "/app/relatorios", icon: "📈", label: "Relatórios" },
-  { to: "/app/importar",   icon: "📁", label: "Importar"   },
+  { to: "/app",                Icon: LayoutDashboard, label: "Dashboard"     },
+  { to: "/app/transacoes",     Icon: CreditCard,      label: "Transações"    },
+  { to: "/app/relatorios",     Icon: BarChart2,        label: "Relatórios"    },
+  { to: "/app/investimentos",  Icon: TrendingUp,       label: "Investimentos" },
+  { to: "/app/importar",       Icon: FolderOpen,       label: "Importar"      },
 ];
 
 function Layout({ children, toggleTheme, darkMode }) {
   const location  = useLocation();
   const navigate  = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [menuPerfil, setMenuPerfil] = useState(false);
+
+  const dica = useMemo(() => DICAS[new Date().getDate() % DICAS.length], []);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -46,9 +67,9 @@ function Layout({ children, toggleTheme, darkMode }) {
           </h2>
           <button
             onClick={toggleTheme}
-            style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "20px" }}
+            style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--subtext)", display: "flex", alignItems: "center" }}
           >
-            {darkMode ? "🌙" : "☀️"}
+            {darkMode ? <Moon size={20} /> : <Sun size={20} />}
           </button>
         </div>
 
@@ -73,7 +94,7 @@ function Layout({ children, toggleTheme, darkMode }) {
           borderTop: "1px solid var(--border)",
           display: "flex"
         }}>
-          {MENU.map(({ to, icon, label }) => (
+          {MENU.map(({ to, Icon, label }) => (
             <Link
               key={to}
               to={to}
@@ -91,7 +112,7 @@ function Layout({ children, toggleTheme, darkMode }) {
                 transition: "all 0.15s"
               }}
             >
-              <span style={{ fontSize: "18px" }}>{icon}</span>
+              <Icon size={20} />
               {label}
             </Link>
           ))}
@@ -109,7 +130,7 @@ function Layout({ children, toggleTheme, darkMode }) {
               gap: "3px", cursor: "pointer"
             }}
           >
-            <span style={{ fontSize: "18px" }}>🚪</span>
+            <LogOut size={20} />
             Sair
           </button>
         </div>
@@ -131,18 +152,12 @@ function Layout({ children, toggleTheme, darkMode }) {
         flexDirection: "column",
         boxShadow: "var(--shadow)"
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <h2 style={{ color: "#22c55e", fontWeight: "bold", margin: 0 }}>FinanceIA</h2>
-          <button
-            onClick={toggleTheme}
-            style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: "18px" }}
-          >
-            {darkMode ? "🌙" : "☀️"}
-          </button>
         </div>
 
         <div style={{ marginTop: "40px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
-          {MENU.map(({ to, icon, label }) => (
+          {MENU.map(({ to, Icon, label }) => (
             <Link
               key={to}
               to={to}
@@ -158,22 +173,100 @@ function Layout({ children, toggleTheme, darkMode }) {
                 transition: "background 0.15s, color 0.15s"
               }}
             >
-              <span>{icon}</span> {label}
+              <Icon size={18} /> {label}
             </Link>
           ))}
         </div>
 
-        <button
-          onClick={handleLogout}
-          style={{
-            marginTop: "auto", padding: "10px",
-            borderRadius: "8px", border: "1px solid var(--border)",
-            backgroundColor: "transparent", color: "#ef4444",
-            cursor: "pointer", fontWeight: "500", fontSize: "14px", textAlign: "left"
-          }}
-        >
-          🚪 Sair
-        </button>
+        {/* DICA DO DIA */}
+        <div style={{
+          marginTop: "auto",
+          background: "linear-gradient(135deg, #059669, #10b981)",
+          borderRadius: "14px",
+          padding: "16px",
+          marginBottom: "12px",
+          color: "white",
+        }}>
+          <div style={{ marginBottom: "8px" }}><Lightbulb size={18} /></div>
+          <div style={{ fontWeight: "700", fontSize: "13px", marginBottom: "6px" }}>Dica do dia</div>
+          <div style={{ fontSize: "12px", lineHeight: "1.5", opacity: 0.9 }}>{dica}</div>
+        </div>
+
+        {/* PERFIL */}
+        <div style={{ position: "relative" }}>
+          {/* Dropdown */}
+          {menuPerfil && (
+            <>
+              {/* overlay para fechar */}
+              <div
+                onClick={() => setMenuPerfil(false)}
+                style={{ position: "fixed", inset: 0, zIndex: 99 }}
+              />
+              <div style={{
+                position: "absolute", bottom: "calc(100% + 8px)", left: 0, right: 0,
+                backgroundColor: "var(--card)", border: "1px solid var(--border)",
+                borderRadius: "12px", overflow: "hidden",
+                boxShadow: "0 -8px 24px rgba(0,0,0,0.2)",
+                zIndex: 100
+              }}>
+                {/* Perfil */}
+                <button
+                  onClick={() => { navigate("/app/perfil"); setMenuPerfil(false); }}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                    padding: "12px 14px", border: "none", background: "transparent",
+                    color: "var(--text)", cursor: "pointer", fontSize: "13px", fontWeight: "500",
+                    borderBottom: "1px solid var(--border)"
+                  }}
+                >
+                  <User size={15} /> Perfil
+                </button>
+
+                {/* Tema */}
+                <button
+                  onClick={toggleTheme}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                    padding: "12px 14px", border: "none", background: "transparent",
+                    color: "var(--text)", cursor: "pointer", fontSize: "13px", fontWeight: "500",
+                    borderBottom: "1px solid var(--border)"
+                  }}
+                >
+                  {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+                  {darkMode ? "Modo claro" : "Modo escuro"}
+                </button>
+
+                {/* Sair */}
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                    padding: "12px 14px", border: "none", background: "transparent",
+                    color: "#ef4444", cursor: "pointer", fontSize: "13px", fontWeight: "500"
+                  }}
+                >
+                  <LogOut size={15} /> Sair
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Botão principal — avatar */}
+          <button
+            onClick={() => setMenuPerfil((v) => !v)}
+            style={{
+              width: "40px", height: "40px", borderRadius: "50%",
+              background: "linear-gradient(135deg, #10b981, #059669)",
+              border: "2px solid transparent",
+              outline: menuPerfil ? "2px solid #10b981" : "none",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", transition: "outline 0.15s",
+              flexShrink: 0
+            }}
+          >
+            <User size={18} color="white" />
+          </button>
+        </div>
       </div>
 
       {/* CONTEÚDO */}

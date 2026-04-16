@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { importarExtrato, listarExtratos, deletarExtrato } from "../api/gastosApi";
+import { FolderOpen, Upload, Trash2, CheckCircle } from "lucide-react";
 
 function Importar() {
   const [arquivo, setArquivo] = useState(null);
@@ -143,10 +144,9 @@ function Importar() {
             backgroundColor: arquivo ? "rgba(16,185,129,0.15)" : "var(--input)",
             display: "flex", alignItems: "center", justifyContent: "center",
             margin: "0 auto 12px",
-            fontSize: "22px",
             transition: "background 0.2s"
           }}>
-            {arquivo ? "✅" : "📂"}
+            {arquivo ? <CheckCircle size={22} color="#10b981" /> : <FolderOpen size={22} color="var(--subtext)" />}
           </div>
 
           <div style={{ fontWeight: "600", color: "var(--text)", marginBottom: "4px", fontSize: "15px" }}>
@@ -232,7 +232,7 @@ function Importar() {
             boxShadow: carregando ? "none" : "0 2px 12px rgba(16,185,129,0.35)"
           }}
         >
-          {carregando ? "Processando..." : "⬆️ Processar"}
+          {carregando ? "Processando..." : <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Upload size={15} /> Processar</span>}
         </button>
       </div>
 
@@ -296,7 +296,7 @@ function Importar() {
                   transition: "background 0.2s"
                 }}
               >
-                🗑️
+                <Trash2 size={15} />
               </button>
             </div>
           ))

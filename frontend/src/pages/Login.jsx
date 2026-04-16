@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { login } from "../api/authApi";
 import { useNavigate, Link } from "react-router-dom";
+import { Wallet, Bot, Zap, TrendingUp, ShoppingBag, Car, Bell, Home, Gamepad2, Target, CreditCard } from "lucide-react";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -8,6 +9,7 @@ function Login() {
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [manterConectado, setManterConectado] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [darkMode, setDarkMode] = useState(
     () => document.body.classList.contains("dark")
   );
@@ -110,7 +112,7 @@ function Login() {
           { label: "Entradas", value: "R$ 7.132", color: "#10b981" },
           { label: "Saídas",   value: "R$ 6.551", color: "#ef4444" },
           { label: "Saldo",    value: "R$ 581",   color: "#3b82f6" },
-        ].map(item => (
+        ].map((item) => (
           <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "12px", color: "#7d8fa8" }}>{item.label}</span>
             <span style={{ fontSize: "13px", fontWeight: "700", color: item.color }}>{item.value}</span>
@@ -130,12 +132,12 @@ function Login() {
       }}>
         <div style={{ fontSize: "10px", color: "#4a5568", textTransform: "uppercase", letterSpacing: "1px" }}>Últimas transações</div>
         {[
-          { icon: "💰", name: "Salário",   cat: "Entrada",     value: "+R$ 7.132", color: "#10b981" },
-          { icon: "🍔", name: "iFood",     cat: "Alimentação", value: "-R$ 45,90", color: "#ef4444" },
-          { icon: "🔔", name: "Netflix",   cat: "Assinaturas", value: "-R$ 39,90", color: "#ef4444" },
-        ].map(item => (
+          { Icon: Wallet,  name: "Salário",   cat: "Entrada",     value: "+R$ 7.132", color: "#10b981" },
+          { Icon: ShoppingBag, name: "iFood", cat: "Alimentação", value: "-R$ 45,90", color: "#ef4444" },
+          { Icon: Bell,    name: "Netflix",   cat: "Assinaturas", value: "-R$ 39,90", color: "#ef4444" },
+        ].map((item) => (
           <div key={item.name} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", flexShrink: 0 }}>{item.icon}</div>
+            <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><item.Icon size={14} color="#7d8fa8" /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "12px", fontWeight: "600", color: "#c8d0de" }}>{item.name}</div>
               <div style={{ fontSize: "10px", color: "#4a5568" }}>{item.cat}</div>
@@ -157,13 +159,13 @@ function Login() {
       }}>
         <div style={{ fontSize: "10px", color: "#4a5568", textTransform: "uppercase", letterSpacing: "1px" }}>Por categoria</div>
         {[
-          { icon: "🍔", label: "Alimentação", pct: 32, color: "#f97316" },
-          { icon: "🚗", label: "Transporte",  pct: 18, color: "#3b82f6" },
-          { icon: "🎮", label: "Lazer",        pct: 24, color: "#8b5cf6" },
-          { icon: "🔔", label: "Assinaturas",  pct: 14, color: "#0ea5e9" },
-        ].map(item => (
+          { Icon: ShoppingBag, label: "Alimentação", pct: 32, color: "#f97316" },
+          { Icon: Car,         label: "Transporte",  pct: 18, color: "#3b82f6" },
+          { Icon: Gamepad2,    label: "Lazer",        pct: 24, color: "#8b5cf6" },
+          { Icon: Bell,        label: "Assinaturas",  pct: 14, color: "#0ea5e9" },
+        ].map((item) => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "13px", width: "18px" }}>{item.icon}</span>
+            <item.Icon size={13} color={item.color} style={{ flexShrink: 0 }} />
             <div style={{ flex: 1, height: "4px", background: "rgba(255,255,255,0.07)", borderRadius: "2px", overflow: "hidden" }}>
               <div style={{ width: `${item.pct}%`, height: "100%", background: item.color, borderRadius: "2px" }} />
             </div>
@@ -183,7 +185,7 @@ function Login() {
         pointerEvents: "none"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "28px", height: "28px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>🤖</div>
+          <div style={{ width: "28px", height: "28px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><Bot size={14} color="#34d399" /></div>
           <span style={{ fontSize: "12px", fontWeight: "600", color: "#34d399" }}>IA Ativa</span>
         </div>
         <div style={{ fontSize: "11px", color: "#4a5568", lineHeight: 1.5 }}>
@@ -213,7 +215,7 @@ function Login() {
         <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: "4px", height: "6px", overflow: "hidden" }}>
           <div style={{ width: "64%", height: "100%", background: "linear-gradient(90deg, #10b981, #34d399)", borderRadius: "4px" }} />
         </div>
-        <div style={{ fontSize: "10px", color: "#4a5568" }}>Você está no caminho certo 🎯</div>
+        <div style={{ fontSize: "10px", color: "#4a5568", display: "flex", alignItems: "center", gap: "4px" }}><Target size={10} color="#4a5568" /> Você está no caminho certo</div>
       </div>
 
       {/* Card notificação — top center-left */}
@@ -226,7 +228,7 @@ function Login() {
         display: "flex", alignItems: "center", gap: "10px",
         pointerEvents: "none"
       }}>
-        <div style={{ fontSize: "18px" }}>⚡</div>
+        <div style={{ display: "flex", alignItems: "center" }}><Zap size={18} color="#fbbf24" /></div>
         <div>
           <div style={{ fontSize: "12px", fontWeight: "600", color: "#fbbf24" }}>Novo extrato importado</div>
           <div style={{ fontSize: "10px", color: "#4a5568" }}>47 transações processadas</div>
@@ -245,13 +247,13 @@ function Login() {
       }}>
         <div style={{ fontSize: "10px", color: "#4a5568", textTransform: "uppercase", letterSpacing: "1px" }}>Top gastos</div>
         {[
-          { icon: "🏠", name: "Aluguel",   value: "R$ 1.800", w: "72%" },
-          { icon: "🚗", name: "Combustível",value: "R$ 420",   w: "35%" },
-          { icon: "🛒", name: "Mercado",   value: "R$ 380",   w: "30%" },
-        ].map(item => (
+          { Icon: Home,        name: "Aluguel",      value: "R$ 1.800", w: "72%" },
+          { Icon: Car,         name: "Combustível",  value: "R$ 420",   w: "35%" },
+          { Icon: ShoppingBag, name: "Mercado",      value: "R$ 380",   w: "30%" },
+        ].map((item) => (
           <div key={item.name} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "11px", color: "#7d8fa8" }}>{item.icon} {item.name}</span>
+              <span style={{ fontSize: "11px", color: "#7d8fa8", display: "flex", alignItems: "center", gap: "4px" }}><item.Icon size={11} /> {item.name}</span>
               <span style={{ fontSize: "11px", fontWeight: "700", color: "#f0f4ff" }}>{item.value}</span>
             </div>
             <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: "3px", height: "3px" }}>
@@ -271,7 +273,7 @@ function Login() {
         display: "flex", alignItems: "center", gap: "14px",
         pointerEvents: "none"
       }}>
-        <div style={{ fontSize: "22px" }}>💹</div>
+        <div style={{ display: "flex", alignItems: "center" }}><TrendingUp size={22} color="#60a5fa" /></div>
         <div>
           <div style={{ fontSize: "12px", fontWeight: "600", color: "#60a5fa" }}>Economia vs mês anterior</div>
           <div style={{ fontSize: "16px", fontWeight: "800", color: "#10b981" }}>+R$ 430,00 <span style={{ fontSize: "11px", color: "#34d399" }}>↑ 12%</span></div>
@@ -321,10 +323,9 @@ function Login() {
             height: "56px",
             backgroundColor: "#10b981",
             borderRadius: "16px",
-            fontSize: "26px",
             marginBottom: "16px"
           }}>
-            💰
+            <Wallet size={26} color="white" />
           </div>
           <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "700", color: "#f0f4ff" }}>
             FinanceIA
@@ -369,16 +370,41 @@ function Login() {
               <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
                 Senha
               </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                required
-                style={inputStyle}
-                onFocus={(e) => e.target.style.borderColor = "#10b981"}
-                onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={mostrarSenha ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  required
+                  style={{ ...inputStyle, paddingRight: "42px" }}
+                  onFocus={(e) => e.target.style.borderColor = "#10b981"}
+                  onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(!mostrarSenha)}
+                  style={{
+                    position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+                    background: "transparent", border: "none", cursor: "pointer",
+                    color: "#7d8fa8", fontSize: "16px", padding: "0", lineHeight: 1,
+                    display: "flex", alignItems: "center"
+                  }}
+                >
+                  {mostrarSenha ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
