@@ -248,32 +248,20 @@ function Layout({ children, toggleTheme, darkMode }) {
             </>
           )}
 
-          {/* Botão principal */}
+          {/* Botão principal — avatar */}
           <button
             onClick={() => setMenuPerfil((v) => !v)}
             style={{
-              width: "100%", display: "flex", alignItems: "center", gap: "10px",
-              padding: "10px 12px", borderRadius: "10px",
-              border: "1px solid var(--border)", backgroundColor: "transparent",
-              cursor: "pointer", transition: "background 0.15s"
+              width: "40px", height: "40px", borderRadius: "50%",
+              background: "linear-gradient(135deg, #10b981, #059669)",
+              border: "2px solid transparent",
+              outline: menuPerfil ? "2px solid #10b981" : "none",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", transition: "outline 0.15s",
+              flexShrink: 0
             }}
           >
-            <div style={{
-              width: "32px", height: "32px", borderRadius: "50%",
-              background: "linear-gradient(135deg, #10b981, #059669)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0
-            }}>
-              <User size={16} color="white" />
-            </div>
-            <span style={{ flex: 1, textAlign: "left", fontSize: "13px", fontWeight: "500", color: "var(--text)" }}>
-              Minha conta
-            </span>
-            <ChevronUp
-              size={14}
-              color="var(--subtext)"
-              style={{ transform: menuPerfil ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}
-            />
+            <User size={18} color="white" />
           </button>
         </div>
       </div>
