@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, CreditCard, BarChart2, TrendingUp, FolderOpen,
-  LogOut, Moon, Sun, Lightbulb,
+  LogOut, Moon, Sun, Lightbulb, User, ChevronUp,
 } from "lucide-react";
 
 const DICAS = [
@@ -30,6 +30,7 @@ function Layout({ children, toggleTheme, darkMode }) {
   const location  = useLocation();
   const navigate  = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [menuPerfil, setMenuPerfil] = useState(false);
 
   const dica = useMemo(() => DICAS[new Date().getDate() % DICAS.length], []);
 
@@ -197,17 +198,90 @@ function Layout({ children, toggleTheme, darkMode }) {
           <div style={{ fontSize: "12px", lineHeight: "1.5", opacity: 0.9 }}>{dica}</div>
         </div>
 
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: "10px",
-            borderRadius: "8px", border: "1px solid var(--border)",
-            backgroundColor: "transparent", color: "#ef4444",
-            cursor: "pointer", fontWeight: "500", fontSize: "14px", textAlign: "left"
-          }}
-        >
-          <LogOut size={16} style={{ marginRight: "6px" }} /> Sair
-        </button>
+        {/* PERFIL */}
+        <div style={{ position: "relative" }}>
+          {/* Dropdown */}
+          {menuPerfil && (
+            <>
+              {/* overlay para fechar */}
+              <div
+                onClick={() => setMenuPerfil(false)}
+                style={{ position: "fixed", inset: 0, zIndex: 99 }}
+              />
+              <div style={{
+                position: "absolute", bottom: "calc(100% + 8px)", left: 0, right: 0,
+                backgroundColor: "var(--card)", border: "1px solid var(--border)",
+                borderRadius: "12px", overflow: "hidden",
+                boxShadow: "0 -8px 24px rgba(0,0,0,0.2)",
+                zIndex: 100
+              }}>
+                {/* Perfil */}
+                <button style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                  padding: "12px 14px", border: "none", background: "transparent",
+                  color: "var(--text)", cursor: "pointer", fontSize: "13px", fontWeight: "500",
+                  borderBottom: "1px solid var(--border)"
+                }}>
+                  <User size={15} /> Perfil
+                </button>
+
+                {/* Tema */}
+                <button
+                  onClick={() => { toggleTheme(); setMenuPerfil(false); }}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                    padding: "12px 14px", border: "none", background: "transparent",
+                    color: "var(--text)", cursor: "pointer", fontSize: "13px", fontWeight: "500",
+                    borderBottom: "1px solid var(--border)"
+                  }}
+                >
+                  {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+                  {darkMode ? "Modo claro" : "Modo escuro"}
+                </button>
+
+                {/* Sair */}
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                    padding: "12px 14px", border: "none", background: "transparent",
+                    color: "#ef4444", cursor: "pointer", fontSize: "13px", fontWeight: "500"
+                  }}
+                >
+                  <LogOut size={15} /> Sair
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Botão principal */}
+          <button
+            onClick={() => setMenuPerfil((v) => !v)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: "10px",
+              padding: "10px 12px", borderRadius: "10px",
+              border: "1px solid var(--border)", backgroundColor: "transparent",
+              cursor: "pointer", transition: "background 0.15s"
+            }}
+          >
+            <div style={{
+              width: "32px", height: "32px", borderRadius: "50%",
+              background: "linear-gradient(135deg, #10b981, #059669)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0
+            }}>
+              <User size={16} color="white" />
+            </div>
+            <span style={{ flex: 1, textAlign: "left", fontSize: "13px", fontWeight: "500", color: "var(--text)" }}>
+              Minha conta
+            </span>
+            <ChevronUp
+              size={14}
+              color="var(--subtext)"
+              style={{ transform: menuPerfil ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}
+            />
+          </button>
+        </div>
       </div>
 
       {/* CONTEÚDO */}
