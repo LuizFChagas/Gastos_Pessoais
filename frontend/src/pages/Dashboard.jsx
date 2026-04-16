@@ -102,24 +102,32 @@ function Dashboard() {
     }
   };
 
-  // Inicialização: carrega meses, corrige mês se necessário e busca dados tudo junto
+  // Inicialização: carrega meses, corrige ano/mês se necessário e busca dados
   useEffect(() => {
     const inicializar = async () => {
       try {
         const meses = await listarMesesDisponiveis();
         setMesesComDados(meses);
 
-        const disponiveis = meses
-          .filter(m => m.ano === anoSelecionado)
-          .map(m => m.mes);
+        if (meses.length === 0) { await carregarDados(); return; }
 
+        // Verifica se o ano salvo tem dados; se não, usa o ano mais recente disponível
+        let anoCorreto = anoSelecionado;
+        const anosOk = [...new Set(meses.map(m => m.ano))];
+        if (!anosOk.includes(anoCorreto)) {
+          anoCorreto = Math.max(...anosOk);
+          setAnoSelecionado(anoCorreto);
+        }
+
+        // Verifica se o mês salvo está disponível para o ano correto
+        const disponiveis = meses.filter(m => m.ano === anoCorreto).map(m => m.mes);
         let mesCorreto = mesSelecionado;
         if (periodo === "mes_custom" && disponiveis.length > 0 && !disponiveis.includes(mesSelecionado)) {
           mesCorreto = disponiveis[disponiveis.length - 1];
           setMesSelecionado(mesCorreto);
         }
 
-        await carregarDados(mesCorreto, anoSelecionado, periodo);
+        await carregarDados(mesCorreto, anoCorreto, periodo);
       } catch {
         await carregarDados();
       }
