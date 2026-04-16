@@ -152,14 +152,8 @@ function Layout({ children, toggleTheme, darkMode }) {
         flexDirection: "column",
         boxShadow: "var(--shadow)"
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <h2 style={{ color: "#22c55e", fontWeight: "bold", margin: 0 }}>FinanceIA</h2>
-          <button
-            onClick={toggleTheme}
-            style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--subtext)", display: "flex", alignItems: "center" }}
-          >
-            {darkMode ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
         </div>
 
         <div style={{ marginTop: "40px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
