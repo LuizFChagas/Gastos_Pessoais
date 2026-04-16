@@ -53,6 +53,29 @@ body:not(.dark) {
 }
 
 /* ========================= */
+/* 🔢 INPUTS — sem setas     */
+/* ========================= */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* ========================= */
+/* 🚫 SCROLLBARS ocultas     */
+/* ========================= */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* ========================= */
 /* 📱 MOBILE                 */
 /* ========================= */
 @media (max-width: 767px) {
