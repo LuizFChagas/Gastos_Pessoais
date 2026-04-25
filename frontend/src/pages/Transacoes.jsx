@@ -102,6 +102,8 @@ function Transacoes() {
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todos");
   const [busca, setBusca] = useState("");
   const [tipoFiltro, setTipoFiltro] = useState("todos");
+  const [mesFiltro, setMesFiltro] = useState("todos");
+  const [anoFiltro, setAnoFiltro] = useState(String(new Date().getFullYear()));
   const [openModal, setOpenModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [gastoSelecionado, setGastoSelecionado] = useState(null);
@@ -216,13 +218,25 @@ function Transacoes() {
     return true;
   };
 
+  const NOMES_MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+  const anosDisponiveis = [...new Set(transacoes.map(t => new Date(t.data_hora).getFullYear()))].sort((a, b) => b - a);
+  const mesesDisponiveisNoAno = [...new Set(
+    transacoes
+      .filter(t => anoFiltro === "todos" || String(new Date(t.data_hora).getFullYear()) === anoFiltro)
+      .map(t => new Date(t.data_hora).getMonth())
+  )].sort((a, b) => b - a);
+
   const transacoesFiltradas = transacoes.filter((t) => {
+    const data = new Date(t.data_hora);
     const matchCategoria = categoriaSelecionada === "todos" ||
       t.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase();
     const matchBusca =
       t.descricao?.toLowerCase().includes(busca.toLowerCase()) ||
       t.banco?.toLowerCase().includes(busca.toLowerCase());
-    return matchCategoria && matchBusca && matchTipo(t);
+    const matchAno = anoFiltro === "todos" || String(data.getFullYear()) === anoFiltro;
+    const matchMes = mesFiltro === "todos" || String(data.getMonth()) === mesFiltro;
+    return matchCategoria && matchBusca && matchTipo(t) && matchAno && matchMes;
   });
 
   const formatarDataBonita = (dataStr) => {
@@ -301,12 +315,28 @@ function Transacoes() {
         backgroundColor: "var(--card)", padding: "15px",
         borderRadius: "12px", marginTop: "20px"
       }}>
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <input
             placeholder="🔍 Buscar..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)" }}
+            style={{ flex: 1, minWidth: "160px", padding: "10px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)" }}
+          />
+          <CustomSelect
+            value={anoFiltro}
+            onChange={(v) => { setAnoFiltro(v); setMesFiltro("todos"); }}
+            options={[
+              { value: "todos", label: "Todos os anos" },
+              ...anosDisponiveis.map(a => ({ value: String(a), label: String(a) }))
+            ]}
+          />
+          <CustomSelect
+            value={mesFiltro}
+            onChange={setMesFiltro}
+            options={[
+              { value: "todos", label: "Todos os meses" },
+              ...mesesDisponiveisNoAno.map(m => ({ value: String(m), label: NOMES_MESES[m] }))
+            ]}
           />
           <CustomSelect
             value={categoriaSelecionada}
