@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getPerfil } from "../api/perfilApi";
-import { User, Mail, Calendar, Clock, TrendingDown, TrendingUp, BarChart2 } from "lucide-react";
+import { toggle2FA } from "../api/authApi";
+import { User, Mail, Calendar, Clock, TrendingDown, TrendingUp, BarChart2, Shield, ShieldCheck } from "lucide-react";
 
 const fmt = (v) =>
   Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -56,12 +57,26 @@ function formatarData(str) {
 export default function Perfil() {
   const [perfil, setPerfil] = useState(null);
   const [erro, setErro] = useState(false);
+  const [twoFA, setTwoFA] = useState(false);
+  const [toggleCarregando, setToggleCarregando] = useState(false);
 
   useEffect(() => {
     getPerfil()
-      .then(setPerfil)
+      .then((data) => { setPerfil(data); setTwoFA(!!data.two_fa_enabled); })
       .catch(() => setErro(true));
   }, []);
+
+  const handleToggle2FA = async () => {
+    setToggleCarregando(true);
+    try {
+      const res = await toggle2FA(!twoFA);
+      setTwoFA(res.two_fa_enabled);
+    } catch {
+      // silently ignore
+    } finally {
+      setToggleCarregando(false);
+    }
+  };
 
   const cardStyle = {
     backgroundColor: "var(--card)",
@@ -186,6 +201,48 @@ export default function Perfil() {
             <div style={{ fontSize: "11px", color: "var(--subtext)", marginTop: "2px" }}>Total saídas</div>
           </div>
 
+        </div>
+      </div>
+
+      {/* SEGURANÇA */}
+      <div style={cardStyle}>
+        <h3 style={{ margin: "0 0 16px", color: "var(--text)", fontSize: "15px", fontWeight: "600" }}>Segurança</h3>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{
+              width: "36px", height: "36px", borderRadius: "10px",
+              backgroundColor: twoFA ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.05)",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+            }}>
+              {twoFA ? <ShieldCheck size={16} color="#10b981" /> : <Shield size={16} color="#7d8fa8" />}
+            </div>
+            <div>
+              <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>Verificação em 2 etapas</div>
+              <div style={{ fontSize: "12px", color: twoFA ? "#10b981" : "var(--subtext)", marginTop: "2px" }}>
+                {twoFA ? "Ativa — código enviado por email no login" : "Desativada"}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleToggle2FA}
+            disabled={toggleCarregando}
+            style={{
+              padding: "8px 18px",
+              borderRadius: "8px",
+              border: "1px solid",
+              borderColor: twoFA ? "rgba(239,68,68,0.4)" : "rgba(16,185,129,0.4)",
+              backgroundColor: twoFA ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)",
+              color: twoFA ? "#ef4444" : "#10b981",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: toggleCarregando ? "not-allowed" : "pointer",
+              opacity: toggleCarregando ? 0.6 : 1,
+              transition: "all 0.2s",
+              whiteSpace: "nowrap"
+            }}
+          >
+            {toggleCarregando ? "..." : twoFA ? "Desativar" : "Ativar"}
+          </button>
         </div>
       </div>
 

@@ -13,7 +13,7 @@ function MainLayout() {
           padding: "20px"
         }}
       >
-        <h2 style={{ color: "#16a34a" }}>FinanceIA</h2>
+        <h2 style={{ color: "#16a34a" }}>Finly</h2>
 
         <nav style={{ marginTop: "30px", display: "flex", flexDirection: "column", gap: "15px" }}>
           

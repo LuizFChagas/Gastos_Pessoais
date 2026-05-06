@@ -5,6 +5,10 @@ import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
+import EsqueciSenha from "./pages/EsqueciSenha";
+import RedefinirSenha from "./pages/RedefinirSenha";
+import VerificarEmail from "./pages/VerificarEmail";
+import Duo from "./pages/Duo";
 import Transacoes from "./pages/Transacoes";
 import Importar from "./pages/Importar";
 import Relatorios from "./pages/Relatorios";
@@ -46,8 +50,11 @@ function App() {
         {/* Página inicial pública */}
         <Route path="/" element={<Landing />} />
 
-        <Route path="/login"    element={<Login />} />
-        <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/login"           element={<Login />} />
+        <Route path="/cadastro"        element={<Cadastro />} />
+        <Route path="/esqueci-senha"   element={<EsqueciSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        <Route path="/verificar-email" element={<VerificarEmail />} />
 
         {/* App autenticado */}
         <Route
@@ -100,6 +107,17 @@ function App() {
             <PrivateRoute>
               <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
                 <Perfil />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/app/duo"
+          element={
+            <PrivateRoute>
+              <Layout toggleTheme={toggleTheme} darkMode={darkMode}>
+                <Duo />
               </Layout>
             </PrivateRoute>
           }

@@ -14,6 +14,14 @@ class Usuario(Base):
     nome = Column(String, nullable=True)
     data_nascimento = Column(String, nullable=True)  # formato "YYYY-MM-DD"
     criado_em = Column(DateTime, default=datetime.utcnow, nullable=True)
+    two_fa_enabled = Column(Boolean, default=False, nullable=True)
+    otp_code = Column(String, nullable=True)
+    otp_expiry = Column(DateTime, nullable=True)
+    email_verificado = Column(Boolean, default=False, nullable=True)
+    verificacao_token = Column(String, nullable=True)
+    reset_token = Column(String, nullable=True)
+    reset_token_expiry = Column(DateTime, nullable=True)
+    plano = Column(String, default="free", nullable=True)  # "free" | "premium"
 
     gastos = relationship("Gasto", back_populates="usuario")
     extratos = relationship("Extrato", back_populates="usuario")
@@ -84,3 +92,14 @@ class Aporte(Base):
     nota            = Column(String, nullable=True)
 
     investimento = relationship("Investimento", back_populates="aportes")
+
+
+class Sugestao(Base):
+    __tablename__ = "sugestoes"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True, index=True)
+    texto      = Column(String)
+    criado_em  = Column(DateTime, default=datetime.utcnow)
+
+    usuario = relationship("Usuario")

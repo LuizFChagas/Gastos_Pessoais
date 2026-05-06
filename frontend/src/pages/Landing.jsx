@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Landing.css";
+import { FinlyLogo } from "../components/FinlyLogo";
 
 /* ——— Tiny helpers rendered inside the preview card ——— */
 function PreviewBalanceCard({ label, value, color }) {
@@ -82,8 +83,8 @@ function Landing() {
       {/* ===== NAVBAR ===== */}
       <nav className="landing-nav">
         <div className="landing-logo">
-          <div className="logo-icon">💰</div>
-          FinanceIA
+          <FinlyLogo size={32} />
+          Finly
         </div>
         <div className="landing-nav-links">
           <Link to="/login"    className="nav-btn-outline">Entrar</Link>
@@ -234,7 +235,7 @@ function Landing() {
               registrando cada gasto manualmente, surgiu a vontade de criar algo
               mais inteligente — mais visual, mais automatizado e feito do zero.
               <br /><br />
-              O FinanceIA nasceu assim: de uma necessidade real. Construído com
+              O Finly nasceu assim: de uma necessidade real. Construído com
               FastAPI no backend, React no frontend e uma IA que aprende com
               os seus dados para categorizar automaticamente. Uma ferramenta
               pessoal que virou um projeto de verdade.
@@ -308,7 +309,7 @@ function Landing() {
       <footer className="landing-footer">
         <div className="footer-logo">
           <div className="logo-icon" style={{ width: 28, height: 28, fontSize: 14, borderRadius: 8 }}>💰</div>
-          FinanceIA
+          Finly
         </div>
         <span className="footer-text">
           Feito com código, design e vontade de ter controle financeiro de verdade.

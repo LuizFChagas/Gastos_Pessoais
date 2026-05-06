@@ -1,7 +1,24 @@
 import { useState } from "react";
 import { cadastro } from "../api/authApi";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
+
+function forcaSenha(s) {
+  let n = 0;
+  if (s.length >= 8) n++;
+  if (/[A-Z]/.test(s)) n++;
+  if (/[0-9]/.test(s)) n++;
+  if (/[^A-Za-z0-9]/.test(s)) n++;
+  return n;
+}
+const FORCA = {
+  0: { label: "", color: "transparent", w: "0%" },
+  1: { label: "Fraca",    color: "#ef4444", w: "25%" },
+  2: { label: "Razoável", color: "#f97316", w: "50%" },
+  3: { label: "Boa",      color: "#eab308", w: "75%" },
+  4: { label: "Forte",    color: "#10b981", w: "100%" },
+};
 import { Wallet, Bot, Zap, TrendingUp, ShoppingBag, Car, Bell, Home, Gamepad2, Target } from "lucide-react";
+import { FinlyLogo } from "../components/FinlyLogo";
 
 function Cadastro() {
   const [nome, setNome] = useState("");
@@ -11,8 +28,7 @@ function Cadastro() {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
-
-  const navigate = useNavigate();
+  const [cadastrado, setCadastrado] = useState(false);
 
   const calcularIdade = (dataNasc) => {
     const hoje = new Date();
@@ -47,8 +63,8 @@ function Cadastro() {
       return;
     }
 
-    if (senha.length < 6) {
-      setErro("A senha deve ter pelo menos 6 caracteres");
+    if (forcaSenha(senha) < 4) {
+      setErro("A senha deve ter pelo menos 8 caracteres, uma maiúscula, um número e um símbolo");
       return;
     }
 
@@ -56,7 +72,7 @@ function Cadastro() {
 
     try {
       await cadastro(email, senha, nome.trim(), dataNascimento);
-      navigate("/login");
+      setCadastrado(true);
     } catch (err) {
       const msg = err?.response?.data?.detail || "Erro ao criar conta. Tente novamente.";
       setErro(msg);
@@ -325,23 +341,18 @@ function Cadastro() {
         onMouseEnter={e => e.currentTarget.style.color = "#10b981"}
         onMouseLeave={e => e.currentTarget.style.color = "#7d8fa8"}
       >
-        ← FinanceIA
+        ← Finly
       </Link>
 
       <div style={{ width: "100%", maxWidth: "400px", position: "relative", zIndex: 10 }}>
 
         {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: "56px", height: "56px", backgroundColor: "#10b981",
-            borderRadius: "16px", fontSize: "26px", marginBottom: "16px",
-            boxShadow: "0 8px 24px rgba(16,185,129,0.35)"
-          }}>
-            <Wallet size={26} color="white" />
+          <div style={{ marginBottom: "16px", display: "inline-flex" }}>
+            <FinlyLogo size={56} />
           </div>
           <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "700", color: "#f0f4ff" }}>
-            FinanceIA
+            Finly
           </h1>
           <p style={{ margin: "6px 0 0", color: "#7d8fa8", fontSize: "14px" }}>
             Controle seus gastos com inteligência
@@ -360,6 +371,20 @@ function Cadastro() {
           <h2 style={{ margin: "0 0 24px", fontSize: "18px", fontWeight: "600", color: "#f0f4ff" }}>
             Criar conta
           </h2>
+
+          {cadastrado ? (
+            <div style={{ textAlign: "center", padding: "8px 0" }}>
+              <div style={{ fontSize: "40px", marginBottom: "16px" }}>📧</div>
+              <h3 style={{ margin: "0 0 12px", color: "#f0f4ff", fontSize: "17px" }}>Verifique seu email!</h3>
+              <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: "0 0 24px" }}>
+                Enviamos um link de confirmação para <strong style={{ color: "#f0f4ff" }}>{email}</strong>.<br />
+                Clique no link para ativar sua conta.
+              </p>
+              <Link to="/login" style={{ color: "#10b981", fontWeight: "600", fontSize: "14px", textDecoration: "none" }}>
+                Ir para o login →
+              </Link>
+            </div>
+          ) : (
 
           <form onSubmit={handleCadastro} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
@@ -419,7 +444,7 @@ function Cadastro() {
               </label>
               <input
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required
@@ -427,6 +452,20 @@ function Cadastro() {
                 onFocus={(e) => e.target.style.borderColor = "#10b981"}
                 onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
               />
+              {senha && (() => {
+                const f = forcaSenha(senha);
+                const info = FORCA[f];
+                return (
+                  <div style={{ marginTop: "8px" }}>
+                    <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: "4px", height: "4px", overflow: "hidden" }}>
+                      <div style={{ width: info.w, height: "100%", background: info.color, borderRadius: "4px", transition: "width 0.3s, background 0.3s" }} />
+                    </div>
+                    <div style={{ fontSize: "11px", color: info.color, marginTop: "4px" }}>
+                      {info.label}{f < 4 ? " — use maiúscula, número e símbolo (ex: Senha@123)" : " ✓"}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div>
@@ -484,6 +523,7 @@ function Cadastro() {
             </p>
 
           </form>
+          )}
         </div>
 
       </div>

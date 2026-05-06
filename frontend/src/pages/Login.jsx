@@ -1,7 +1,10 @@
-import { useState } from "react";
-import { login } from "../api/authApi";
+import { useState, useRef } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
+import { login, verificarOTP } from "../api/authApi";
 import { useNavigate, Link } from "react-router-dom";
+
 import { Wallet, Bot, Zap, TrendingUp, ShoppingBag, Car, Bell, Home, Gamepad2, Target, CreditCard } from "lucide-react";
+import { FinlyLogo } from "../components/FinlyLogo";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -13,6 +16,12 @@ function Login() {
   const [darkMode, setDarkMode] = useState(
     () => document.body.classList.contains("dark")
   );
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [etapa, setEtapa] = useState("login"); // "login" | "otp"
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCodigo, setOtpCodigo] = useState("");
+  const recaptchaRef = useRef(null);
+  const captchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "";
 
   const navigate = useNavigate();
 
@@ -27,23 +36,63 @@ function Login() {
     setDarkMode(!darkMode);
   };
 
+  const salvarToken = (token) => {
+    if (manterConectado) {
+      const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000;
+      localStorage.setItem("token", token);
+      localStorage.setItem("token_expiry", expiry);
+    } else {
+      sessionStorage.setItem("token", token);
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setErro("");
-    setCarregando(true);
 
+    if (captchaSiteKey && !captchaToken) {
+      setErro("Confirme que você não é um robô");
+      return;
+    }
+
+    setCarregando(true);
     try {
-      const data = await login(email, senha, manterConectado);
-      if (manterConectado) {
-        const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 dias
-        localStorage.setItem("token", data.access_token);
-        localStorage.setItem("token_expiry", expiry);
-      } else {
-        sessionStorage.setItem("token", data.access_token);
+      const data = await login(email, senha, manterConectado, captchaToken);
+
+      if (data.requires_2fa) {
+        setOtpEmail(data.email);
+        setEtapa("otp");
+        return;
       }
+
+      salvarToken(data.access_token);
+      navigate("/app");
+    } catch (err) {
+      const detail = err?.response?.data?.detail || "";
+      if (detail.includes("Verifique seu email")) {
+        setErro("Confirme seu email antes de entrar. Verifique sua caixa de entrada.");
+      } else if (detail.includes("Muitas tentativas")) {
+        setErro("Muitas tentativas de login. Aguarde 15 minutos.");
+      } else {
+        setErro("Email ou senha inválidos");
+      }
+      recaptchaRef.current?.reset();
+      setCaptchaToken("");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const handleOTP = async (e) => {
+    e.preventDefault();
+    setErro("");
+    setCarregando(true);
+    try {
+      const data = await verificarOTP(otpEmail, otpCodigo, manterConectado);
+      salvarToken(data.access_token);
       navigate("/app");
     } catch {
-      setErro("Email ou senha inválidos");
+      setErro("Código inválido ou expirado");
     } finally {
       setCarregando(false);
     }
@@ -308,27 +357,18 @@ function Login() {
         onMouseEnter={e => e.currentTarget.style.color = "#10b981"}
         onMouseLeave={e => e.currentTarget.style.color = "#7d8fa8"}
       >
-        ← FinanceIA
+        ← Finly
       </Link>
 
       <div style={{ width: "100%", maxWidth: "400px", position: "relative", zIndex: 10 }}>
 
         {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "56px",
-            height: "56px",
-            backgroundColor: "#10b981",
-            borderRadius: "16px",
-            marginBottom: "16px"
-          }}>
-            <Wallet size={26} color="white" />
+          <div style={{ marginBottom: "16px", display: "inline-flex" }}>
+            <FinlyLogo size={56} />
           </div>
           <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "700", color: "#f0f4ff" }}>
-            FinanceIA
+            Finly
           </h1>
           <p style={{ margin: "6px 0 0", color: "#7d8fa8", fontSize: "14px" }}>
             Controle seus gastos com inteligência
@@ -345,116 +385,233 @@ function Login() {
           boxShadow: "0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)"
         }}>
           <h2 style={{ margin: "0 0 24px", fontSize: "18px", fontWeight: "600", color: "#f0f4ff" }}>
-            Entrar na conta
+            {etapa === "otp" ? "Verificação em 2 etapas" : "Entrar na conta"}
           </h2>
 
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {etapa === "login" ? (
+            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-            <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
-                Email
-              </label>
-              <input
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={inputStyle}
-                onFocus={(e) => e.target.style.borderColor = "#10b981"}
-                onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
-                Senha
-              </label>
-              <div style={{ position: "relative" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
+                  Email
+                </label>
                 <input
-                  type={mostrarSenha ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  style={{ ...inputStyle, paddingRight: "42px" }}
+                  style={inputStyle}
+                  onFocus={(e) => e.target.style.borderColor = "#10b981"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--border)"}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
+                  Senha
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={mostrarSenha ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    required
+                    style={{ ...inputStyle, paddingRight: "42px" }}
+                    onFocus={(e) => e.target.style.borderColor = "#10b981"}
+                    onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSenha(!mostrarSenha)}
+                    style={{
+                      position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+                      background: "transparent", border: "none", cursor: "pointer",
+                      color: "#7d8fa8", fontSize: "16px", padding: "0", lineHeight: 1,
+                      display: "flex", alignItems: "center"
+                    }}
+                  >
+                    {mostrarSenha ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ textAlign: "right", marginTop: "-8px" }}>
+                <Link to="/esqueci-senha" style={{ fontSize: "12px", color: "#7d8fa8", textDecoration: "none" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#10b981"}
+                  onMouseLeave={e => e.currentTarget.style.color = "#7d8fa8"}
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <input
+                  type="checkbox"
+                  id="manterConectado"
+                  checked={manterConectado}
+                  onChange={(e) => setManterConectado(e.target.checked)}
+                  style={{ accentColor: "#10b981", width: "16px", height: "16px", cursor: "pointer" }}
+                />
+                <label htmlFor="manterConectado" style={{ fontSize: "13px", color: "#7d8fa8", cursor: "pointer" }}>
+                  Manter conectado
+                </label>
+              </div>
+
+              {captchaSiteKey && (
+                <div style={{
+                  borderRadius: "12px",
+                  border: `1px solid ${captchaToken ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.08)"}`,
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  padding: "12px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                  transition: "border-color 0.3s"
+                }}>
+                  <span style={{ fontSize: "11px", color: "#4a5568", textTransform: "uppercase", letterSpacing: "1px" }}>
+                    Verificação de segurança
+                  </span>
+                  <div style={{ display: "flex", justifyContent: "center", transform: "scale(0.95)", transformOrigin: "center" }}>
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={captchaSiteKey}
+                      onChange={(token) => setCaptchaToken(token || "")}
+                      onExpired={() => setCaptchaToken("")}
+                      theme="dark"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {erro && (
+                <div style={{
+                  backgroundColor: "rgba(239,68,68,0.1)",
+                  border: "1px solid rgba(239,68,68,0.3)",
+                  borderRadius: "8px",
+                  padding: "10px 14px",
+                  fontSize: "13px",
+                  color: "#ef4444"
+                }}>
+                  {erro}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={carregando}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "none",
+                  backgroundColor: "#10b981",
+                  color: "white",
+                  fontWeight: "600",
+                  fontSize: "15px",
+                  cursor: carregando ? "not-allowed" : "pointer",
+                  opacity: carregando ? 0.8 : 1,
+                  transition: "all 0.2s",
+                  marginTop: "4px"
+                }}
+              >
+                {carregando ? "Entrando..." : "Entrar"}
+              </button>
+
+            </form>
+          ) : (
+            <form onSubmit={handleOTP} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+              <div style={{
+                backgroundColor: "rgba(16,185,129,0.08)",
+                border: "1px solid rgba(16,185,129,0.2)",
+                borderRadius: "10px",
+                padding: "12px 14px",
+                fontSize: "13px",
+                color: "#94a3b8",
+                lineHeight: 1.5
+              }}>
+                Enviamos um código de 6 dígitos para <strong style={{ color: "#f0f4ff" }}>{otpEmail}</strong>. Insira-o abaixo para concluir o login.
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#7d8fa8", marginBottom: "6px" }}>
+                  Código de verificação
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="000000"
+                  value={otpCodigo}
+                  onChange={(e) => setOtpCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  required
+                  autoFocus
+                  style={{ ...inputStyle, letterSpacing: "8px", fontSize: "22px", textAlign: "center", fontWeight: "700" }}
                   onFocus={(e) => e.target.style.borderColor = "#10b981"}
                   onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
                 />
-                <button
-                  type="button"
-                  onClick={() => setMostrarSenha(!mostrarSenha)}
-                  style={{
-                    position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
-                    background: "transparent", border: "none", cursor: "pointer",
-                    color: "#7d8fa8", fontSize: "16px", padding: "0", lineHeight: 1,
-                    display: "flex", alignItems: "center"
-                  }}
-                >
-                  {mostrarSenha ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
               </div>
-            </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <input
-                type="checkbox"
-                id="manterConectado"
-                checked={manterConectado}
-                onChange={(e) => setManterConectado(e.target.checked)}
-                style={{ accentColor: "#10b981", width: "16px", height: "16px", cursor: "pointer" }}
-              />
-              <label htmlFor="manterConectado" style={{ fontSize: "13px", color: "#7d8fa8", cursor: "pointer" }}>
-                Manter conectado
-              </label>
-            </div>
+              {erro && (
+                <div style={{
+                  backgroundColor: "rgba(239,68,68,0.1)",
+                  border: "1px solid rgba(239,68,68,0.3)",
+                  borderRadius: "8px",
+                  padding: "10px 14px",
+                  fontSize: "13px",
+                  color: "#ef4444"
+                }}>
+                  {erro}
+                </div>
+              )}
 
-            {erro && (
-              <div style={{
-                backgroundColor: "rgba(239,68,68,0.1)",
-                border: "1px solid rgba(239,68,68,0.3)",
-                borderRadius: "8px",
-                padding: "10px 14px",
-                fontSize: "13px",
-                color: "#ef4444"
-              }}>
-                {erro}
-              </div>
-            )}
+              <button
+                type="submit"
+                disabled={carregando || otpCodigo.length < 6}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "none",
+                  backgroundColor: "#10b981",
+                  color: "white",
+                  fontWeight: "600",
+                  fontSize: "15px",
+                  cursor: (carregando || otpCodigo.length < 6) ? "not-allowed" : "pointer",
+                  opacity: (carregando || otpCodigo.length < 6) ? 0.6 : 1,
+                  transition: "all 0.2s",
+                  marginTop: "4px"
+                }}
+              >
+                {carregando ? "Verificando..." : "Verificar código"}
+              </button>
 
-            <button
-              type="submit"
-              disabled={carregando}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: "10px",
-                border: "none",
-                backgroundColor: "#10b981",
-                color: "white",
-                fontWeight: "600",
-                fontSize: "15px",
-                cursor: carregando ? "not-allowed" : "pointer",
-                opacity: carregando ? 0.8 : 1,
-                transition: "all 0.2s",
-                marginTop: "4px"
-              }}
-            >
-              {carregando ? "Entrando..." : "Entrar"}
-            </button>
+              <button
+                type="button"
+                onClick={() => { setEtapa("login"); setErro(""); setOtpCodigo(""); }}
+                style={{
+                  background: "transparent", border: "none", cursor: "pointer",
+                  color: "#7d8fa8", fontSize: "13px", textAlign: "center",
+                  padding: "4px"
+                }}
+              >
+                ← Voltar ao login
+              </button>
 
-          </form>
+            </form>
+          )}
         </div>
 
         <p style={{ textAlign: "center", marginTop: "20px", fontSize: "14px", color: "#7d8fa8" }}>
