@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from html import escape as _esc
 
 
 def enviar_otp(destinatario: str, codigo: str, nome: str):
@@ -18,7 +19,7 @@ def enviar_otp(destinatario: str, codigo: str, nome: str):
     <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f172a;color:#f1f5f9;border-radius:16px;">
       <div style="font-size:22px;font-weight:800;color:#10b981;margin-bottom:8px;">Finly</div>
       <h2 style="margin:0 0 16px;font-size:18px;color:#f1f5f9;">Código de verificação</h2>
-      <p style="color:#94a3b8;margin:0 0 24px;">Olá, <strong style="color:#f1f5f9;">{nome or "usuário"}</strong>! Use o código abaixo para concluir o login.</p>
+      <p style="color:#94a3b8;margin:0 0 24px;">Olá, <strong style="color:#f1f5f9;">{_esc(nome) or "usuário"}</strong>! Use o código abaixo para concluir o login.</p>
       <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
         <span style="font-size:40px;font-weight:800;letter-spacing:12px;color:#10b981;">{codigo}</span>
       </div>
@@ -63,7 +64,7 @@ def enviar_verificacao(destinatario: str, token: str, nome: str):
     <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f172a;color:#f1f5f9;border-radius:16px;">
       <div style="font-size:22px;font-weight:800;color:#10b981;margin-bottom:8px;">Finly</div>
       <h2 style="margin:0 0 16px;font-size:18px;color:#f1f5f9;">Confirme seu email</h2>
-      <p style="color:#94a3b8;margin:0 0 24px;">Olá, <strong style="color:#f1f5f9;">{nome or "usuário"}</strong>! Clique no botão abaixo para ativar sua conta.</p>
+      <p style="color:#94a3b8;margin:0 0 24px;">Olá, <strong style="color:#f1f5f9;">{_esc(nome) or "usuário"}</strong>! Clique no botão abaixo para ativar sua conta.</p>
       <a href="{link}" style="display:inline-block;background:#10b981;color:white;font-weight:700;font-size:15px;padding:14px 28px;border-radius:10px;text-decoration:none;margin-bottom:24px;">Verificar email</a>
       <p style="color:#64748b;font-size:13px;margin:0;">Se não foi você quem criou esta conta, ignore este email.</p>
     </div>
@@ -78,9 +79,9 @@ def enviar_sugestao_admin(admin_email: str, texto: str, nome_usuario: str, email
       <div style="font-size:22px;font-weight:800;color:#10b981;margin-bottom:8px;">Finly</div>
       <h2 style="margin:0 0 16px;font-size:18px;color:#f1f5f9;">Nova sugestão recebida</h2>
       <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:20px;">
-        <p style="font-size:15px;color:#f1f5f9;margin:0;line-height:1.6;">{texto}</p>
+        <p style="font-size:15px;color:#f1f5f9;margin:0;line-height:1.6;white-space:pre-wrap;">{_esc(texto)}</p>
       </div>
-      <p style="color:#94a3b8;font-size:13px;margin:0 0 4px;">De: <strong style="color:#f1f5f9;">{nome_usuario}</strong> &lt;{email_usuario}&gt;</p>
+      <p style="color:#94a3b8;font-size:13px;margin:0 0 4px;">De: <strong style="color:#f1f5f9;">{_esc(nome_usuario)}</strong> &lt;{_esc(email_usuario)}&gt;</p>
       <p style="color:#64748b;font-size:12px;margin:0;">{data_hora}</p>
     </div>
     """
@@ -94,7 +95,7 @@ def enviar_reset_senha(destinatario: str, token: str, nome: str):
     <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f172a;color:#f1f5f9;border-radius:16px;">
       <div style="font-size:22px;font-weight:800;color:#10b981;margin-bottom:8px;">Finly</div>
       <h2 style="margin:0 0 16px;font-size:18px;color:#f1f5f9;">Redefinir senha</h2>
-      <p style="color:#94a3b8;margin:0 0 24px;">Olá, <strong style="color:#f1f5f9;">{nome or "usuário"}</strong>! Clique no botão abaixo para criar uma nova senha. O link expira em <strong>1 hora</strong>.</p>
+      <p style="color:#94a3b8;margin:0 0 24px;">Olá, <strong style="color:#f1f5f9;">{_esc(nome) or "usuário"}</strong>! Clique no botão abaixo para criar uma nova senha. O link expira em <strong>1 hora</strong>.</p>
       <a href="{link}" style="display:inline-block;background:#10b981;color:white;font-weight:700;font-size:15px;padding:14px 28px;border-radius:10px;text-decoration:none;margin-bottom:24px;">Redefinir senha</a>
       <p style="color:#64748b;font-size:13px;margin:0;">Se não foi você, ignore este email. Sua senha não será alterada.</p>
     </div>

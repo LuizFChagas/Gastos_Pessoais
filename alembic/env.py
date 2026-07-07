@@ -10,6 +10,10 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
+# Sobrescreve a URL do alembic.ini com a DATABASE_URL real do .env
+# (o "%" é escapado pois o configparser do Alembic o trata como interpolação)
+config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:

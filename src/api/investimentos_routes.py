@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.database.deps import get_db
 from src.database.models import Investimento, Aporte
-from src.auth.security import pegar_usuario_logado
+from src.auth.security import exigir_premium
 
 router = APIRouter()
 
@@ -59,7 +59,7 @@ def _serialize_aporte(a):
 
 @router.get("/")
 def listar_investimentos(
-    usuario_id: int = Depends(pegar_usuario_logado),
+    usuario_id: int = Depends(exigir_premium),
     db: Session = Depends(get_db)
 ):
     itens = db.query(Investimento).filter(
@@ -71,7 +71,7 @@ def listar_investimentos(
 @router.post("/")
 def criar_investimento(
     req: InvestimentoRequest,
-    usuario_id: int = Depends(pegar_usuario_logado),
+    usuario_id: int = Depends(exigir_premium),
     db: Session = Depends(get_db)
 ):
     inv = Investimento(
@@ -94,7 +94,7 @@ def criar_investimento(
 def editar_investimento(
     inv_id: int,
     req: InvestimentoRequest,
-    usuario_id: int = Depends(pegar_usuario_logado),
+    usuario_id: int = Depends(exigir_premium),
     db: Session = Depends(get_db)
 ):
     inv = db.query(Investimento).filter(
@@ -118,7 +118,7 @@ def editar_investimento(
 @router.delete("/{inv_id}")
 def deletar_investimento(
     inv_id: int,
-    usuario_id: int = Depends(pegar_usuario_logado),
+    usuario_id: int = Depends(exigir_premium),
     db: Session = Depends(get_db)
 ):
     inv = db.query(Investimento).filter(
@@ -137,7 +137,7 @@ def deletar_investimento(
 @router.get("/{inv_id}/aportes")
 def listar_aportes(
     inv_id: int,
-    usuario_id: int = Depends(pegar_usuario_logado),
+    usuario_id: int = Depends(exigir_premium),
     db: Session = Depends(get_db)
 ):
     inv = db.query(Investimento).filter(
@@ -157,7 +157,7 @@ def listar_aportes(
 def criar_aporte(
     inv_id: int,
     req: AporteRequest,
-    usuario_id: int = Depends(pegar_usuario_logado),
+    usuario_id: int = Depends(exigir_premium),
     db: Session = Depends(get_db)
 ):
     inv = db.query(Investimento).filter(
@@ -190,7 +190,7 @@ def criar_aporte(
 @router.delete("/aportes/{aporte_id}")
 def deletar_aporte(
     aporte_id: int,
-    usuario_id: int = Depends(pegar_usuario_logado),
+    usuario_id: int = Depends(exigir_premium),
     db: Session = Depends(get_db)
 ):
     aporte = db.query(Aporte).filter(

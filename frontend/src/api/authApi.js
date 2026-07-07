@@ -29,8 +29,8 @@ export const verificarOTP = async (email, codigo, rememberMe = false) => {
   return response.data;
 };
 
-export const toggle2FA = async (ativar) => {
-  const response = await api.post("/auth/toggle-2fa", { ativar });
+export const toggle2FA = async (ativar, senhaAtual) => {
+  const response = await api.post("/auth/toggle-2fa", { ativar, senha_atual: senhaAtual });
   return response.data;
 };
 

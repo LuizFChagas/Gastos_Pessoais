@@ -9,13 +9,13 @@ function PrivateRoute({ children }) {
   if (localToken && expiry && Date.now() > Number(expiry)) {
     localStorage.removeItem("token");
     localStorage.removeItem("token_expiry");
-    return <Navigate to="/" />;
+    return <Navigate to="/login" />;
   }
 
   const token = localToken || sessionToken;
 
   if (!token) {
-    return <Navigate to="/" />;
+    return <Navigate to="/login" />;
   }
 
   return children;
