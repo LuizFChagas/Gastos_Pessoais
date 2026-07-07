@@ -133,6 +133,38 @@ function PremiumModal({ onClose }) {
   );
 }
 
+function PremiumLocked({ onUpgrade }) {
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      textAlign: "center", padding: "60px 20px", minHeight: "300px",
+    }}>
+      <div style={{
+        width: "64px", height: "64px", borderRadius: "18px", marginBottom: "20px",
+        background: "linear-gradient(135deg, #f59e0b, #fbbf24)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 8px 24px rgba(251,191,36,0.3)",
+      }}>
+        <Lock size={28} color="white" />
+      </div>
+      <h2 style={{ margin: "0 0 8px", fontSize: "20px", fontWeight: "800", color: "var(--text)" }}>
+        Recurso Premium
+      </h2>
+      <p style={{ margin: "0 0 24px", fontSize: "14px", color: "var(--subtext)", maxWidth: "320px", lineHeight: 1.5 }}>
+        Essa página está disponível apenas para assinantes Premium.
+      </p>
+      <button onClick={onUpgrade} style={{
+        padding: "12px 24px", borderRadius: "10px", border: "none",
+        background: "linear-gradient(135deg, #f59e0b, #fbbf24)",
+        color: "#1a1a1a", fontWeight: "700", fontSize: "14px", cursor: "pointer",
+        display: "flex", alignItems: "center", gap: "8px",
+      }}>
+        <Crown size={16} /> Ver planos Premium
+      </button>
+    </div>
+  );
+}
+
 function SugestaoModal({ onClose }) {
   const [texto, setTexto] = useState("");
   const [enviado, setEnviado] = useState(false);
@@ -247,6 +279,9 @@ function Layout({ children, toggleTheme, darkMode }) {
   const isActive = (path) => location.pathname === path;
   const isPremiumLocked = (item) => item.premium && plano === "free";
 
+  const currentMenuItem = MENU.find((item) => item.to === location.pathname);
+  const contentLocked = isPremiumLocked(currentMenuItem || {});
+
   const handleMenuClick = (e, item) => {
     if (isPremiumLocked(item)) {
       e.preventDefault();
@@ -295,7 +330,7 @@ function Layout({ children, toggleTheme, darkMode }) {
           paddingBottom: "80px", overflowY: "auto", overflowX: "hidden",
           width: "100%", boxSizing: "border-box"
         }}>
-          {children}
+          {contentLocked ? <PremiumLocked onUpgrade={() => setShowPremium(true)} /> : children}
         </div>
 
         {/* BOTTOM NAV */}
@@ -418,7 +453,7 @@ function Layout({ children, toggleTheme, darkMode }) {
           >
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
               <Crown size={15} color="#fbbf24" />
-              <span style={{ fontWeight: "700", fontSize: "13px", color: "#fef3c7" }}>Seja Premium</span>
+              <span style={{ fontWeight: "700", fontSize: "13px", color: "#fef3c7" }}>Quer turbinar sua experiência?</span>
             </div>
             <div style={{ fontSize: "11px", color: "#fcd34d", lineHeight: 1.4, opacity: 0.9 }}>
               Desbloqueie investimentos e muito mais
@@ -497,7 +532,7 @@ function Layout({ children, toggleTheme, darkMode }) {
 
       {/* CONTEÚDO */}
       <div style={{ flex: 1, backgroundColor: "var(--bg)", padding: "30px", overflowY: "auto" }}>
-        {children}
+        {contentLocked ? <PremiumLocked onUpgrade={() => setShowPremium(true)} /> : children}
       </div>
     </div>
   );

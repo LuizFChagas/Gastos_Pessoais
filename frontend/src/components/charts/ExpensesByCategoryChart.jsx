@@ -73,11 +73,12 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
       ) : (
         <div style={{
           display: "flex",
-          alignItems: isMobile ? "center" : "center",
+          alignItems: "center",
           justifyContent: isMobile ? "center" : "flex-start",
           flexDirection: isMobile ? "column" : "row",
           flex: 1,
-          gap: isMobile ? "12px" : 0
+          minHeight: 0,
+          gap: isMobile ? "12px" : "16px"
         }}>
           {/* Donut chart com total no centro */}
           <div style={{ position: "relative", width: isMobile ? 180 : 220, height: isMobile ? 180 : 220, flexShrink: 0 }}>
@@ -144,12 +145,14 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
 
           {/* Legenda */}
           <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            alignContent: "center",
+            columnGap: "12px",
+            rowGap: "2px",
             flex: 1,
-            alignItems: "center",
-            width: isMobile ? "100%" : "auto"
+            minWidth: 0,
+            width: isMobile ? "100%" : "auto",
           }}>
             {dadosFiltrados.map((item, index) => {
               const style = getCategoriaStyle(item.name);
@@ -165,7 +168,7 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
                     display: "flex",
                     alignItems: "center",
                     gap: "6px",
-                    width: isMobile ? "100%" : "240px",
+                    minWidth: 0,
                     padding: "4px 6px",
                     borderRadius: "6px",
                     cursor: "pointer",
@@ -182,14 +185,14 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
                     transition: "transform 0.15s",
                     transform: isActive ? "scale(1.4)" : "scale(1)"
                   }} />
-                  <span style={{ fontSize: "13px", width: "20px", flexShrink: 0 }}>
-                    {style.icon}
-                  </span>
                   <span style={{
                     color: "var(--text)",
                     fontSize: "13px",
-                    width: "90px",
-                    flexShrink: 0,
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                     fontWeight: isActive ? "600" : "400",
                     transition: "font-weight 0.1s"
                   }}>
@@ -200,14 +203,14 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
                     fontSize: "12px",
                     fontWeight: "600",
                     textAlign: "right",
-                    flex: 1
+                    flexShrink: 0
                   }}>
                     {formatCurrency(item.value)}
                   </span>
                   <span style={{
                     color: "var(--subtext)",
                     fontSize: "11px",
-                    width: "36px",
+                    width: "34px",
                     textAlign: "right",
                     flexShrink: 0
                   }}>

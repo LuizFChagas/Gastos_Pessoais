@@ -105,7 +105,6 @@ function AddTransactionForm({ onSuccess, onCancel }) {
 
       onSuccess();
     } catch (error) {
-      console.log(error);
       alert("Erro ao adicionar");
     }
   };
