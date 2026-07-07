@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import BalanceCard from "../components/BalanceCard";
-import TransactionList from "../components/TransactionList";
 import AddTransactionForm from "../components/AddTransactionForm";
 import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChart";
 import ExpensesByDayChart from "../components/charts/ExpensesByDayChart";
 import { gastosPorIntervalo, listarMesesDisponiveis } from "../api/gastosApi";
+import { getPerfil } from "../api/perfilApi";
+import { getCategoriaStyle, capitalizar } from "../utils/categorias";
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -95,12 +96,86 @@ function CustomSelect({ value, onChange, options, flex }) {
   );
 }
 
+function TopGastos({ gastos, periodo }) {
+  const titulo =
+    periodo === "ano" ? "Maiores gastos do ano" :
+    periodo === "semana" ? "Maiores gastos da semana" :
+    "Maiores gastos do mês";
+
+  const top = gastos
+    .filter(g => g.tipo === "saida" && !g.transferencia_interna)
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 5);
+
+  const formatCurrency = (v) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+  return (
+    <div style={{
+      backgroundColor: "var(--card)",
+      padding: "20px",
+      borderRadius: "16px",
+      marginTop: "20px",
+      boxShadow: "var(--shadow-md)"
+    }}>
+      <h3 style={{ color: "var(--text)", margin: "0 0 12px 0" }}>{titulo}</h3>
+
+      {top.length === 0 ? (
+        <div style={{ color: "var(--subtext)", textAlign: "center", padding: "20px 0" }}>
+          Nenhuma movimentação encontrada
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {top.map((g, i) => {
+            const style = getCategoriaStyle(g.categoria);
+            return (
+              <div key={g.id ?? i} style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "10px 4px",
+                borderBottom: i < top.length - 1 ? "1px solid var(--border)" : "none",
+              }}>
+                <div style={{
+                  width: "10px", height: "10px", borderRadius: "50%",
+                  backgroundColor: style.chartColor, flexShrink: 0
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    color: "var(--text)", fontSize: "14px", fontWeight: "500",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                  }}>
+                    {g.descricao}
+                  </div>
+                  <div style={{ color: "var(--subtext)", fontSize: "12px", marginTop: "2px" }}>
+                    {capitalizar(g.categoria)}
+                  </div>
+                </div>
+                <div style={{ color: "#ef4444", fontSize: "14px", fontWeight: "700", flexShrink: 0 }}>
+                  {formatCurrency(g.valor)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Dashboard() {
   const isMobile = useIsMobile();
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [mesesComDados, setMesesComDados] = useState([]);
+  const [primeiroNome, setPrimeiroNome] = useState("");
+
+  useEffect(() => {
+    getPerfil()
+      .then((p) => setPrimeiroNome((p.nome || "").trim().split(" ")[0]))
+      .catch(() => {});
+  }, []);
 
   const [periodo, setPeriodo] = useState(
     () => localStorage.getItem("dashboard_periodo") || "mes_custom"
@@ -238,8 +313,8 @@ function Dashboard() {
         gap: isMobile ? "12px" : 0
       }}>
         <div>
-          <h1 style={{ margin: 0, color: "var(--text)" }}>Dashboard</h1>
-          <span style={{ color: "var(--subtext)" }}>{getSubtitulo()}</span>
+          <h1 style={{ margin: 0, color: "var(--text)", fontSize: "26px", fontWeight: "700" }}>{primeiroNome ? `Olá, ${primeiroNome}` : "Olá!"}</h1>
+          <span style={{ color: "var(--subtext)", fontSize: "14px" }}>{getSubtitulo()}</span>
         </div>
 
         <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
@@ -349,8 +424,8 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* LISTA */}
-      <TransactionList transactions={gastos} />
+      {/* MAIORES GASTOS */}
+      <TopGastos gastos={gastos} periodo={periodo === "mes_custom" ? "mes" : periodo} />
 
       {/* MODAL NOVA TRANSAÇÃO */}
       {openModal && (

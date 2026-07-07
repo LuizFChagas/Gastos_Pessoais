@@ -47,6 +47,3 @@ export const getCategoriaStyle = (categoria) => {
 
 export const capitalizar = (str) =>
   str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
-
-// alias mantido para compatibilidade
-export const getCategoriaSyle = getCategoriaStyle;
