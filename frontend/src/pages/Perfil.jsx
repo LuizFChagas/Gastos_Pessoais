@@ -59,6 +59,9 @@ export default function Perfil() {
   const [erro, setErro] = useState(false);
   const [twoFA, setTwoFA] = useState(false);
   const [toggleCarregando, setToggleCarregando] = useState(false);
+  const [showSenhaModal, setShowSenhaModal] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [erroSenha, setErroSenha] = useState("");
 
   useEffect(() => {
     getPerfil()
@@ -66,13 +69,22 @@ export default function Perfil() {
       .catch(() => setErro(true));
   }, []);
 
-  const handleToggle2FA = async () => {
+  const abrirConfirmacao2FA = () => {
+    setSenhaAtual("");
+    setErroSenha("");
+    setShowSenhaModal(true);
+  };
+
+  const confirmarToggle2FA = async (e) => {
+    e.preventDefault();
     setToggleCarregando(true);
+    setErroSenha("");
     try {
-      const res = await toggle2FA(!twoFA);
+      const res = await toggle2FA(!twoFA, senhaAtual);
       setTwoFA(res.two_fa_enabled);
+      setShowSenhaModal(false);
     } catch {
-      // silently ignore
+      setErroSenha("Senha incorreta");
     } finally {
       setToggleCarregando(false);
     }
@@ -224,7 +236,7 @@ export default function Perfil() {
             </div>
           </div>
           <button
-            onClick={handleToggle2FA}
+            onClick={abrirConfirmacao2FA}
             disabled={toggleCarregando}
             style={{
               padding: "8px 18px",
@@ -245,6 +257,67 @@ export default function Perfil() {
           </button>
         </div>
       </div>
+
+      {showSenhaModal && (
+        <>
+          <div
+            onClick={() => setShowSenhaModal(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 1000, backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          />
+          <div style={{
+            position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            zIndex: 1001, width: "100%", maxWidth: "360px",
+            backgroundColor: "var(--card)", border: "1px solid var(--border)",
+            borderRadius: "16px", padding: "24px", boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
+          }}>
+            <h3 style={{ margin: "0 0 8px", color: "var(--text)", fontSize: "16px", fontWeight: "700" }}>
+              Confirme sua senha
+            </h3>
+            <p style={{ margin: "0 0 16px", fontSize: "13px", color: "var(--subtext)" }}>
+              {twoFA ? "Digite sua senha atual para desativar a verificação em 2 etapas." : "Digite sua senha atual para ativar a verificação em 2 etapas."}
+            </p>
+            <form onSubmit={confirmarToggle2FA}>
+              <input
+                type="password"
+                autoFocus
+                value={senhaAtual}
+                onChange={(e) => setSenhaAtual(e.target.value)}
+                placeholder="Senha atual"
+                required
+                style={{
+                  width: "100%", padding: "10px 12px", borderRadius: "8px",
+                  border: "1px solid var(--border)", backgroundColor: "var(--input)",
+                  color: "var(--text)", fontSize: "14px", outline: "none", boxSizing: "border-box",
+                }}
+              />
+              {erroSenha && (
+                <div style={{ marginTop: "8px", fontSize: "12px", color: "#ef4444" }}>{erroSenha}</div>
+              )}
+              <div style={{ display: "flex", gap: "10px", marginTop: "18px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowSenhaModal(false)}
+                  style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text)", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={toggleCarregando || !senhaAtual}
+                  style={{
+                    flex: 1, padding: "10px", borderRadius: "8px", border: "none",
+                    backgroundColor: "#10b981", color: "white", fontSize: "13px", fontWeight: "600",
+                    cursor: (toggleCarregando || !senhaAtual) ? "not-allowed" : "pointer",
+                    opacity: (toggleCarregando || !senhaAtual) ? 0.6 : 1,
+                  }}
+                >
+                  {toggleCarregando ? "..." : "Confirmar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
 
     </div>
   );

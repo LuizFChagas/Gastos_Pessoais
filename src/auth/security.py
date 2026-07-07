@@ -3,17 +3,10 @@ from jose import jwt, JWTError
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY não definida no .env")
+from src.core.config import SECRET_KEY
+from src.database.deps import get_db
 
 
 ALGORITHM = "HS256"
@@ -62,3 +55,20 @@ def pegar_usuario_logado(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido"
         )
+
+
+def exigir_premium(
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    from src.database.models import Usuario
+
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+
+    if not usuario or usuario.plano != "premium":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Recurso disponível apenas para o plano Premium"
+        )
+
+    return usuario_id

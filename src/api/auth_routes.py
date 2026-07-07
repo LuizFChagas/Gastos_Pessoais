@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, datetime, timedelta
 import logging
-import random
 import re
 import os
 import secrets
@@ -44,7 +43,7 @@ def _checar_rate_limit(ip: str) -> bool:
 
 class CadastroRequest(BaseModel):
     email: str
-    senha: str = Field(min_length=8)
+    senha: str = Field(min_length=8, max_length=72)
     nome: str
     data_nascimento: str  # "YYYY-MM-DD"
 
@@ -64,6 +63,7 @@ class VerificarOTPRequest(BaseModel):
 
 class Toggle2FARequest(BaseModel):
     ativar: bool
+    senha_atual: str
 
 
 class EsqueciSenhaRequest(BaseModel):
@@ -72,7 +72,7 @@ class EsqueciSenhaRequest(BaseModel):
 
 class RedefinirSenhaRequest(BaseModel):
     token: str
-    nova_senha: str = Field(min_length=8)
+    nova_senha: str = Field(min_length=8, max_length=72)
 
 
 # ── Helpers ──────────────────────────────────────────────────
@@ -80,6 +80,7 @@ class RedefinirSenhaRequest(BaseModel):
 def _verificar_captcha(token: str) -> bool:
     secret = os.getenv("RECAPTCHA_SECRET_KEY", "")
     if not secret:
+        logger.warning("RECAPTCHA_SECRET_KEY não definida — verificação de captcha desabilitada")
         return True
     if not token:
         return False
@@ -94,7 +95,7 @@ def _verificar_captcha(token: str) -> bool:
 
 
 def _gerar_otp() -> str:
-    return str(random.randint(100000, 999999))
+    return str(secrets.randbelow(900000) + 100000)
 
 
 def _senha_forte(senha: str) -> bool:
@@ -109,7 +110,11 @@ def _senha_forte(senha: str) -> bool:
 # ── Rotas ────────────────────────────────────────────────────
 
 @router.post("/cadastro")
-def cadastro(dados: CadastroRequest, db: Session = Depends(get_db)):
+def cadastro(dados: CadastroRequest, request: Request, db: Session = Depends(get_db)):
+    ip = request.client.host if request.client else "unknown"
+    if not _checar_rate_limit(f"cadastro:{ip}"):
+        raise HTTPException(status_code=429, detail="Muitas tentativas. Aguarde 15 minutos.")
+
     email = dados.email.lower()
 
     try:
@@ -203,7 +208,11 @@ def login(dados: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/verify-otp")
-def verify_otp(dados: VerificarOTPRequest, db: Session = Depends(get_db)):
+def verify_otp(dados: VerificarOTPRequest, request: Request, db: Session = Depends(get_db)):
+    ip = request.client.host if request.client else "unknown"
+    if not _checar_rate_limit(f"otp:{ip}"):
+        raise HTTPException(status_code=429, detail="Muitas tentativas. Aguarde 15 minutos.")
+
     email = dados.email.lower()
     usuario = db.query(Usuario).filter(Usuario.email == email).first()
 
@@ -237,13 +246,19 @@ def toggle_2fa(
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    if not verificar_senha(dados.senha_atual, usuario.senha):
+        raise HTTPException(status_code=401, detail="Senha incorreta")
     usuario.two_fa_enabled = dados.ativar
     db.commit()
     return {"two_fa_enabled": usuario.two_fa_enabled}
 
 
 @router.post("/esqueci-senha")
-def esqueci_senha(dados: EsqueciSenhaRequest, db: Session = Depends(get_db)):
+def esqueci_senha(dados: EsqueciSenhaRequest, request: Request, db: Session = Depends(get_db)):
+    ip = request.client.host if request.client else "unknown"
+    if not _checar_rate_limit(f"esqueci-senha:{ip}"):
+        raise HTTPException(status_code=429, detail="Muitas tentativas. Aguarde 15 minutos.")
+
     email = dados.email.lower()
     usuario = db.query(Usuario).filter(Usuario.email == email).first()
     if usuario:

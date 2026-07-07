@@ -1,8 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
 from pydantic import BaseModel
 from pathlib import Path
-import shutil
 import logging
+import uuid
 from datetime import datetime
 
 from sqlalchemy.orm import Session
@@ -49,6 +49,9 @@ def criar_gasto_manual(
     return {"msg": "Gasto adicionado"}
 
 
+MAX_CSV_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
 # ✅ IMPORTAR EXTRATO
 @router.post("/importar")
 def importar_extrato_bancario(
@@ -64,32 +67,44 @@ def importar_extrato_bancario(
             detail="Formato inválido. Envie CSV."
         )
 
-    caminho_temp = Path("data/extratos") / file.filename
-    caminho_temp.parent.mkdir(parents=True, exist_ok=True)
+    pasta = Path("data/extratos")
+    pasta.mkdir(parents=True, exist_ok=True)
+    # nome gerado (não o nome enviado pelo cliente) evita path traversal/colisão
+    caminho_temp = pasta / f"{uuid.uuid4().hex}.csv"
 
+    tamanho = 0
     with open(caminho_temp, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        while chunk := file.file.read(1024 * 1024):
+            tamanho += len(chunk)
+            if tamanho > MAX_CSV_SIZE:
+                buffer.close()
+                caminho_temp.unlink(missing_ok=True)
+                raise HTTPException(status_code=413, detail="Arquivo muito grande (máximo 10MB)")
+            buffer.write(chunk)
 
-    extrato = Extrato(
-        nome_arquivo=file.filename,
-        banco=banco,
-        usuario_id=usuario_id
-    )
-    db.add(extrato)
-    db.commit()
-    db.refresh(extrato)
+    try:
+        extrato = Extrato(
+            nome_arquivo=file.filename,
+            banco=banco,
+            usuario_id=usuario_id
+        )
+        db.add(extrato)
+        db.commit()
+        db.refresh(extrato)
 
-    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
-    nome_usuario = usuario.nome if usuario else None
-    importar_extrato(caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco, nome_usuario=nome_usuario)
+        usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+        nome_usuario = usuario.nome if usuario else None
+        importar_extrato(caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco, nome_usuario=nome_usuario)
 
-    logger.info(f"Usuário {usuario_id} importou arquivo: {file.filename}")
+        logger.info(f"Usuário {usuario_id} importou arquivo: {file.filename}")
 
-    return {
-        "message": "Extrato importado com sucesso",
-        "arquivo": file.filename,
-        "extrato_id": extrato.id
-    }
+        return {
+            "message": "Extrato importado com sucesso",
+            "arquivo": file.filename,
+            "extrato_id": extrato.id
+        }
+    finally:
+        caminho_temp.unlink(missing_ok=True)
 
 
 # ✅ LISTAR HISTÓRICO DE EXTRATOS
