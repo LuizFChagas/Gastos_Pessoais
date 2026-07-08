@@ -1,33 +1,45 @@
-import smtplib
-import socket
 import os
+import json
+import urllib.request
+import urllib.error
 from datetime import datetime
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from html import escape as _esc
 
 
-class _SMTPForcaIPv4(smtplib.SMTP):
-    """Alguns provedores de hospedagem (ex: Render) não têm saída IPv6
-    funcional, e a resolução de smtp.gmail.com pode retornar um endereço
-    IPv6 primeiro, causando "Network is unreachable". Forçamos IPv4 aqui,
-    mantendo o hostname original para a validação do certificado TLS."""
+def _enviar(destinatario: str, assunto: str, html: str):
+    api_key = os.getenv("BREVO_API_KEY")
+    remetente = os.getenv("SMTP_USER")
 
-    def _get_socket(self, host, port, timeout):
-        addr_info = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
-        sockaddr = addr_info[0][4]
-        return socket.create_connection(sockaddr, timeout, self.source_address)
+    if not api_key or not remetente:
+        raise RuntimeError("Credenciais de email não configuradas (BREVO_API_KEY / SMTP_USER)")
+
+    payload = json.dumps({
+        "sender": {"name": "Finly", "email": remetente},
+        "to": [{"email": destinatario}],
+        "subject": assunto,
+        "htmlContent": html,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=payload,
+        method="POST",
+        headers={
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+    except urllib.error.HTTPError as e:
+        detalhe = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Brevo respondeu {e.code}: {detalhe}") from e
 
 
 def enviar_otp(destinatario: str, codigo: str, nome: str):
-    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASS")
-
-    if not smtp_user or not smtp_pass:
-        raise RuntimeError("Credenciais de email não configuradas (SMTP_USER / SMTP_PASS)")
-
     html = f"""
     <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f172a;color:#f1f5f9;border-radius:16px;">
       <div style="font-size:22px;font-weight:800;color:#10b981;margin-bottom:8px;">Finly</div>
@@ -39,35 +51,7 @@ def enviar_otp(destinatario: str, codigo: str, nome: str):
       <p style="color:#64748b;font-size:13px;margin:0;">Este código expira em <strong>10 minutos</strong>. Se não foi você, ignore este email.</p>
     </div>
     """
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"{codigo} é seu código Finly"
-    msg["From"] = f"Finly <{smtp_user}>"
-    msg["To"] = destinatario
-    msg.attach(MIMEText(html, "html"))
-
-    with _SMTPForcaIPv4(smtp_host, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_pass)
-        server.sendmail(smtp_user, destinatario, msg.as_string())
-
-
-def _enviar(destinatario: str, assunto: str, html: str):
-    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASS")
-    if not smtp_user or not smtp_pass:
-        raise RuntimeError("Credenciais de email não configuradas (SMTP_USER / SMTP_PASS)")
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = assunto
-    msg["From"] = f"Finly <{smtp_user}>"
-    msg["To"] = destinatario
-    msg.attach(MIMEText(html, "html"))
-    with _SMTPForcaIPv4(smtp_host, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_pass)
-        server.sendmail(smtp_user, destinatario, msg.as_string())
+    _enviar(destinatario, f"{codigo} é seu código Finly", html)
 
 
 def enviar_verificacao(destinatario: str, token: str, nome: str):
@@ -98,7 +82,7 @@ def enviar_sugestao_admin(admin_email: str, texto: str, nome_usuario: str, email
       <p style="color:#64748b;font-size:12px;margin:0;">{data_hora}</p>
     </div>
     """
-    _enviar(admin_email, f"Nova sugestão — Finly", html)
+    _enviar(admin_email, "Nova sugestão — Finly", html)
 
 
 def enviar_reset_senha(destinatario: str, token: str, nome: str):
