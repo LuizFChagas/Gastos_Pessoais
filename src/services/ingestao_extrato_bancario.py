@@ -119,9 +119,18 @@ def _extrair_parcela(titulo: str):
     return titulo, None
 
 
+def _parse_valor_brl(v) -> float:
+    """Converte valor monetário aceitando tanto '50.70' quanto '50,70'
+    (e '1.234,56' com separador de milhar) para float."""
+    s = str(v).strip().replace(" ", "")
+    if "," in s:
+        s = s.replace(".", "").replace(",", ".")
+    return float(s)
+
+
 def _processar_linha_nubank_fatura(linha):
     titulo = str(linha["title"]).strip()
-    valor = float(linha["amount"])
+    valor = _parse_valor_brl(linha["amount"])
     data_hora = datetime.strptime(str(linha["date"]).strip(), "%Y-%m-%d")
     descricao, parcela = _extrair_parcela(titulo)
     return descricao, valor, data_hora, parcela
