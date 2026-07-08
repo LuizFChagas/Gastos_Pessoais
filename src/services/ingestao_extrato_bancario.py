@@ -500,7 +500,8 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
 
             transacoes.append((descricao, valor_abs, data_hora, tipo, categoria, parcela))
 
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Linha ignorada ao importar extrato (formato {formato}): {e} | dados: {linha.to_dict()}")
             continue
 
     # Detecta mês dominante e ajusta datas fora do padrão
