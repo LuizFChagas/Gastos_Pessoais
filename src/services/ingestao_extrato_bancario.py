@@ -142,7 +142,7 @@ def _processar_linha_nubank_conta(linha, colunas_map):
     col_valor = colunas_map.get("valor", "Valor")
     col_desc = colunas_map.get("descricao", "Descrição")
 
-    valor = float(str(linha[col_valor]).replace(",", "."))
+    valor = _parse_valor_brl(linha[col_valor])
     data_hora = datetime.strptime(str(linha[col_data]).strip(), "%d/%m/%Y")
     desc_raw = str(linha[col_desc]).strip()
 
@@ -182,8 +182,8 @@ def _processar_linha_c6_conta(linha, colunas_map):
     titulo = str(linha[col_titulo]).strip()
     desc   = str(linha[col_desc]).strip()
 
-    entrada = float(str(linha[col_entrada]).replace(",", "."))
-    saida   = float(str(linha[col_saida]).replace(",", "."))
+    entrada = _parse_valor_brl(linha[col_entrada])
+    saida   = _parse_valor_brl(linha[col_saida])
 
     # Débito no cartão: usa descrição (nome do estabelecimento)
     # Pix e demais: usa título (tem o nome da pessoa/operação)
@@ -213,12 +213,12 @@ def _processar_linha_bradesco_conta(linha, colunas_map):
     if any(k in _normalizar(descricao) for k in KEYWORDS_SKIP_BRADESCO):
         raise ValueError("linha de metadado")
 
-    def _parse_valor(v):
-        s = str(v).strip().replace(".", "").replace(",", ".")
-        return float(s) if s and s.lower() != "nan" else 0.0
+    def _parse_valor_ou_zero(v):
+        s = str(v).strip()
+        return _parse_valor_brl(s) if s and s.lower() != "nan" else 0.0
 
-    credito = _parse_valor(linha[col_credito])
-    debito  = _parse_valor(linha[col_debito])
+    credito = _parse_valor_ou_zero(linha[col_credito])
+    debito  = _parse_valor_ou_zero(linha[col_debito])
 
     if credito == 0.0 and debito == 0.0:
         raise ValueError("linha sem movimento")
@@ -237,7 +237,7 @@ def _processar_linha_c6_fatura(linha, colunas_map):
     col_parc  = colunas_map.get("parcela", "Parcela")
 
     descricao = str(linha[col_desc]).strip()
-    valor     = float(str(linha[col_valor]).replace(",", "."))
+    valor     = _parse_valor_brl(linha[col_valor])
     data_hora = datetime.strptime(str(linha[col_data]).strip(), "%d/%m/%Y")
 
     parcela_raw = str(linha[col_parc]).strip()
@@ -248,7 +248,7 @@ def _processar_linha_c6_fatura(linha, colunas_map):
 
 def _processar_linha_legado(linha):
     descricao = str(linha["Descrição"]).strip()
-    valor = float(linha["Valor (em R$)"])
+    valor = _parse_valor_brl(linha["Valor (em R$)"])
     data_hora = datetime.strptime(str(linha["Data de Compra"]).strip(), "%d/%m/%Y")
     return descricao, valor, data_hora
 
