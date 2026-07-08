@@ -1,9 +1,22 @@
 import smtplib
+import socket
 import os
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from html import escape as _esc
+
+
+class _SMTPForcaIPv4(smtplib.SMTP):
+    """Alguns provedores de hospedagem (ex: Render) não têm saída IPv6
+    funcional, e a resolução de smtp.gmail.com pode retornar um endereço
+    IPv6 primeiro, causando "Network is unreachable". Forçamos IPv4 aqui,
+    mantendo o hostname original para a validação do certificado TLS."""
+
+    def _get_socket(self, host, port, timeout):
+        addr_info = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+        sockaddr = addr_info[0][4]
+        return socket.create_connection(sockaddr, timeout, self.source_address)
 
 
 def enviar_otp(destinatario: str, codigo: str, nome: str):
@@ -33,7 +46,7 @@ def enviar_otp(destinatario: str, codigo: str, nome: str):
     msg["To"] = destinatario
     msg.attach(MIMEText(html, "html"))
 
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
+    with _SMTPForcaIPv4(smtp_host, smtp_port) as server:
         server.starttls()
         server.login(smtp_user, smtp_pass)
         server.sendmail(smtp_user, destinatario, msg.as_string())
@@ -51,7 +64,7 @@ def _enviar(destinatario: str, assunto: str, html: str):
     msg["From"] = f"Finly <{smtp_user}>"
     msg["To"] = destinatario
     msg.attach(MIMEText(html, "html"))
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
+    with _SMTPForcaIPv4(smtp_host, smtp_port) as server:
         server.starttls()
         server.login(smtp_user, smtp_pass)
         server.sendmail(smtp_user, destinatario, msg.as_string())
