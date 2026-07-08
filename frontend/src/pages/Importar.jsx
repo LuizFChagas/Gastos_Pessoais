@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
-import { importarExtrato, listarExtratos, deletarExtrato } from "../api/gastosApi";
-import { FolderOpen, Upload, Trash2, CheckCircle } from "lucide-react";
+import { importarExtrato, previewExtrato, listarExtratos, deletarExtrato } from "../api/gastosApi";
+import { FolderOpen, Upload, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
+
+const fmtMoeda = (v) =>
+  Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const fmtData = (iso) => {
+  const [ano, mes, dia] = (iso || "").split("-");
+  return dia ? `${dia}/${mes}/${ano}` : iso;
+};
 
 function Importar() {
   const [arquivo, setArquivo] = useState(null);
@@ -9,6 +17,10 @@ function Importar() {
   const [historico, setHistorico] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
+
+  const [preview, setPreview] = useState(null);
+  const [carregandoPreview, setCarregandoPreview] = useState(false);
+  const [erroPreview, setErroPreview] = useState(null);
 
   useEffect(() => {
     carregarHistorico();
@@ -23,20 +35,38 @@ function Importar() {
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const selecionarArquivo = (file) => {
+    if (!file) return;
     setArquivo(file);
-    if (file) setStep(2);
+    setStep(2);
+    buscarPreview(file);
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    setArquivo(file);
-    if (file) setStep(2);
-  };
-
+  const handleFileChange = (e) => selecionarArquivo(e.target.files[0]);
+  const handleDrop = (e) => { e.preventDefault(); selecionarArquivo(e.dataTransfer.files[0]); };
   const handleDragOver = (e) => e.preventDefault();
+
+  const buscarPreview = async (file) => {
+    setPreview(null);
+    setErroPreview(null);
+    setCarregandoPreview(true);
+    try {
+      const data = await previewExtrato(file);
+      setPreview(data);
+    } catch (e) {
+      const msg = e?.response?.data?.detail || "Não foi possível ler esse arquivo.";
+      setErroPreview(msg);
+    } finally {
+      setCarregandoPreview(false);
+    }
+  };
+
+  const cancelarArquivo = () => {
+    setArquivo(null);
+    setPreview(null);
+    setErroPreview(null);
+    setStep(1);
+  };
 
   const handleUpload = async () => {
     if (!arquivo) {
@@ -54,6 +84,7 @@ function Importar() {
       setStep(1);
       setArquivo(null);
       setBanco("");
+      setPreview(null);
     } catch (e) {
       const msg = e?.response?.data?.detail || "Erro ao processar o arquivo.";
       setErro(msg);
@@ -110,8 +141,8 @@ function Importar() {
         <StepCircle n={3} />
         <span style={{ marginLeft: "10px", color: "var(--subtext)", fontSize: "14px" }}>
           {step === 1 && "Selecionar arquivo"}
-          {step === 2 && "Revisar informações"}
-          {step === 3 && "Processando..."}
+          {step === 2 && "Conferir transações"}
+          {step === 3 && "Importando..."}
         </span>
       </div>
 
@@ -162,8 +193,7 @@ function Importar() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setArquivo(null);
-              setStep(1);
+              cancelarArquivo();
             }}
             style={{
               marginTop: "12px",
@@ -197,6 +227,91 @@ function Importar() {
         </div>
       )}
 
+      {/* PREVIEW — ANALISANDO */}
+      {carregandoPreview && (
+        <div style={{
+          marginTop: "16px", padding: "16px", textAlign: "center",
+          color: "var(--subtext)", fontSize: "14px"
+        }}>
+          Analisando arquivo...
+        </div>
+      )}
+
+      {/* PREVIEW — ERRO (formato não reconhecido) */}
+      {erroPreview && (
+        <div style={{
+          marginTop: "16px", padding: "14px 16px", borderRadius: "12px",
+          background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)",
+          color: "#ef4444", fontSize: "14px", display: "flex", gap: "10px", alignItems: "flex-start"
+        }}>
+          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: "1px" }} />
+          <span>{erroPreview}</span>
+        </div>
+      )}
+
+      {/* PREVIEW — NENHUMA TRANSAÇÃO ENCONTRADA */}
+      {preview && preview.total === 0 && (
+        <div style={{
+          marginTop: "16px", padding: "14px 16px", borderRadius: "12px",
+          background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)",
+          color: "#f59e0b", fontSize: "14px", display: "flex", gap: "10px", alignItems: "flex-start"
+        }}>
+          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: "1px" }} />
+          <span>Nenhuma transação foi reconhecida nesse arquivo. Confira se é o arquivo certo antes de tentar outro banco.</span>
+        </div>
+      )}
+
+      {/* PREVIEW — TABELA DE CONFERÊNCIA */}
+      {preview && preview.total > 0 && (
+        <div style={{
+          marginTop: "16px", backgroundColor: "var(--card)", borderRadius: "12px",
+          border: "1px solid var(--border)", overflow: "hidden"
+        }}>
+          <div style={{
+            padding: "12px 16px", borderBottom: "1px solid var(--border)",
+            display: "flex", justifyContent: "space-between", alignItems: "center"
+          }}>
+            <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--text)" }}>
+              {preview.total} transaç{preview.total === 1 ? "ão encontrada" : "ões encontradas"}
+            </span>
+            {preview.formato === "generico" && (
+              <span style={{ fontSize: "11px", color: "#f59e0b" }}>
+                Banco detectado automaticamente — confira os valores abaixo
+              </span>
+            )}
+          </div>
+
+          <div style={{ maxHeight: "280px", overflowY: "auto" }}>
+            {preview.transacoes.map((t, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex", alignItems: "center", gap: "12px",
+                  padding: "10px 16px",
+                  borderBottom: i < preview.transacoes.length - 1 ? "1px solid var(--border)" : "none"
+                }}
+              >
+                <span style={{ fontSize: "12px", color: "var(--subtext)", flexShrink: 0, width: "62px" }}>
+                  {fmtData(t.data)}
+                </span>
+                <span style={{
+                  fontSize: "13px", color: "var(--text)", flex: 1, minWidth: 0,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                }}>
+                  {t.descricao}
+                </span>
+                <span style={{
+                  fontSize: "13px", fontWeight: "600", flexShrink: 0,
+                  color: t.tipo === "entrada" ? "#22c55e" : "#ef4444"
+                }}>
+                  {t.tipo === "entrada" ? "+" : "-"}{fmtMoeda(t.valor)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* INPUT BANCO + BOTÃO */}
       <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
         <input
@@ -218,21 +333,21 @@ function Importar() {
 
         <button
           onClick={handleUpload}
-          disabled={carregando}
+          disabled={carregando || carregandoPreview || !preview || preview.total === 0}
           style={{
-            backgroundColor: carregando ? "var(--border)" : "#10b981",
+            backgroundColor: (carregando || carregandoPreview || !preview || preview.total === 0) ? "var(--border)" : "#10b981",
             color: "white",
             border: "none",
             padding: "12px 24px",
             borderRadius: "10px",
             fontWeight: "700",
             fontSize: "14px",
-            cursor: carregando ? "not-allowed" : "pointer",
+            cursor: (carregando || carregandoPreview || !preview || preview.total === 0) ? "not-allowed" : "pointer",
             transition: "background 0.2s",
-            boxShadow: carregando ? "none" : "0 2px 12px rgba(16,185,129,0.35)"
+            boxShadow: (carregando || carregandoPreview || !preview || preview.total === 0) ? "none" : "0 2px 12px rgba(16,185,129,0.35)"
           }}
         >
-          {carregando ? "Processando..." : <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Upload size={15} /> Processar</span>}
+          {carregando ? "Importando..." : <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Upload size={15} /> Confirmar importação</span>}
         </button>
       </div>
 
