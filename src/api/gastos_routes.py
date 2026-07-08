@@ -12,7 +12,7 @@ from src.database.deps import get_db
 from src.database.models import Gasto, Extrato, Usuario
 
 from src.services.ingestao_manual import adicionar_gasto_manual
-from src.services.ingestao_extrato_bancario import importar_extrato
+from src.services.ingestao_extrato_bancario import importar_extrato, pre_visualizar_extrato
 from src.auth.security import pegar_usuario_logado
 
 
@@ -52,24 +52,14 @@ def criar_gasto_manual(
 MAX_CSV_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
-# ✅ IMPORTAR EXTRATO
-@router.post("/importar")
-def importar_extrato_bancario(
-    file: UploadFile = File(...),
-    banco: str = "",
-    usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
-):
-
+def _salvar_csv_temp(file: UploadFile) -> Path:
+    """Valida extensão/tamanho e salva o upload num arquivo temporário com nome
+    gerado (nunca o nome enviado pelo cliente, evita path traversal/colisão)."""
     if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(
-            status_code=400,
-            detail="Formato inválido. Envie CSV."
-        )
+        raise HTTPException(status_code=400, detail="Formato inválido. Envie CSV.")
 
     pasta = Path("data/extratos")
     pasta.mkdir(parents=True, exist_ok=True)
-    # nome gerado (não o nome enviado pelo cliente) evita path traversal/colisão
     caminho_temp = pasta / f"{uuid.uuid4().hex}.csv"
 
     tamanho = 0
@@ -81,6 +71,32 @@ def importar_extrato_bancario(
                 caminho_temp.unlink(missing_ok=True)
                 raise HTTPException(status_code=413, detail="Arquivo muito grande (máximo 10MB)")
             buffer.write(chunk)
+
+    return caminho_temp
+
+
+# ✅ PRÉ-VISUALIZAR EXTRATO (sem salvar nada no banco)
+@router.post("/importar/preview")
+def preview_extrato_bancario(
+    file: UploadFile = File(...),
+    usuario_id: int = Depends(pegar_usuario_logado),
+):
+    caminho_temp = _salvar_csv_temp(file)
+    try:
+        return pre_visualizar_extrato(caminho_temp, usuario_id)
+    finally:
+        caminho_temp.unlink(missing_ok=True)
+
+
+# ✅ IMPORTAR EXTRATO
+@router.post("/importar")
+def importar_extrato_bancario(
+    file: UploadFile = File(...),
+    banco: str = "",
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    caminho_temp = _salvar_csv_temp(file)
 
     try:
         extrato = Extrato(

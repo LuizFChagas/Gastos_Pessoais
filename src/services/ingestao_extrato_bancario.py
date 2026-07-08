@@ -105,6 +105,48 @@ def _detectar_formato(df):
     return None
 
 
+def _detectar_colunas_genericas(df) -> dict | None:
+    """Fallback pra bancos ainda não conhecidos: tenta achar colunas de data,
+    descrição e valor por nomes comuns (PT/EN). Retorna None se não achar as três —
+    nesse caso não arriscamos importar nada, é melhor falhar de forma clara."""
+    colunas_norm = {_normalizar(c): c for c in df.columns.str.strip()}
+
+    def _achar(candidatos):
+        for chave_norm, nome_real in colunas_norm.items():
+            if any(cand in chave_norm for cand in candidatos):
+                return nome_real
+        return None
+
+    col_data = _achar(["data", "date", "dt lancamento", "dt movimento"])
+    col_desc = _achar(["descricao", "description", "historico", "titulo", "title", "estabelecimento", "lancamento", "detalhe"])
+    col_valor = _achar(["valor", "value", "amount", "vlr", "montante"])
+
+    # As três precisam existir E ser colunas diferentes entre si — se caírem na
+    # mesma coluna (ex: CSV mal separado, virou uma coluna só), é sinal de que a
+    # detecção não é confiável; melhor recusar do que arriscar dado errado.
+    if col_data and col_desc and col_valor and len({col_data, col_desc, col_valor}) == 3:
+        return {"data": col_data, "descricao": col_desc, "valor": col_valor}
+    return None
+
+
+def _parse_data_flexivel(s: str):
+    """Tenta os formatos de data mais comuns em extratos brasileiros, nessa ordem."""
+    s = s.strip()
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y", "%d/%m/%y"):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    raise ValueError(f"formato de data não reconhecido: {s!r}")
+
+
+def _processar_linha_generico(linha, colunas):
+    descricao = str(linha[colunas["descricao"]]).strip()
+    valor = _parse_valor_brl(linha[colunas["valor"]])
+    data_hora = _parse_data_flexivel(str(linha[colunas["data"]]))
+    return descricao, valor, data_hora
+
+
 def _extrair_parcela(titulo: str):
     """Extrai parcela embutida no título. Ex: 'Netflix 2/12' → ('Netflix', '2/12')"""
     # Padrão "X/Y" no final do título
@@ -394,10 +436,15 @@ def _buscar_historico_categorias(usuario_id: int) -> dict:
         db.close()
 
 
-def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, nome_usuario=None):
+def _parsear_extrato(caminho_extrato, usuario_id):
+    """Lê o CSV, detecta o formato/colunas e devolve (formato, transacoes_ajustadas)
+    SEM tocar no banco de dados. Usado tanto pela importação de verdade quanto
+    pela pré-visualização (preview) antes de confirmar."""
 
     formato = None
     df = None
+    colunas_genericas = None
+    df_generico_candidato = None
 
     for encoding in ["utf-8-sig", "utf-8", "latin1"]:
         for sep in [",", ";"]:
@@ -417,6 +464,13 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
                         df = df_tentativa
                         formato = fmt
                         break
+                    # Nenhum banco conhecido bateu — tenta achar colunas genéricas
+                    # (data/descrição/valor por nome) como último recurso.
+                    if colunas_genericas is None:
+                        genericas = _detectar_colunas_genericas(df_tentativa)
+                        if genericas:
+                            colunas_genericas = genericas
+                            df_generico_candidato = df_tentativa
                 except Exception:
                     continue
             if formato:
@@ -424,8 +478,15 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
         if formato:
             break
 
+    if not formato and colunas_genericas:
+        df = df_generico_candidato
+        formato = "generico"
+
     if df is None or not formato:
-        raise HTTPException(status_code=400, detail="CSV inválido. Formato não reconhecido")
+        raise HTTPException(
+            status_code=400,
+            detail="CSV inválido. Não conseguimos identificar as colunas de data, descrição e valor desse extrato."
+        )
 
     # Mapa de colunas normalizadas → nome real (para nubank_conta com encoding variável)
     colunas_map = {_normalizar(c): c for c in df.columns.str.strip()}
@@ -464,6 +525,8 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
                 descricao, valor, data_hora = _processar_linha_bradesco_conta(linha, colunas_map)
             elif formato == "c6_fatura":
                 descricao, valor, data_hora, parcela = _processar_linha_c6_fatura(linha, colunas_map)
+            elif formato == "generico":
+                descricao, valor, data_hora = _processar_linha_generico(linha, colunas_genericas)
             else:
                 descricao, valor, data_hora = _processar_linha_legado(linha)
 
@@ -534,7 +597,34 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
             (d, v, dh, t, c, None, p) for d, v, dh, t, c, p in transacoes
         ]
 
-    # Segunda passada: persiste no banco
+    return formato, transacoes_ajustadas
+
+
+def pre_visualizar_extrato(caminho_extrato, usuario_id):
+    """Faz o parsing do CSV sem persistir nada no banco — usado pela tela de
+    conferência antes do usuário confirmar a importação de verdade."""
+    formato, transacoes_ajustadas = _parsear_extrato(caminho_extrato, usuario_id)
+    return {
+        "formato": formato,
+        "total": len(transacoes_ajustadas),
+        "transacoes": [
+            {
+                "descricao": descricao,
+                "valor": valor_abs,
+                "data": data_hora.strftime("%Y-%m-%d"),
+                "tipo": tipo,
+                "categoria": categoria,
+                "parcela": parcela,
+            }
+            for descricao, valor_abs, data_hora, tipo, categoria, _data_original, parcela in transacoes_ajustadas
+        ],
+    }
+
+
+def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, nome_usuario=None):
+    formato, transacoes_ajustadas = _parsear_extrato(caminho_extrato, usuario_id)
+
+    # Persiste no banco
     db: Session = SessionLocal()
 
     for descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela in transacoes_ajustadas:
@@ -567,7 +657,7 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
 
     logger.info(
         f"Importação finalizada para usuário {usuario_id} "
-        f"(formato: {formato}, mês dominante: {mes_dominante})"
+        f"(formato: {formato}, {len(transacoes_ajustadas)} transações processadas)"
     )
 
     # Detecta transferências internas entre contas do mesmo usuário

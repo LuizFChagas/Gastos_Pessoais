@@ -42,6 +42,16 @@ export const deletarGasto = async (id) => {
   await api.delete(`/gastos/${id}`);
 };
 
+// PRÉ-VISUALIZAR EXTRATO (CSV) — não salva nada, só mostra o que seria importado
+export const previewExtrato = async (arquivo) => {
+  const formData = new FormData();
+  formData.append("file", arquivo);
+  const response = await api.post("/gastos/importar/preview", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+  return response.data;
+};
+
 // IMPORTAR EXTRATO (CSV)
 export const importarExtrato = async (arquivo, banco) => {
   const formData = new FormData();
