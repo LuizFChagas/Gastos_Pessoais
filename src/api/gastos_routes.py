@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pathlib import Path
+from typing import Literal
 import logging
 import uuid
 from datetime import datetime
@@ -23,10 +24,10 @@ router = APIRouter()
 
 class GastoManualRequest(BaseModel):
     descricao: str
-    valor: float
+    valor: float = Field(gt=0)
     categoria: str
     banco: str
-    tipo: str  # 👈 NOVO
+    tipo: Literal["entrada", "saida"]
     data_hora: str | None = None
 
 
@@ -389,9 +390,9 @@ def top_maiores_gastos(
 
 class EditarGastoRequest(BaseModel):
     descricao: str | None = None
-    valor: float | None = None
+    valor: float | None = Field(default=None, gt=0)
     categoria: str | None = None
-    tipo: str | None = None
+    tipo: Literal["entrada", "saida"] | None = None
     banco: str | None = None
     data_hora: str | None = None
 

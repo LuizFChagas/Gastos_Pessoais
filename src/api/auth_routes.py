@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, datetime, timedelta
@@ -41,11 +41,21 @@ def _checar_rate_limit(ip: str) -> bool:
 
 # ── Schemas ──────────────────────────────────────────────────
 
+_EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
 class CadastroRequest(BaseModel):
     email: str
     senha: str = Field(min_length=8, max_length=72)
     nome: str
     data_nascimento: str  # "YYYY-MM-DD"
+
+    @field_validator("email")
+    @classmethod
+    def _validar_email(cls, v: str) -> str:
+        if not _EMAIL_REGEX.match(v.strip()):
+            raise ValueError("Email inválido")
+        return v
 
 
 class LoginRequest(BaseModel):
