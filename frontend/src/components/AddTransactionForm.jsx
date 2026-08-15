@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import api from "../api/api";
 import { CATEGORIAS, capitalizar } from "../utils/categorias";
 import { useCategoriasPersonalizadas, LIMITE_CATEGORIAS_PERSONALIZADAS } from "../hooks/useCategoriasPersonalizadas";
-import { ArrowUpCircle, ArrowDownCircle, ChevronDown } from "lucide-react";
+import { ArrowUpCircle, ArrowDownCircle, ChevronDown, HelpCircle, Plus } from "lucide-react";
 
 const NOVA_CATEGORIA_VALUE = "__nova_categoria__";
 
@@ -42,7 +42,6 @@ function CustomSelect({ value, onChange, options, inputStyle }) {
         onClick={() => setOpen(o => !o)}
         style={{
           ...inputStyle,
-          marginTop: 0,
           display: "flex", alignItems: "center", justifyContent: "space-between",
           gap: "6px", cursor: "pointer", textAlign: "left",
           transition: "border-color 0.2s", outline: "none",
@@ -336,7 +335,24 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       {/* CATEGORIA + BANCO */}
       <div style={{ display: "flex", gap: "12px" }}>
         <div style={{ flex: 1 }}>
-          <label style={labelStyle}>Categoria</label>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <label style={labelStyle}>Categoria</label>
+            {categoriasPersonalizadas.length < LIMITE_CATEGORIAS_PERSONALIZADAS && (
+              <button
+                type="button"
+                onClick={() => setOpenNovaCategoria(true)}
+                title="Criar nova categoria"
+                style={{
+                  display: "flex", alignItems: "center", gap: "2px",
+                  background: "transparent", border: "none", padding: 0,
+                  color: "#10b981", fontSize: "11px", fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                <Plus size={12} /> Nova
+              </button>
+            )}
+          </div>
           <CustomSelect
             value={categoria}
             onChange={(v) => {
@@ -373,11 +389,17 @@ function AddTransactionForm({ onSuccess, onCancel }) {
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text)", cursor: parcelado ? "default" : "pointer", opacity: parcelado ? 0.5 : 1 }}>
           <input type="checkbox" checked={fixo} disabled={parcelado} onChange={(e) => setFixo(e.target.checked)} style={{ accentColor: "#10b981", width: "16px", height: "16px" }} />
-          Repetir todo mês (gasto/entrada fixo)
+          Gasto fixo
+          <span title="Repete essa transação automaticamente todo mês, sem precisar lançar de novo." style={{ display: "inline-flex", color: "var(--subtext)", cursor: "help" }}>
+            <HelpCircle size={13} />
+          </span>
         </label>
         <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text)", cursor: fixo ? "default" : "pointer", opacity: fixo ? 0.5 : 1 }}>
           <input type="checkbox" checked={parcelado} disabled={fixo} onChange={(e) => setParcelado(e.target.checked)} style={{ accentColor: "#10b981", width: "16px", height: "16px" }} />
-          Parcelar (gera as próximas parcelas automaticamente)
+          Parcelado
+          <span title="Divide o valor em parcelas e gera automaticamente os lançamentos dos próximos meses." style={{ display: "inline-flex", color: "var(--subtext)", cursor: "help" }}>
+            <HelpCircle size={13} />
+          </span>
         </label>
         {parcelado && (
           <div style={{ marginLeft: "24px" }}>

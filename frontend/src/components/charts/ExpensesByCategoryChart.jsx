@@ -145,14 +145,14 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
 
           {/* Legenda */}
           <div style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-            alignContent: "center",
-            columnGap: "12px",
+            display: "flex",
+            flexDirection: "column",
             rowGap: "2px",
             flex: 1,
             minWidth: 0,
             width: isMobile ? "100%" : "auto",
+            maxHeight: isMobile ? "none" : "220px",
+            overflowY: "auto",
           }}>
             {dadosFiltrados.map((item, index) => {
               const style = getCategoriaStyle(item.name);
