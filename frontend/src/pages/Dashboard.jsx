@@ -36,7 +36,7 @@ function CustomSelect({ value, onChange, options, flex }) {
 
   useEffect(() => {
     const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    const onScroll = () => setOpen(false);
+    const onScroll = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", onClick);
     window.addEventListener("scroll", onScroll, true);
     return () => {

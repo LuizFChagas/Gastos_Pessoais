@@ -6,7 +6,7 @@ import { useCategoriasPersonalizadas } from "../hooks/useCategoriasPersonalizada
 import {
   AlignJustify, ArrowUp, ArrowDown, Zap, CreditCard, RefreshCw, ArrowLeftRight,
   ArrowDownCircle, ArrowUpCircle, CornerUpLeft, Pencil, Trash2, Landmark, CalendarDays,
-  ChevronDown, Wallet, Download, Repeat,
+  ChevronDown, Wallet, Download, Repeat, Search,
 } from "lucide-react";
 
 const FORMAS_PAGAMENTO_OPCOES = [
@@ -42,7 +42,7 @@ function CustomSelect({ value, onChange, options }) {
 
   useEffect(() => {
     const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    const onScroll = () => setOpen(false);
+    const onScroll = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", onClick);
     window.addEventListener("scroll", onScroll, true);
     return () => {
@@ -394,12 +394,15 @@ function Transacoes() {
         borderRadius: "12px", marginTop: "20px"
       }}>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <input
-            placeholder="🔍 Buscar..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={{ flex: 1, minWidth: "160px", padding: "10px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)" }}
-          />
+          <div style={{ position: "relative", flex: 1, minWidth: "160px" }}>
+            <Search size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--subtext)", pointerEvents: "none" }} />
+            <input
+              placeholder="Buscar..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              style={{ width: "100%", padding: "10px 10px 10px 34px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)", boxSizing: "border-box" }}
+            />
+          </div>
           <CustomSelect
             value={anoFiltro}
             onChange={(v) => { setAnoFiltro(v); setMesFiltro("todos"); }}

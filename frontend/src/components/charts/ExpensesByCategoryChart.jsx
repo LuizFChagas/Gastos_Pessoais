@@ -145,14 +145,14 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
 
           {/* Legenda */}
           <div style={{
-            display: "flex",
-            flexDirection: "column",
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            alignContent: "center",
+            columnGap: "16px",
             rowGap: "2px",
             flex: 1,
             minWidth: 0,
             width: isMobile ? "100%" : "auto",
-            maxHeight: isMobile ? "none" : "220px",
-            overflowY: "auto",
           }}>
             {dadosFiltrados.map((item, index) => {
               const style = getCategoriaStyle(item.name);
@@ -164,6 +164,7 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
                   key={index}
                   onMouseEnter={() => setActiveIndex(index)}
                   onMouseLeave={() => setActiveIndex(null)}
+                  title={`${capitalizar(item.name)} — ${formatCurrency(item.value)}`}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -199,18 +200,9 @@ function ExpensesByCategoryChart({ data, isMobile = false }) {
                     {capitalizar(item.name)}
                   </span>
                   <span style={{
-                    color: style.chartColor,
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    textAlign: "right",
-                    flexShrink: 0
-                  }}>
-                    {formatCurrency(item.value)}
-                  </span>
-                  <span style={{
                     color: "var(--subtext)",
-                    fontSize: "11px",
-                    width: "34px",
+                    fontSize: "12px",
+                    fontWeight: isActive ? "600" : "500",
                     textAlign: "right",
                     flexShrink: 0
                   }}>
