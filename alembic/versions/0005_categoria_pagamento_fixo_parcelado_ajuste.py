@@ -28,18 +28,28 @@ def upgrade() -> None:
     op.create_index(op.f('ix_gastos_origem_id'), 'gastos', ['origem_id'], unique=False)
 
     # ── categorias_personalizadas ──
-    op.create_table(
-        'categorias_personalizadas',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('usuario_id', sa.Integer(), nullable=True),
-        sa.Column('nome', sa.String(), nullable=True),
-        sa.Column('cor', sa.String(), nullable=True),
-        sa.Column('criado_em', sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(['usuario_id'], ['usuarios.id']),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_categorias_personalizadas_id'), 'categorias_personalizadas', ['id'], unique=False)
-    op.create_index(op.f('ix_categorias_personalizadas_usuario_id'), 'categorias_personalizadas', ['usuario_id'], unique=False)
+    # Guarda com "se não existir" porque o Base.metadata.create_all() que roda
+    # no startup do backend (src/api/main.py) pode ter criado essa tabela
+    # antes da migração rodar, caso o deploy tenha subido o código novo primeiro.
+    inspector = sa.inspect(op.get_bind())
+    if 'categorias_personalizadas' not in inspector.get_table_names():
+        op.create_table(
+            'categorias_personalizadas',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('usuario_id', sa.Integer(), nullable=True),
+            sa.Column('nome', sa.String(), nullable=True),
+            sa.Column('cor', sa.String(), nullable=True),
+            sa.Column('criado_em', sa.DateTime(), nullable=True),
+            sa.ForeignKeyConstraint(['usuario_id'], ['usuarios.id']),
+            sa.PrimaryKeyConstraint('id')
+        )
+
+    indices_existentes = {ix['name'] for ix in inspector.get_indexes('categorias_personalizadas')} \
+        if 'categorias_personalizadas' in inspector.get_table_names() else set()
+    if op.f('ix_categorias_personalizadas_id') not in indices_existentes:
+        op.create_index(op.f('ix_categorias_personalizadas_id'), 'categorias_personalizadas', ['id'], unique=False)
+    if op.f('ix_categorias_personalizadas_usuario_id') not in indices_existentes:
+        op.create_index(op.f('ix_categorias_personalizadas_usuario_id'), 'categorias_personalizadas', ['usuario_id'], unique=False)
 
 
 def downgrade() -> None:
