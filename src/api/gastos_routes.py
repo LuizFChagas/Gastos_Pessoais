@@ -1,6 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
-from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field, field_validator
 from pathlib import Path
+from typing import Literal
 import logging
 import uuid
 from datetime import datetime
@@ -13,6 +15,8 @@ from src.database.models import Gasto, Extrato, Usuario
 
 from src.services.ingestao_manual import adicionar_gasto_manual
 from src.services.ingestao_extrato_bancario import importar_extrato, pre_visualizar_extrato
+from src.services.gastos_fixos import processar_gastos_fixos, marcar_fixo
+from src.services.exportacao import gerar_csv, gerar_excel, gerar_pdf
 from src.auth.security import pegar_usuario_logado
 
 
@@ -20,21 +24,27 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+FORMAS_PAGAMENTO = Literal["debito", "credito", "pix", "dinheiro", "outro"]
+
 
 class GastoManualRequest(BaseModel):
     descricao: str
-    valor: float
+    valor: float = Field(gt=0)
     categoria: str
     banco: str
-    tipo: str  # 👈 NOVO
+    tipo: Literal["entrada", "saida"]
     data_hora: str | None = None
+    forma_pagamento: FORMAS_PAGAMENTO | None = None
+    fixo: bool = False
+    parcelas: int | None = Field(default=None, ge=2, le=48)
 
 
 # ✅ CRIAR GASTO / ENTRADA
 @router.post("/manual")
 def criar_gasto_manual(
     request: GastoManualRequest,
-    usuario_id: int = Depends(pegar_usuario_logado)
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
 ):
     adicionar_gasto_manual(
         request.descricao,
@@ -43,10 +53,67 @@ def criar_gasto_manual(
         usuario_id,
         request.banco,
         request.tipo,
-        request.data_hora
+        request.data_hora,
+        request.forma_pagamento,
+        request.fixo,
+        request.parcelas,
     )
 
+    processar_gastos_fixos(db, usuario_id)
+
     return {"msg": "Gasto adicionado"}
+
+
+class AjusteSaldoRequest(BaseModel):
+    novo_saldo: float
+    motivo: str
+
+    @field_validator("motivo")
+    @classmethod
+    def validar_motivo(cls, v):
+        v = v.strip()
+        if not v:
+            raise ValueError("Conte o que aconteceu pra gerar esse ajuste")
+        if len(v) > 500:
+            raise ValueError("Motivo muito longo (máximo 500 caracteres)")
+        return v
+
+
+# ✅ AJUSTAR SALDO MANUALMENTE
+@router.post("/ajuste-saldo")
+def ajustar_saldo(
+    request: AjusteSaldoRequest,
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    gastos = db.query(Gasto).filter(
+        Gasto.usuario_id == usuario_id,
+        Gasto.transferencia_interna.isnot(True)
+    ).all()
+
+    saldo_atual = sum(g.valor for g in gastos if g.tipo == "entrada") - \
+        sum(g.valor for g in gastos if g.tipo == "saida")
+
+    diferenca = request.novo_saldo - saldo_atual
+
+    if diferenca == 0:
+        raise HTTPException(status_code=400, detail="O saldo informado já é o saldo atual")
+
+    ajuste = Gasto(
+        descricao="Ajuste de saldo",
+        valor=abs(diferenca),
+        categoria="ajuste",
+        banco="Ajuste manual",
+        tipo="entrada" if diferenca > 0 else "saida",
+        data_hora=datetime.now(),
+        ajuste_saldo=True,
+        motivo_ajuste=request.motivo.strip(),
+        usuario_id=usuario_id
+    )
+    db.add(ajuste)
+    db.commit()
+
+    return {"message": "Saldo ajustado", "diferenca": diferenca}
 
 
 MAX_CSV_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -111,6 +178,8 @@ def importar_extrato_bancario(
         usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
         nome_usuario = usuario.nome if usuario else None
         importar_extrato(caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco, nome_usuario=nome_usuario)
+
+        processar_gastos_fixos(db, usuario_id)
 
         logger.info(f"Usuário {usuario_id} importou arquivo: {file.filename}")
 
@@ -188,6 +257,8 @@ def listar_gastos(
     usuario_id: int = Depends(pegar_usuario_logado),
     db: Session = Depends(get_db)
 ):
+    processar_gastos_fixos(db, usuario_id)
+
     gastos = db.query(Gasto).filter(
         Gasto.usuario_id == usuario_id
     ).order_by(Gasto.data_hora.desc()).all()
@@ -203,7 +274,12 @@ def listar_gastos(
             "data_hora": g.data_hora,
             "data_original": g.data_original,
             "parcela": g.parcela,
-            "transferencia_interna": g.transferencia_interna or False
+            "transferencia_interna": g.transferencia_interna or False,
+            "forma_pagamento": g.forma_pagamento,
+            "fixo": g.fixo or False,
+            "origem_id": g.origem_id,
+            "ajuste_saldo": g.ajuste_saldo or False,
+            "motivo_ajuste": g.motivo_ajuste,
         }
         for g in gastos
     ]
@@ -312,7 +388,12 @@ def gastos_por_mes(
             "data_hora": g.data_hora,
             "data_original": g.data_original,
             "parcela": g.parcela,
-            "transferencia_interna": g.transferencia_interna or False
+            "transferencia_interna": g.transferencia_interna or False,
+            "forma_pagamento": g.forma_pagamento,
+            "fixo": g.fixo or False,
+            "origem_id": g.origem_id,
+            "ajuste_saldo": g.ajuste_saldo or False,
+            "motivo_ajuste": g.motivo_ajuste,
         }
         for g in gastos
     ]
@@ -349,7 +430,12 @@ def gastos_por_intervalo(
             "data_hora": g.data_hora,
             "data_original": g.data_original,
             "parcela": g.parcela,
-            "transferencia_interna": g.transferencia_interna or False
+            "transferencia_interna": g.transferencia_interna or False,
+            "forma_pagamento": g.forma_pagamento,
+            "fixo": g.fixo or False,
+            "origem_id": g.origem_id,
+            "ajuste_saldo": g.ajuste_saldo or False,
+            "motivo_ajuste": g.motivo_ajuste,
         }
         for g in gastos
     ]
@@ -381,7 +467,12 @@ def top_maiores_gastos(
             "data_hora": g.data_hora,
             "data_original": g.data_original,
             "parcela": g.parcela,
-            "transferencia_interna": g.transferencia_interna or False
+            "transferencia_interna": g.transferencia_interna or False,
+            "forma_pagamento": g.forma_pagamento,
+            "fixo": g.fixo or False,
+            "origem_id": g.origem_id,
+            "ajuste_saldo": g.ajuste_saldo or False,
+            "motivo_ajuste": g.motivo_ajuste,
         }
         for g in gastos
     ]
@@ -389,11 +480,13 @@ def top_maiores_gastos(
 
 class EditarGastoRequest(BaseModel):
     descricao: str | None = None
-    valor: float | None = None
+    valor: float | None = Field(default=None, gt=0)
     categoria: str | None = None
-    tipo: str | None = None
+    tipo: Literal["entrada", "saida"] | None = None
     banco: str | None = None
     data_hora: str | None = None
+    forma_pagamento: FORMAS_PAGAMENTO | None = None
+    fixo: bool | None = None
 
 
 class RecategorizarLoteRequest(BaseModel):
@@ -445,8 +538,14 @@ def editar_gasto(
         gasto.banco = request.banco
     if request.data_hora is not None:
         gasto.data_hora = datetime.fromisoformat(request.data_hora)
+    if request.forma_pagamento is not None:
+        gasto.forma_pagamento = request.forma_pagamento
 
     db.commit()
+
+    if request.fixo is not None and request.fixo != (gasto.fixo or False):
+        marcar_fixo(db, gasto, request.fixo)
+
     return {"message": "Gasto atualizado"}
 
 
@@ -469,3 +568,45 @@ def deletar_gasto(
     db.commit()
 
     return {"message": "Gasto deletado com sucesso"}
+
+
+MEDIA_TYPES_EXPORT = {
+    "csv": "text/csv",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "pdf": "application/pdf",
+}
+
+
+# ✅ EXPORTAR (CSV / EXCEL / PDF)
+@router.get("/exportar")
+def exportar_gastos(
+    formato: Literal["csv", "xlsx", "pdf"],
+    ano: int | None = None,
+    mes: int | None = None,
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Gasto).filter(Gasto.usuario_id == usuario_id)
+
+    if ano is not None and mes is not None:
+        inicio = datetime(ano, mes, 1)
+        fim = datetime(ano + 1, 1, 1) if mes == 12 else datetime(ano, mes + 1, 1)
+        query = query.filter(Gasto.data_hora >= inicio, Gasto.data_hora < fim)
+    elif ano is not None:
+        query = query.filter(extract("year", Gasto.data_hora) == ano)
+
+    gastos = query.order_by(Gasto.data_hora.desc()).all()
+
+    if formato == "csv":
+        conteudo = gerar_csv(gastos)
+    elif formato == "xlsx":
+        conteudo = gerar_excel(gastos)
+    else:
+        conteudo = gerar_pdf(gastos)
+
+    nome_arquivo = f"finly_transacoes.{formato}"
+    return StreamingResponse(
+        iter([conteudo]),
+        media_type=MEDIA_TYPES_EXPORT[formato],
+        headers={"Content-Disposition": f'attachment; filename="{nome_arquivo}"'}
+    )

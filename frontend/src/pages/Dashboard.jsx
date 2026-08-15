@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Pencil } from "lucide-react";
 import BalanceCard from "../components/BalanceCard";
 import AddTransactionForm from "../components/AddTransactionForm";
 import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChart";
 import ExpensesByDayChart from "../components/charts/ExpensesByDayChart";
-import { gastosPorIntervalo, listarMesesDisponiveis } from "../api/gastosApi";
+import { gastosPorIntervalo, listarMesesDisponiveis, ajustarSaldo, resumoDashboard } from "../api/gastosApi";
 import { getPerfil } from "../api/perfilApi";
 import { getCategoriaStyle, capitalizar } from "../utils/categorias";
+import { useCategoriasPersonalizadas } from "../hooks/useCategoriasPersonalizadas";
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -96,7 +97,7 @@ function CustomSelect({ value, onChange, options, flex }) {
   );
 }
 
-function TopGastos({ gastos, periodo }) {
+function TopGastos({ gastos, periodo, categoriasPersonalizadas }) {
   const titulo =
     periodo === "ano" ? "Maiores gastos do ano" :
     periodo === "semana" ? "Maiores gastos da semana" :
@@ -127,7 +128,7 @@ function TopGastos({ gastos, periodo }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {top.map((g, i) => {
-            const style = getCategoriaStyle(g.categoria);
+            const style = getCategoriaStyle(g.categoria, categoriasPersonalizadas);
             return (
               <div key={g.id ?? i} style={{
                 display: "flex",
@@ -163,8 +164,94 @@ function TopGastos({ gastos, periodo }) {
   );
 }
 
+function ModalAjustarSaldo({ onClose, onAjustado }) {
+  const [novoSaldo, setNovoSaldo] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [carregando, setCarregando] = useState(true);
+
+  // O ajuste corrige o saldo GERAL (todas as transações), não o do período
+  // filtrado no dashboard — por isso busca o saldo real ao abrir o modal.
+  useEffect(() => {
+    resumoDashboard()
+      .then((r) => setNovoSaldo(String((r.saldo ?? 0).toFixed(2))))
+      .catch(() => setNovoSaldo("0.00"))
+      .finally(() => setCarregando(false));
+  }, []);
+
+  const inputStyle = {
+    width: "100%", marginTop: "6px", padding: "10px 12px", borderRadius: "10px",
+    border: "1px solid var(--border)", backgroundColor: "var(--input)",
+    color: "var(--text)", fontSize: "14px", boxSizing: "border-box", outline: "none"
+  };
+
+  const confirmar = async () => {
+    const valor = Number(novoSaldo.replace(",", "."));
+    if (isNaN(valor)) { setErro("Digite um saldo válido"); return; }
+    if (!motivo.trim()) { setErro("Conte o que aconteceu — ajuda a identificar o que precisa melhorar"); return; }
+
+    setSalvando(true);
+    setErro("");
+    try {
+      await ajustarSaldo(valor, motivo.trim());
+      onAjustado();
+    } catch (e) {
+      setErro(e?.response?.data?.detail || "Erro ao ajustar saldo");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}
+    >
+      <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "min(400px, calc(100vw - 32px))", border: "1px solid var(--border)" }}>
+        <h3 style={{ margin: "0 0 6px", color: "var(--text)", fontSize: "18px" }}>Ajustar saldo</h3>
+        <p style={{ margin: "0 0 18px", color: "var(--subtext)", fontSize: "13px" }}>
+          Corrija o saldo pro valor real. A diferença vira uma transação de ajuste.
+        </p>
+
+        <label style={{ fontSize: "12px", fontWeight: "500", color: "var(--subtext)" }}>Saldo correto (R$)</label>
+        <input
+          type="text"
+          value={carregando ? "Carregando..." : novoSaldo}
+          disabled={carregando}
+          onChange={(e) => { if (/^-?\d*[.,]?\d*$/.test(e.target.value)) setNovoSaldo(e.target.value); }}
+          style={inputStyle}
+        />
+
+        <label style={{ fontSize: "12px", fontWeight: "500", color: "var(--subtext)", display: "block", marginTop: "14px" }}>
+          O que aconteceu? <span style={{ fontWeight: 400 }}>(obrigatório)</span>
+        </label>
+        <textarea
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          placeholder="Ex: esqueci de lançar uma compra no débito, o app não pegou uma transferência..."
+          maxLength={500}
+          rows={3}
+          style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
+        />
+
+        {erro && <div style={{ color: "#ef4444", fontSize: "13px", marginTop: "12px" }}>{erro}</div>}
+
+        <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--subtext)", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
+          <button onClick={confirmar} disabled={salvando || carregando} style={{ flex: 2, padding: "12px", borderRadius: "12px", border: "none", backgroundColor: "#3b82f6", color: "white", fontWeight: "700", cursor: (salvando || carregando) ? "default" : "pointer", opacity: (salvando || carregando) ? 0.7 : 1 }}>
+            {salvando ? "Salvando..." : "Confirmar ajuste"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
   const isMobile = useIsMobile();
+  const { categoriasPersonalizadas } = useCategoriasPersonalizadas();
+  const [openAjusteSaldo, setOpenAjusteSaldo] = useState(false);
   const [resumo, setResumo] = useState({});
   const [gastos, setGastos] = useState([]);
   const [openModal, setOpenModal] = useState(false);
@@ -395,13 +482,27 @@ function Dashboard() {
       }}>
         <BalanceCard title="Entradas" value={resumo.entradas || 0} color="#22c55e" isMobile={isMobile} />
         <BalanceCard title="Saídas"   value={resumo.saidas   || 0} color="#ef4444" isMobile={isMobile} />
-        <BalanceCard
-          title="Saldo"
-          value={resumo.saldo || 0}
-          color="#3b82f6"
-          isMobile={isMobile}
-          extraStyle={isMobile ? { gridColumn: "1 / -1" } : {}}
-        />
+        <div style={{ position: "relative", flex: 1, minWidth: 0, ...(isMobile ? { gridColumn: "1 / -1" } : {}) }}>
+          <BalanceCard
+            title="Saldo"
+            value={resumo.saldo || 0}
+            color="#3b82f6"
+            isMobile={isMobile}
+          />
+          <button
+            onClick={() => setOpenAjusteSaldo(true)}
+            title="Ajustar saldo"
+            style={{
+              position: "absolute", top: "10px", right: "10px",
+              width: "26px", height: "26px", borderRadius: "8px",
+              border: "1px solid var(--border)", backgroundColor: "var(--input)",
+              color: "var(--subtext)", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}
+          >
+            <Pencil size={12} />
+          </button>
+        </div>
       </div>
 
       {/* GRÁFICOS */}
@@ -425,7 +526,7 @@ function Dashboard() {
       </div>
 
       {/* MAIORES GASTOS */}
-      <TopGastos gastos={gastos} periodo={periodo === "mes_custom" ? "mes" : periodo} />
+      <TopGastos gastos={gastos} periodo={periodo === "mes_custom" ? "mes" : periodo} categoriasPersonalizadas={categoriasPersonalizadas} />
 
       {/* MODAL NOVA TRANSAÇÃO */}
       {openModal && (
@@ -469,6 +570,14 @@ function Dashboard() {
             />
           </div>
         </div>
+      )}
+
+      {/* MODAL AJUSTAR SALDO */}
+      {openAjusteSaldo && (
+        <ModalAjustarSaldo
+          onClose={() => setOpenAjusteSaldo(false)}
+          onAjustado={() => { setOpenAjusteSaldo(false); carregarDados(); }}
+        />
       )}
 
     </div>

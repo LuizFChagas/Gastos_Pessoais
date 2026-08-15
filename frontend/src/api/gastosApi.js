@@ -91,3 +91,26 @@ export const recategorizarLote = async (ids, categoria) => {
   return response.data;
 };
 
+// AJUSTAR SALDO MANUALMENTE
+export const ajustarSaldo = async (novoSaldo, motivo) => {
+  const response = await api.post("/gastos/ajuste-saldo", { novo_saldo: novoSaldo, motivo });
+  return response.data;
+};
+
+// EXPORTAR TRANSAÇÕES (csv | xlsx | pdf) — dispara o download no navegador
+export const exportarGastos = async (formato) => {
+  const response = await api.get("/gastos/exportar", {
+    params: { formato },
+    responseType: "blob",
+  });
+
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `finly_transacoes.${formato}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+

@@ -46,6 +46,16 @@ def _is_pagamento_fatura(descricao: str) -> bool:
 def _is_ignorar_conta(descricao: str) -> bool:
     return any(k in descricao.lower() for k in KEYWORDS_IGNORAR_CONTA)
 
+def _inferir_forma_pagamento(formato: str, descricao: str) -> str:
+    """Infere a forma de pagamento a partir do formato do extrato/fatura e da
+    descrição, pra já popular o campo de verdade na importação (em vez de só
+    inferir na hora de exibir, como era feito antes)."""
+    if descricao.strip().startswith("Pix"):
+        return "pix"
+    if formato in ("nubank_fatura", "c6_fatura"):
+        return "credito"
+    return "debito"
+
 def _normalizar(texto: str) -> str:
     """Remove acentos e converte para minúsculo — usado para comparar nomes de colunas."""
     return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii").lower().strip()
@@ -570,7 +580,9 @@ def _parsear_extrato(caminho_extrato, usuario_id):
             if categoria_historica:
                 categoria = categoria_historica
 
-            transacoes.append((descricao, valor_abs, data_hora, tipo, categoria, parcela))
+            forma_pagamento = _inferir_forma_pagamento(formato, descricao)
+
+            transacoes.append((descricao, valor_abs, data_hora, tipo, categoria, parcela, forma_pagamento))
 
         except Exception as e:
             logger.warning(f"Linha ignorada ao importar extrato (formato {formato}): {e} | dados: {linha.to_dict()}")
@@ -582,7 +594,7 @@ def _parsear_extrato(caminho_extrato, usuario_id):
     if mes_dominante:
         ano_alvo, mes_alvo = mes_dominante
         transacoes_ajustadas = []
-        for descricao, valor_abs, data_hora, tipo, categoria, parcela in transacoes:
+        for descricao, valor_abs, data_hora, tipo, categoria, parcela, forma_pagamento in transacoes:
             data_original = None
             if (data_hora.year, data_hora.month) != (ano_alvo, mes_alvo):
                 logger.info(
@@ -591,10 +603,10 @@ def _parsear_extrato(caminho_extrato, usuario_id):
                 )
                 data_original = data_hora
                 data_hora = _ajustar_data(data_hora, ano_alvo, mes_alvo)
-            transacoes_ajustadas.append((descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela))
+            transacoes_ajustadas.append((descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela, forma_pagamento))
     else:
         transacoes_ajustadas = [
-            (d, v, dh, t, c, None, p) for d, v, dh, t, c, p in transacoes
+            (d, v, dh, t, c, None, p, fp) for d, v, dh, t, c, p, fp in transacoes
         ]
 
     return formato, transacoes_ajustadas
@@ -615,8 +627,9 @@ def pre_visualizar_extrato(caminho_extrato, usuario_id):
                 "tipo": tipo,
                 "categoria": categoria,
                 "parcela": parcela,
+                "forma_pagamento": forma_pagamento,
             }
-            for descricao, valor_abs, data_hora, tipo, categoria, _data_original, parcela in transacoes_ajustadas
+            for descricao, valor_abs, data_hora, tipo, categoria, _data_original, parcela, forma_pagamento in transacoes_ajustadas
         ],
     }
 
@@ -627,7 +640,7 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
     # Persiste no banco
     db: Session = SessionLocal()
 
-    for descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela in transacoes_ajustadas:
+    for descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela, forma_pagamento in transacoes_ajustadas:
         existe = db.query(Gasto).filter(
             Gasto.usuario_id == usuario_id,
             Gasto.descricao == descricao,
@@ -646,6 +659,7 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
             data_hora=data_hora,
             data_original=data_original,
             parcela=parcela,
+            forma_pagamento=forma_pagamento,
             banco=banco,
             usuario_id=usuario_id,
             extrato_id=extrato_id
