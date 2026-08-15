@@ -1,12 +1,39 @@
 import { useEffect, useState, useRef } from "react";
-import { listarGastos, deletarGasto, editarGasto, recategorizarLote } from "../api/gastosApi";
+import { listarGastos, deletarGasto, editarGasto, recategorizarLote, exportarGastos } from "../api/gastosApi";
 import AddTransactionForm from "../components/AddTransactionForm";
 import { CATEGORIAS, getCategoriaStyle, capitalizar } from "../utils/categorias";
+import { useCategoriasPersonalizadas } from "../hooks/useCategoriasPersonalizadas";
 import {
   AlignJustify, ArrowUp, ArrowDown, Zap, CreditCard, RefreshCw, ArrowLeftRight,
   ArrowDownCircle, ArrowUpCircle, CornerUpLeft, Pencil, Trash2, Landmark, CalendarDays,
-  ChevronDown,
+  ChevronDown, Wallet, Download, Repeat,
 } from "lucide-react";
+
+const FORMAS_PAGAMENTO_OPCOES = [
+  { value: "debito", label: "Débito" },
+  { value: "credito", label: "Crédito" },
+  { value: "pix", label: "Pix" },
+  { value: "dinheiro", label: "Dinheiro" },
+  { value: "outro", label: "Outro" },
+];
+
+const FORMA_PAGAMENTO_TAG = {
+  pix:      { label: "Pix",      Icon: Zap,        color: "#a78bfa", bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)" },
+  debito:   { label: "Débito",   Icon: CreditCard, color: "#facc15", bg: "rgba(234,179,8,0.12)",  border: "rgba(234,179,8,0.3)" },
+  credito:  { label: "Crédito",  Icon: CreditCard, color: "#60a5fa", bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)" },
+  dinheiro: { label: "Dinheiro", Icon: Wallet,     color: "#34d399", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)" },
+  outro:    { label: "Outro",    Icon: CreditCard, color: "#94a3b8", bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.3)" },
+  conta:    { label: "Conta",    Icon: Landmark,   color: "#818cf8", bg: "rgba(99,102,241,0.12)", border: "rgba(99,102,241,0.3)" },
+};
+
+// Transações antigas não têm forma_pagamento salva — nesse caso infere a partir
+// do banco/descrição, do jeito que já era feito antes desse campo existir.
+const formaPagamentoEfetiva = (t) => {
+  if (t.forma_pagamento) return t.forma_pagamento;
+  if (t.descricao?.startsWith("Pix")) return "pix";
+  if (t.banco?.toLowerCase().includes("fatura")) return "credito";
+  return t.tipo === "entrada" ? "conta" : "debito";
+};
 
 function CustomSelect({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
@@ -92,6 +119,8 @@ const TIPO_FILTROS = [
   { key: "pix",        label: "Pix",        Icon: Zap,           iconColor: null },
   { key: "debito",     label: "Débito",     Icon: CreditCard,    iconColor: null },
   { key: "credito",    label: "Crédito",    Icon: CreditCard,    iconColor: null },
+  { key: "dinheiro",   label: "Dinheiro",   Icon: Wallet,        iconColor: null },
+  { key: "fixos",      label: "Fixos",      Icon: Repeat,        iconColor: null },
   { key: "parcelados", label: "Parcelados", Icon: RefreshCw,     iconColor: null },
   { key: "internas",   label: "Internas",   Icon: ArrowLeftRight, iconColor: "#94a3b8" },
 ];
@@ -117,12 +146,20 @@ function Transacoes() {
   const [editTipo, setEditTipo] = useState("saida");
   const [editBanco, setEditBanco] = useState("");
   const [editData, setEditData] = useState("");
+  const [editFormaPagamento, setEditFormaPagamento] = useState("");
+  const [editFixo, setEditFixo] = useState(false);
 
   // Feature 9 — seleção em lote
   const [modoSelecao, setModoSelecao] = useState(false);
   const [selecionados, setSelecionados] = useState(new Set());
   const [openRecatModal, setOpenRecatModal] = useState(false);
   const [novaCategoria, setNovaCategoria] = useState("outros");
+
+  // Exportar
+  const [openExportModal, setOpenExportModal] = useState(false);
+  const [exportando, setExportando] = useState(false);
+
+  const { categoriasPersonalizadas } = useCategoriasPersonalizadas();
 
   const cancelarModoSelecao = () => {
     setModoSelecao(false);
@@ -164,6 +201,8 @@ function Transacoes() {
     setEditTipo(t.tipo || "saida");
     setEditBanco(t.banco || "");
     setEditData(t.data_hora ? t.data_hora.split("T")[0] : "");
+    setEditFormaPagamento(t.forma_pagamento || "");
+    setEditFixo(t.fixo || false);
     setOpenEditModal(true);
   };
 
@@ -176,11 +215,34 @@ function Transacoes() {
         tipo: editTipo,
         banco: editBanco,
         data_hora: editData ? editData + "T00:00:00" : undefined,
+        forma_pagamento: editFormaPagamento || null,
+        fixo: editFixo,
       });
       setOpenEditModal(false);
       carregar();
     } catch {
       alert("Erro ao editar");
+    }
+  };
+
+  const toggleFixo = async (t) => {
+    try {
+      await editarGasto(t.id, { fixo: !t.fixo });
+      carregar();
+    } catch {
+      alert("Erro ao marcar como fixo");
+    }
+  };
+
+  const handleExportar = async (formato) => {
+    setExportando(true);
+    try {
+      await exportarGastos(formato);
+      setOpenExportModal(false);
+    } catch {
+      alert("Erro ao exportar");
+    } finally {
+      setExportando(false);
     }
   };
 
@@ -204,17 +266,19 @@ function Transacoes() {
     }
   };
 
-  const categorias = ["todos", ...CATEGORIAS];
+  const categorias = ["todos", ...CATEGORIAS, ...categoriasPersonalizadas.map(c => c.nome)];
 
   // Feature 8 — filtro por tipo
   const matchTipo = (t) => {
     if (tipoFiltro === "entradas") return t.tipo === "entrada";
     if (tipoFiltro === "saidas")   return t.tipo === "saida";
-    if (tipoFiltro === "pix")      return t.descricao?.startsWith("Pix");
-    if (tipoFiltro === "debito")   return !t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix");
-    if (tipoFiltro === "credito")    return t.banco?.toLowerCase().includes("fatura");
     if (tipoFiltro === "parcelados") return !!t.parcela;
     if (tipoFiltro === "internas")   return !!t.transferencia_interna;
+    if (tipoFiltro === "fixos")      return !!t.fixo;
+    if (tipoFiltro === "debito")     return ["debito", "conta"].includes(formaPagamentoEfetiva(t));
+    if (["pix", "credito", "dinheiro", "outro"].includes(tipoFiltro)) {
+      return formaPagamentoEfetiva(t) === tipoFiltro;
+    }
     return true;
   };
 
@@ -282,7 +346,21 @@ function Transacoes() {
             {transacoes.length} registros encontrados
           </span>
         </div>
-        <div style={{ display: "flex", gap: "8px", width: isMobile ? "100%" : "auto" }}>
+        <div style={{ display: "flex", gap: "8px", width: isMobile ? "100%" : "auto", flexWrap: "wrap" }}>
+          <button
+            onClick={() => setOpenExportModal(true)}
+            style={{
+              flex: isMobile ? 1 : "none",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+              backgroundColor: "transparent",
+              color: "var(--subtext)",
+              border: "1px solid var(--border)",
+              padding: "10px 16px", borderRadius: "10px",
+              fontWeight: "600", cursor: "pointer", fontSize: "14px"
+            }}
+          >
+            <Download size={14} /> Exportar
+          </button>
           <button
             onClick={() => modoSelecao ? cancelarModoSelecao() : setModoSelecao(true)}
             style={{
@@ -383,8 +461,9 @@ function Transacoes() {
               const isEstorno = t.tipo === "saida" && t.valor < 0;
               const isEntrada = t.tipo === "entrada";
               const isRecorrente = t.categoria?.toLowerCase() === "assinaturas";
-              const style = getCategoriaStyle(t.categoria);
+              const style = getCategoriaStyle(t.categoria, categoriasPersonalizadas);
               const isSelecionado = selecionados.has(t.id);
+              const tagPagamento = FORMA_PAGAMENTO_TAG[formaPagamentoEfetiva(t)];
 
               const tags = (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
@@ -397,17 +476,13 @@ function Transacoes() {
                   {isRecorrente && (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(14,165,233,0.12)", color: "#0ea5e9", border: "1px solid rgba(14,165,233,0.3)", whiteSpace: "nowrap" }}><RefreshCw size={10} /> Recorrente</span>
                   )}
-                  {t.descricao?.startsWith("Pix") && (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.3)", whiteSpace: "nowrap" }}><Zap size={10} /> Pix</span>
+                  {t.fixo && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)", whiteSpace: "nowrap" }}><Repeat size={10} /> Fixo</span>
                   )}
-                  {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo !== "entrada" && (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(234,179,8,0.12)", color: "#facc15", border: "1px solid rgba(234,179,8,0.3)", whiteSpace: "nowrap" }}><CreditCard size={10} /> Débito</span>
-                  )}
-                  {!t.banco?.toLowerCase().includes("fatura") && !t.descricao?.startsWith("Pix") && t.tipo === "entrada" && (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)", whiteSpace: "nowrap" }}><Landmark size={10} /> Conta</span>
-                  )}
-                  {t.banco?.toLowerCase().includes("fatura") && (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", whiteSpace: "nowrap" }}><CreditCard size={10} /> Crédito</span>
+                  {tagPagamento && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: tagPagamento.bg, color: tagPagamento.color, border: `1px solid ${tagPagamento.border}`, whiteSpace: "nowrap" }}>
+                      <tagPagamento.Icon size={10} /> {tagPagamento.label}
+                    </span>
                   )}
                   {t.data_original && (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "999px", backgroundColor: "rgba(251,191,36,0.15)", color: "#f59e0b", border: "1px solid rgba(251,191,36,0.3)", whiteSpace: "nowrap" }}>
@@ -454,6 +529,7 @@ function Transacoes() {
                       <div style={{ fontSize: "11px", color: "var(--subtext)", margin: "2px 0 6px" }}>{t.banco || "Banco"}</div>
                       {tags}
                       <div style={{ display: "flex", gap: "4px", marginTop: "6px" }}>
+                        <button onClick={() => toggleFixo(t)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: "2px 4px", color: t.fixo ? "#10b981" : "var(--subtext)", display: "flex" }} title={t.fixo ? "Desmarcar como fixo" : "Marcar como fixo"}><Repeat size={14} /></button>
                         <button onClick={() => handleEditClick(t)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--subtext)", display: "flex" }} title="Editar"><Pencil size={14} /></button>
                         <button onClick={() => handleDeleteClick(t.id)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: "2px 4px", color: "#ef4444", display: "flex" }} title="Excluir"><Trash2 size={14} /></button>
                       </div>
@@ -501,6 +577,7 @@ function Transacoes() {
                       R$ {Math.abs(t.valor).toFixed(2)}
                     </div>
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "4px", marginTop: "5px" }}>
+                      <button onClick={() => toggleFixo(t)} style={{ background: "transparent", border: "none", cursor: "pointer", color: t.fixo ? "#10b981" : "#9ca3af", display: "flex" }} title={t.fixo ? "Desmarcar como fixo" : "Marcar como fixo"}><Repeat size={14} /></button>
                       <button onClick={() => handleEditClick(t)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#9ca3af", display: "flex" }} title="Editar"><Pencil size={14} /></button>
                       <button onClick={() => handleDeleteClick(t.id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", display: "flex" }} title="Excluir"><Trash2 size={14} /></button>
                     </div>
@@ -597,7 +674,7 @@ function Transacoes() {
                   <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Categoria</label>
                   <div style={{ position: "relative", marginTop: "6px" }}>
                     <select value={editCategoria} onChange={(e) => setEditCategoria(e.target.value)} style={{ ...inputStyle, paddingRight: "32px", appearance: "none" }}>
-                      {CATEGORIAS.map((cat, i) => (
+                      {[...CATEGORIAS, ...categoriasPersonalizadas.map(c => c.nome)].map((cat, i) => (
                         <option key={i} value={cat}>{capitalizar(cat)}</option>
                       ))}
                     </select>
@@ -607,6 +684,27 @@ function Transacoes() {
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Banco</label>
                   <input value={editBanco} onChange={(e) => setEditBanco(e.target.value)} style={{ ...inputStyle, marginTop: "6px" }} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "12px", color: "var(--subtext)" }}>Forma de pagamento</label>
+                  <div style={{ position: "relative", marginTop: "6px" }}>
+                    <select value={editFormaPagamento} onChange={(e) => setEditFormaPagamento(e.target.value)} style={{ ...inputStyle, paddingRight: "32px", appearance: "none" }}>
+                      <option value="">Não informar</option>
+                      {FORMAS_PAGAMENTO_OPCOES.map((f) => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                    <svg style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--subtext)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  </div>
+                </div>
+                <div style={{ flex: 1, display: "flex", alignItems: "flex-end", paddingBottom: "10px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text)", cursor: "pointer" }}>
+                    <input type="checkbox" checked={editFixo} onChange={(e) => setEditFixo(e.target.checked)} style={{ accentColor: "#10b981", width: "16px", height: "16px" }} />
+                    Fixo (repete todo mês)
+                  </label>
                 </div>
               </div>
 
@@ -632,8 +730,8 @@ function Transacoes() {
             </p>
             <div style={{ position: "relative" }}>
               <select value={novaCategoria} onChange={(e) => setNovaCategoria(e.target.value)} style={{ width: "100%", padding: "10px 32px 10px 12px", height: "42px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "var(--input)", color: "var(--text)", fontSize: "14px", appearance: "none" }}>
-                {CATEGORIAS.map((cat, i) => (
-                  <option key={i} value={cat}>{getCategoriaStyle(cat).icon} {capitalizar(cat)}</option>
+                {[...CATEGORIAS, ...categoriasPersonalizadas.map(c => c.nome)].map((cat, i) => (
+                  <option key={i} value={cat}>{capitalizar(cat)}</option>
                 ))}
               </select>
               <svg style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--subtext)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
@@ -642,6 +740,41 @@ function Transacoes() {
               <button onClick={() => setOpenRecatModal(false)} style={{ flex: 1, padding: "12px", borderRadius: "12px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--subtext)", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
               <button onClick={confirmarRecategorizar} style={{ flex: 2, padding: "12px", borderRadius: "12px", border: "none", backgroundColor: "#10b981", color: "white", fontWeight: "700", cursor: "pointer" }}>Aplicar</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EXPORTAR */}
+      {openExportModal && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setOpenExportModal(false); }}
+          style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1001 }}
+        >
+          <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "min(360px, calc(100vw - 32px))", border: "1px solid var(--border)" }}>
+            <h3 style={{ margin: "0 0 6px", color: "var(--text)" }}>Exportar transações</h3>
+            <p style={{ margin: "0 0 20px", color: "var(--subtext)", fontSize: "14px" }}>Escolha o formato do arquivo</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {[
+                { formato: "csv", label: "CSV", desc: "Planilha simples, compatível com qualquer programa" },
+                { formato: "xlsx", label: "Excel (.xlsx)", desc: "Com abas de transações, categorias e por mês" },
+                { formato: "pdf", label: "PDF", desc: "Relatório com resumo e gráfico de categorias" },
+              ].map(opt => (
+                <button
+                  key={opt.formato}
+                  onClick={() => handleExportar(opt.formato)}
+                  disabled={exportando}
+                  style={{
+                    textAlign: "left", padding: "12px 14px", borderRadius: "12px",
+                    border: "1px solid var(--border)", backgroundColor: "var(--input)",
+                    cursor: exportando ? "default" : "pointer", opacity: exportando ? 0.6 : 1
+                  }}
+                >
+                  <div style={{ color: "var(--text)", fontWeight: "600", fontSize: "14px" }}>{opt.label}</div>
+                  <div style={{ color: "var(--subtext)", fontSize: "12px", marginTop: "2px" }}>{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setOpenExportModal(false)} style={{ width: "100%", marginTop: "16px", padding: "10px", borderRadius: "10px", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--subtext)", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
           </div>
         </div>
       )}

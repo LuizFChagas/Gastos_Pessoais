@@ -7,6 +7,7 @@ from src.api.auth_routes import router as auth_router
 from src.api.gastos_routes import router as gastos_router
 from src.api.investimentos_routes import router as investimentos_router
 from src.api.sugestoes_routes import router as sugestoes_router
+from src.api.categorias_routes import router as categorias_router
 
 from src.database.database import engine
 from src.database.models import Base
@@ -56,6 +57,7 @@ app.include_router(auth_router,         prefix="/auth",         tags=["Auth"])
 app.include_router(gastos_router,       prefix="/gastos",       tags=["Gastos"])
 app.include_router(investimentos_router,prefix="/investimentos", tags=["Investimentos"])
 app.include_router(sugestoes_router,    prefix="/sugestoes",    tags=["Sugestoes"])
+app.include_router(categorias_router,   prefix="/categorias",   tags=["Categorias"])
 
 
 @app.get("/")

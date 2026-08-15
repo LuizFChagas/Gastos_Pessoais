@@ -11,6 +11,16 @@ const useIsMobile = () => {
   return isMobile;
 };
 import { CATEGORIA_STYLE, getCategoriaStyle, capitalizar } from "../utils/categorias";
+import { useCategoriasPersonalizadas } from "../hooks/useCategoriasPersonalizadas";
+
+// Transações antigas não têm forma_pagamento salva — nesse caso infere a partir
+// do banco/descrição, do jeito que já era feito antes desse campo existir.
+const formaPagamentoEfetiva = (t) => {
+  if (t.forma_pagamento) return t.forma_pagamento;
+  if (t.descricao?.startsWith("Pix")) return "pix";
+  if (t.banco?.toLowerCase().includes("fatura")) return "credito";
+  return "debito";
+};
 import {
   BarChart, Bar, AreaChart, Area, LineChart, Line,
   XAxis, YAxis, Tooltip, CartesianGrid, Legend,
@@ -81,6 +91,7 @@ const Vazio = () => (
 
 function Relatorios() {
   const isMobile = useIsMobile();
+  const { categoriasPersonalizadas } = useCategoriasPersonalizadas();
   const [periodo, setPeriodo] = useState("6");
   const [transacoes, setTransacoes] = useState([]);
   const [activeCat, setActiveCat] = useState(null);
@@ -164,18 +175,26 @@ function Relatorios() {
   const totalCat = donutCategorias.reduce((s, d) => s + d.value, 0);
 
   // ── 5. Donut por tipo de pagamento ─────────────────────────────────────────
+  const LABEL_FORMA_PAGAMENTO = {
+    credito: { name: "Crédito", color: "#60a5fa" },
+    pix: { name: "Pix", color: "#a78bfa" },
+    debito: { name: "Débito", color: "#facc15" },
+    dinheiro: { name: "Dinheiro", color: "#34d399" },
+    outro: { name: "Outro", color: "#94a3b8" },
+  };
   const donutTipo = (() => {
-    let pix = 0, debito = 0, credito = 0;
+    const totais = {};
     saidas.forEach(t => {
-      if (t.descricao?.startsWith("Pix")) pix += t.valor;
-      else if (t.banco?.toLowerCase().includes("fatura")) credito += t.valor;
-      else debito += t.valor;
+      const forma = formaPagamentoEfetiva(t);
+      totais[forma] = (totais[forma] || 0) + t.valor;
     });
-    return [
-      { name: "Crédito", value: parseFloat(credito.toFixed(2)), color: "#60a5fa" },
-      { name: "Pix",     value: parseFloat(pix.toFixed(2)),     color: "#a78bfa" },
-      { name: "Débito",  value: parseFloat(debito.toFixed(2)),  color: "#facc15" },
-    ].filter(d => d.value > 0);
+    return Object.entries(totais)
+      .map(([forma, valor]) => ({
+        name: LABEL_FORMA_PAGAMENTO[forma]?.name || capitalizar(forma),
+        value: parseFloat(valor.toFixed(2)),
+        color: LABEL_FORMA_PAGAMENTO[forma]?.color || "#94a3b8",
+      }))
+      .filter(d => d.value > 0);
   })();
   const totalTipo = donutTipo.reduce((s, d) => s + d.value, 0);
 
@@ -334,7 +353,7 @@ function Relatorios() {
                     onMouseEnter={(_, i) => setActiveCat(i)} onMouseLeave={() => setActiveCat(null)}
                     strokeWidth={0} animationBegin={0} animationDuration={600}>
                     {donutCategorias.map((entry, i) => (
-                      <Cell key={i} fill={getCategoriaStyle(entry.name).chartColor}
+                      <Cell key={i} fill={getCategoriaStyle(entry.name, categoriasPersonalizadas).chartColor}
                         opacity={activeCat === null || activeCat === i ? 1 : 0.35} style={{ cursor: "pointer" }} />
                     ))}
                   </Pie>
@@ -342,7 +361,7 @@ function Relatorios() {
                 <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center", pointerEvents: "none" }}>
                   {activeCat !== null ? (
                     <>
-                      <div style={{ color: getCategoriaStyle(donutCategorias[activeCat].name).chartColor, fontSize: "14px", fontWeight: "700" }}>
+                      <div style={{ color: getCategoriaStyle(donutCategorias[activeCat].name, categoriasPersonalizadas).chartColor, fontSize: "14px", fontWeight: "700" }}>
                         {((donutCategorias[activeCat].value / totalCat) * 100).toFixed(1)}%
                       </div>
                       <div style={{ color: "var(--subtext)", fontSize: "10px" }}>{capitalizar(donutCategorias[activeCat].name)}</div>
@@ -357,7 +376,7 @@ function Relatorios() {
               </div>
               <div style={{ flex: 1, width: isMobile ? "100%" : "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
                 {donutCategorias.map((item, i) => {
-                  const s = getCategoriaStyle(item.name);
+                  const s = getCategoriaStyle(item.name, categoriasPersonalizadas);
                   return (
                     <div key={i} onMouseEnter={() => setActiveCat(i)} onMouseLeave={() => setActiveCat(null)}
                       style={{ display: "flex", alignItems: "center", gap: "6px", padding: "3px 6px", borderRadius: "6px", cursor: "pointer", backgroundColor: activeCat === i ? "rgba(255,255,255,0.06)" : "transparent" }}>
@@ -474,7 +493,7 @@ function Relatorios() {
         <div style={{ ...cardStyle, flex: 1 }}>
           <h3 style={{ color: "var(--text)", margin: "0 0 16px" }}>Top 5 maiores gastos</h3>
           {top5.length === 0 ? <Vazio /> : top5.map((t, i) => {
-            const s = getCategoriaStyle(t.categoria);
+            const s = getCategoriaStyle(t.categoria, categoriasPersonalizadas);
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: i < top5.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

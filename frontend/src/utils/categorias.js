@@ -1,7 +1,7 @@
 import {
   Wallet, Utensils, Car, HeartPulse, Sparkles, Gamepad2,
   ShoppingBag, Bell, BookOpen, Home, Landmark, Plane,
-  PawPrint, Wrench, Tag,
+  PawPrint, Wrench, Tag, SlidersHorizontal, Star,
 } from "lucide-react";
 
 export const CATEGORIAS = [
@@ -38,11 +38,21 @@ export const CATEGORIA_STYLE = {
   "pet":         { bg: "#fef3c7", color: "#92400e", chartColor: "#b45309", Icon: PawPrint    },
   "serviços":    { bg: "#f5f5f4", color: "#57534e", chartColor: "#78716c", Icon: Wrench      },
   "outros":      { bg: "#fef9c3", color: "#d97706", chartColor: "#f59e0b", Icon: Tag         },
+  "ajuste":      { bg: "#f1f5f9", color: "#475569", chartColor: "#64748b", Icon: SlidersHorizontal },
 };
 
-export const getCategoriaStyle = (categoria) => {
+// Categorias personalizadas (por usuário) recebem um estilo montado em tempo real
+// a partir da cor escolhida na criação — não têm entrada fixa em CATEGORIA_STYLE.
+export const estiloCategoriaPersonalizada = (cor) => ({
+  bg: `${cor}22`, color: cor, chartColor: cor, Icon: Star,
+});
+
+export const getCategoriaStyle = (categoria, categoriasPersonalizadas = []) => {
   const key = categoria?.toLowerCase();
-  return CATEGORIA_STYLE[key] || CATEGORIA_STYLE["outros"];
+  if (CATEGORIA_STYLE[key]) return CATEGORIA_STYLE[key];
+  const personalizada = categoriasPersonalizadas.find(c => c.nome.toLowerCase() === key);
+  if (personalizada) return estiloCategoriaPersonalizada(personalizada.cor);
+  return CATEGORIA_STYLE["outros"];
 };
 
 export const capitalizar = (str) =>

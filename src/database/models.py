@@ -54,11 +54,28 @@ class Gasto(Base):
     parcela = Column(String, nullable=True)
     transferencia_interna = Column(Boolean, default=False, nullable=True)
     categoria_manual = Column(Boolean, default=False, nullable=True)
+    forma_pagamento = Column(String, nullable=True)  # debito | credito | pix | dinheiro | outro
+    fixo = Column(Boolean, default=False, nullable=True)
+    origem_id = Column(Integer, ForeignKey("gastos.id"), nullable=True, index=True)
+    ajuste_saldo = Column(Boolean, default=False, nullable=True)
+    motivo_ajuste = Column(String, nullable=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
     extrato_id = Column(Integer, ForeignKey("extratos.id"), nullable=True, index=True)
 
     usuario = relationship("Usuario", back_populates="gastos")
     extrato = relationship("Extrato", back_populates="gastos")
+
+
+class CategoriaPersonalizada(Base):
+    __tablename__ = "categorias_personalizadas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
+    nome = Column(String)
+    cor = Column(String)
+    criado_em = Column(DateTime, default=datetime.utcnow)
+
+    usuario = relationship("Usuario")
 
 
 class Investimento(Base):
