@@ -17,7 +17,7 @@ const FORCA = {
   3: { label: "Boa",      color: "#eab308", w: "75%" },
   4: { label: "Forte",    color: "#10b981", w: "100%" },
 };
-import { Wallet, Bot, Zap, TrendingUp, ShoppingBag, Car, Bell, Home, Gamepad2, Target } from "lucide-react";
+import { Wallet, Bot, Zap, TrendingUp, ShoppingBag, Car, Bell, Home, Gamepad2, Target, Check, Mail } from "lucide-react";
 import { FinlyLogo } from "../components/FinlyLogo";
 
 function Cadastro() {
@@ -224,7 +224,7 @@ function Cadastro() {
         <div style={{ fontSize: "11px", color: "#4a5568", lineHeight: 1.5 }}>
           3 transações categorizadas automaticamente hoje
         </div>
-        <div style={{ fontSize: "11px", color: "#10b981", fontWeight: "600" }}>98% de precisão ✓</div>
+        <div style={{ fontSize: "11px", color: "#10b981", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>98% de precisão <Check size={12} /></div>
       </div>
 
       {/* Card meta do mês — center left */}
@@ -374,7 +374,7 @@ function Cadastro() {
 
           {cadastrado ? (
             <div style={{ textAlign: "center", padding: "8px 0" }}>
-              <div style={{ fontSize: "40px", marginBottom: "16px" }}>📧</div>
+              <div style={{ marginBottom: "16px", color: "#10b981", display: "flex", justifyContent: "center" }}><Mail size={40} /></div>
               <h3 style={{ margin: "0 0 12px", color: "#f0f4ff", fontSize: "17px" }}>Verifique seu email!</h3>
               <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: "0 0 24px" }}>
                 Enviamos um link de confirmação para <strong style={{ color: "#f0f4ff" }}>{email}</strong>.<br />
@@ -460,8 +460,9 @@ function Cadastro() {
                     <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: "4px", height: "4px", overflow: "hidden" }}>
                       <div style={{ width: info.w, height: "100%", background: info.color, borderRadius: "4px", transition: "width 0.3s, background 0.3s" }} />
                     </div>
-                    <div style={{ fontSize: "11px", color: info.color, marginTop: "4px" }}>
-                      {info.label}{f < 4 ? " — use maiúscula, número e símbolo (ex: Senha@123)" : " ✓"}
+                    <div style={{ fontSize: "11px", color: info.color, marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <span>{info.label}{f < 4 ? " — use maiúscula, número e símbolo (ex: Senha@123)" : ""}</span>
+                      {f >= 4 && <Check size={12} />}
                     </div>
                   </div>
                 );

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { ChevronDown, Pencil } from "lucide-react";
+import { ChevronDown, Pencil, X } from "lucide-react";
 import BalanceCard from "../components/BalanceCard";
 import AddTransactionForm from "../components/AddTransactionForm";
 import ExpensesByCategoryChart from "../components/charts/ExpensesByCategoryChart";
@@ -557,10 +557,10 @@ function Dashboard() {
                   border: "none", background: "var(--input)",
                   cursor: "pointer", color: "var(--subtext)",
                   width: "30px", height: "30px", borderRadius: "8px",
-                  fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center"
+                  display: "flex", alignItems: "center", justifyContent: "center"
                 }}
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 

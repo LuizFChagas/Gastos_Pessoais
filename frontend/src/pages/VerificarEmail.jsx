@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { verificarEmailToken } from "../api/authApi";
 import { FinlyLogo } from "../components/FinlyLogo";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 export default function VerificarEmail() {
   const [params] = useSearchParams();
@@ -35,13 +36,13 @@ export default function VerificarEmail() {
         <div style={{ backgroundColor: "rgba(15,23,42,0.85)", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.08)", padding: "40px 32px", backdropFilter: "blur(16px)", textAlign: "center" }}>
           {status === "carregando" && (
             <>
-              <div style={{ fontSize: "36px", marginBottom: "16px" }}>⏳</div>
+              <div style={{ marginBottom: "16px", color: "#10b981", display: "flex", justifyContent: "center" }}><Loader2 size={36} className="icon-spin" /></div>
               <p style={{ color: "#94a3b8", fontSize: "15px" }}>Verificando seu email...</p>
             </>
           )}
           {status === "sucesso" && (
             <>
-              <div style={{ fontSize: "40px", marginBottom: "16px" }}>✅</div>
+              <div style={{ marginBottom: "16px", color: "#10b981", display: "flex", justifyContent: "center" }}><CheckCircle2 size={40} /></div>
               <h2 style={{ margin: "0 0 12px", color: "#f0f4ff", fontSize: "18px" }}>Email verificado!</h2>
               <p style={{ color: "#94a3b8", fontSize: "14px", marginBottom: "24px" }}>
                 Sua conta está ativa. Agora você pode fazer login.
@@ -53,7 +54,7 @@ export default function VerificarEmail() {
           )}
           {status === "erro" && (
             <>
-              <div style={{ fontSize: "40px", marginBottom: "16px" }}>❌</div>
+              <div style={{ marginBottom: "16px", color: "#ef4444", display: "flex", justifyContent: "center" }}><XCircle size={40} /></div>
               <h2 style={{ margin: "0 0 12px", color: "#f0f4ff", fontSize: "18px" }}>Link inválido</h2>
               <p style={{ color: "#94a3b8", fontSize: "14px", marginBottom: "24px" }}>
                 Este link de verificação é inválido ou já foi utilizado.

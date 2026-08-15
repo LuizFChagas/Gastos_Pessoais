@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { importarExtrato, previewExtrato, listarExtratos, deletarExtrato } from "../api/gastosApi";
-import { FolderOpen, Upload, Trash2, CheckCircle, AlertTriangle } from "lucide-react";
+import { FolderOpen, Upload, Trash2, CheckCircle, AlertTriangle, FileText } from "lucide-react";
 
 const fmtMoeda = (v) =>
   Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -377,11 +377,14 @@ function Importar() {
                   backgroundColor: "var(--input)",
                   padding: "8px",
                   borderRadius: "8px",
-                  fontSize: "18px",
                   lineHeight: 1,
-                  flexShrink: 0
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--text)"
                 }}>
-                  📄
+                  <FileText size={18} />
                 </div>
 
                 <div style={{ minWidth: 0 }}>

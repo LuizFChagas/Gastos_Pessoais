@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* ========================= */
-/* 🌞 TEMA CLARO (PADRÃO) */
+/* TEMA CLARO (PADRÃO) */
 /* ========================= */
 :root {
   --bg: #f0f4f8;
@@ -19,7 +19,7 @@
 }
 
 /* ========================= */
-/* 🌙 TEMA ESCURO */
+/* TEMA ESCURO */
 /* ========================= */
 body.dark {
   --bg: #0f172a;
@@ -37,7 +37,7 @@ body.dark {
 }
 
 /* ========================= */
-/* 🌍 GLOBAL */
+/* GLOBAL */
 /* ========================= */
 html, body {
   margin: 0;
@@ -58,7 +58,7 @@ body:not(.dark) {
 }
 
 /* ========================= */
-/* 🔢 INPUTS — sem setas     */
+/* INPUTS — sem setas        */
 /* ========================= */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
@@ -70,7 +70,7 @@ input[type=number] {
 }
 
 /* ========================= */
-/* 🚫 SCROLLBARS ocultas     */
+/* SCROLLBARS ocultas        */
 /* ========================= */
 * {
   scrollbar-width: none;
@@ -81,8 +81,16 @@ input[type=number] {
 }
 
 /* ========================= */
-/* 📱 MOBILE                 */
+/* MOBILE                    */
 /* ========================= */
+.icon-spin {
+  animation: icon-spin 1s linear infinite;
+}
+@keyframes icon-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 767px) {
   /* Barra flutuante de seleção sobe para não ficar atrás do bottom nav */
   .floating-bar {

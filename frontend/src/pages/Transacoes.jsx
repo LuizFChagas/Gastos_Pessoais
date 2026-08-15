@@ -6,7 +6,7 @@ import { useCategoriasPersonalizadas } from "../hooks/useCategoriasPersonalizada
 import {
   AlignJustify, ArrowUp, ArrowDown, Zap, CreditCard, RefreshCw, ArrowLeftRight,
   ArrowDownCircle, ArrowUpCircle, CornerUpLeft, Pencil, Trash2, Landmark, CalendarDays,
-  ChevronDown, Wallet, Download, Repeat, Search,
+  ChevronDown, Wallet, Download, Repeat, Search, X, CheckSquare,
 } from "lucide-react";
 
 const FORMAS_PAGAMENTO_OPCOES = [
@@ -369,10 +369,11 @@ function Transacoes() {
               color: modoSelecao ? "#10b981" : "var(--subtext)",
               border: `1px solid ${modoSelecao ? "#10b981" : "var(--border)"}`,
               padding: "10px 16px", borderRadius: "10px",
-              fontWeight: "600", cursor: "pointer", fontSize: "14px"
+              fontWeight: "600", cursor: "pointer", fontSize: "14px",
+              display: "inline-flex", alignItems: "center", gap: "6px"
             }}
           >
-            {modoSelecao ? "✕ Cancelar" : "☑ Recategorizar"}
+            {modoSelecao ? <><X size={14} /> Cancelar</> : <><CheckSquare size={14} /> Recategorizar</>}
           </button>
           <button
             onClick={() => setOpenModal(true)}
@@ -642,7 +643,7 @@ function Transacoes() {
           <div style={{ backgroundColor: "var(--card)", padding: "28px", borderRadius: "20px", width: "min(420px, calc(100vw - 32px))", border: "1px solid var(--border)", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h3 style={{ margin: 0, color: "var(--text)", fontSize: "18px" }}>Editar transação</h3>
-              <button onClick={() => setOpenEditModal(false)} style={{ border: "none", background: "var(--input)", cursor: "pointer", color: "var(--subtext)", width: "30px", height: "30px", borderRadius: "8px", fontSize: "14px" }}>✕</button>
+              <button onClick={() => setOpenEditModal(false)} style={{ border: "none", background: "var(--input)", cursor: "pointer", color: "var(--subtext)", width: "30px", height: "30px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>

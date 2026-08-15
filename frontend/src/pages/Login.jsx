@@ -3,7 +3,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { login, verificarOTP } from "../api/authApi";
 import { useNavigate, Link } from "react-router-dom";
 
-import { Wallet, Bot, Zap, TrendingUp, ShoppingBag, Car, Bell, Home, Gamepad2, Target, CreditCard } from "lucide-react";
+import { Wallet, Bot, Zap, TrendingUp, ShoppingBag, Car, Bell, Home, Gamepad2, Target, CreditCard, Check } from "lucide-react";
 import { FinlyLogo } from "../components/FinlyLogo";
 
 function Login() {
@@ -240,7 +240,7 @@ function Login() {
         <div style={{ fontSize: "11px", color: "#4a5568", lineHeight: 1.5 }}>
           3 transações categorizadas automaticamente hoje
         </div>
-        <div style={{ fontSize: "11px", color: "#10b981", fontWeight: "600" }}>98% de precisão ✓</div>
+        <div style={{ fontSize: "11px", color: "#10b981", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>98% de precisão <Check size={12} /></div>
       </div>
 
       {/* Card meta do mês — center left */}

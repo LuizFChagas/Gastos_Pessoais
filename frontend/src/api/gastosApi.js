@@ -25,7 +25,7 @@ export const gastosPorCategoria = async () => {
   return response.data;
 };
 
-// 🔥 NOVO FILTRO POR INTERVALO
+// NOVO FILTRO POR INTERVALO
 export const gastosPorIntervalo = async (dataInicio, dataFim) => {
   const response = await api.get("/gastos/intervalo", {
     params: {

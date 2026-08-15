@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { esqueceuSenha } from "../api/authApi";
 import { FinlyLogo } from "../components/FinlyLogo";
+import { Mail } from "lucide-react";
 
 export default function EsqueciSenha() {
   const [email, setEmail] = useState("");
@@ -53,7 +54,7 @@ export default function EsqueciSenha() {
         <div style={{ backgroundColor: "rgba(15,23,42,0.85)", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.08)", padding: "32px", backdropFilter: "blur(16px)" }}>
           {enviado ? (
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "40px", marginBottom: "16px" }}>📧</div>
+              <div style={{ marginBottom: "16px", color: "#10b981", display: "flex", justifyContent: "center" }}><Mail size={40} /></div>
               <h2 style={{ margin: "0 0 12px", color: "#f0f4ff", fontSize: "18px" }}>Verifique seu email</h2>
               <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: "0 0 24px" }}>
                 Se o email <strong style={{ color: "#f0f4ff" }}>{email}</strong> estiver cadastrado, você receberá um link para redefinir sua senha.

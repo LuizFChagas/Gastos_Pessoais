@@ -2,6 +2,10 @@ import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Landing.css";
 import { FinlyLogo } from "../components/FinlyLogo";
+import {
+  Wallet, Utensils, Car, Bell, Gamepad2, Bot, BarChart3,
+  ClipboardList, Lightbulb, Settings, FolderOpen, Rocket,
+} from "lucide-react";
 
 /* ——— Tiny helpers rendered inside the preview card ——— */
 function PreviewBalanceCard({ label, value, color }) {
@@ -13,11 +17,11 @@ function PreviewBalanceCard({ label, value, color }) {
   );
 }
 
-function PreviewTx({ icon, bg, name, cat, value, positive }) {
+function PreviewTx({ icon, bg, color, name, cat, value, positive }) {
   return (
     <div className="preview-tx">
       <div className="preview-tx-left">
-        <div className="preview-tx-icon" style={{ background: bg }}>{icon}</div>
+        <div className="preview-tx-icon" style={{ background: bg, color }}>{icon}</div>
         <div>
           <div className="preview-tx-name">{name}</div>
           <div className="preview-tx-cat">{cat}</div>
@@ -144,19 +148,19 @@ function Landing() {
 
               <div className="preview-transactions">
                 <PreviewTx
-                  icon="💰" bg="rgba(16,185,129,0.15)"
+                  icon={<Wallet size={15} />} bg="rgba(16,185,129,0.15)" color="#10b981"
                   name="Salário"     cat="Salário"      value="+R$4.250" positive
                 />
                 <PreviewTx
-                  icon="🍔" bg="rgba(249,115,22,0.15)"
+                  icon={<Utensils size={15} />} bg="rgba(249,115,22,0.15)" color="#f97316"
                   name="iFood"       cat="Alimentação"  value="-R$45,90"
                 />
                 <PreviewTx
-                  icon="🚗" bg="rgba(59,130,246,0.15)"
+                  icon={<Car size={15} />} bg="rgba(59,130,246,0.15)" color="#3b82f6"
                   name="Uber"        cat="Transporte"   value="-R$23,00"
                 />
                 <PreviewTx
-                  icon="🔔" bg="rgba(14,165,233,0.15)"
+                  icon={<Bell size={15} />} bg="rgba(14,165,233,0.15)" color="#0ea5e9"
                   name="Netflix"     cat="Assinaturas"  value="-R$39,90"
                 />
               </div>
@@ -166,13 +170,13 @@ function Landing() {
             <div className="preview-float-card">
               <div className="preview-float-title">Por categoria</div>
               {[
-                { icon: "🍔", label: "Alimentação", pct: "32%", color: "#f97316", w: "32%" },
-                { icon: "🚗", label: "Transporte",  pct: "18%", color: "#3b82f6", w: "18%" },
-                { icon: "🎮", label: "Lazer",        pct: "24%", color: "#8b5cf6", w: "24%" },
-                { icon: "🔔", label: "Assinaturas",  pct: "14%", color: "#0ea5e9", w: "14%" },
+                { Icon: Utensils, label: "Alimentação", pct: "32%", color: "#f97316", w: "32%" },
+                { Icon: Car,      label: "Transporte",  pct: "18%", color: "#3b82f6", w: "18%" },
+                { Icon: Gamepad2, label: "Lazer",        pct: "24%", color: "#8b5cf6", w: "24%" },
+                { Icon: Bell,     label: "Assinaturas",  pct: "14%", color: "#0ea5e9", w: "14%" },
               ].map((item) => (
                 <div key={item.label} className="preview-cat-item">
-                  <span style={{ fontSize: "14px" }}>{item.icon}</span>
+                  <item.Icon size={14} color={item.color} />
                   <div className="preview-cat-bar-bg">
                     <div
                       className="preview-cat-bar-fill"
@@ -202,17 +206,17 @@ function Landing() {
 
           <div className="features-grid">
             <FeatureCard
-              icon="🤖"
+              icon={<Bot size={24} color="#10b981" />}
               title="Categorização com IA"
               desc="Nossa IA lê o nome de cada transação e classifica automaticamente em alimentação, transporte, lazer, assinaturas e muito mais — sem você precisar fazer nada."
             />
             <FeatureCard
-              icon="📊"
+              icon={<BarChart3 size={24} color="#10b981" />}
               title="Dashboard Visual"
               desc="Gráficos por categoria e por dia, cards de saldo, filtros por mês, semana ou período personalizado. Entenda seus padrões de consumo de uma olhada só."
             />
             <FeatureCard
-              icon="📋"
+              icon={<ClipboardList size={24} color="#10b981" />}
               title="Importação de Extrato"
               desc="Faça upload do CSV do seu banco com um clique. O sistema processa, categoriza e registra tudo automaticamente. Histórico completo de importações salvo."
             />
@@ -246,33 +250,33 @@ function Landing() {
             <div className="timeline">
               {[
                 {
-                  icon: "💡",
+                  Icon: Lightbulb,
                   title: "A ideia surgiu",
                   desc: "Cansados de planilhas e apps complicados, decidimos criar algo próprio — simples, bonito e eficiente.",
                 },
                 {
-                  icon: "⚙️",
+                  Icon: Settings,
                   title: "O desenvolvimento",
                   desc: "Backend em FastAPI com PostgreSQL, frontend em React, e uma IA baseada em palavras-chave para categorização automática.",
                 },
                 {
-                  icon: "📊",
+                  Icon: BarChart3,
                   title: "O dashboard",
                   desc: "Gráficos por categoria e por dia com Recharts, filtros por mês e período, saldo em tempo real.",
                 },
                 {
-                  icon: "📁",
+                  Icon: FolderOpen,
                   title: "Importação de extratos",
                   desc: "Upload de CSV bancário com processamento automático, suporte a múltiplos bancos e histórico de importações.",
                 },
                 {
-                  icon: "🚀",
+                  Icon: Rocket,
                   title: "Evoluindo sempre",
                   desc: "Novas categorias, mais inteligência, melhores visualizações. O projeto cresce a cada versão.",
                 },
               ].map((item, i) => (
                 <div key={i} className="timeline-item">
-                  <div className="timeline-dot">{item.icon}</div>
+                  <div className="timeline-dot" style={{ color: "#10b981" }}><item.Icon size={15} /></div>
                   <div className="timeline-content">
                     <div className="timeline-title">{item.title}</div>
                     <p className="timeline-desc">{item.desc}</p>
@@ -308,7 +312,7 @@ function Landing() {
       {/* ===== FOOTER ===== */}
       <footer className="landing-footer">
         <div className="footer-logo">
-          <div className="logo-icon" style={{ width: 28, height: 28, fontSize: 14, borderRadius: 8 }}>💰</div>
+          <div className="logo-icon" style={{ width: 28, height: 28, borderRadius: 8, color: "white" }}><Wallet size={14} /></div>
           Finly
         </div>
         <span className="footer-text">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { redefinirSenha } from "../api/authApi";
 import { FinlyLogo } from "../components/FinlyLogo";
+import { CheckCircle2 } from "lucide-react";
 
 function forcaSenha(s) {
   let n = 0;
@@ -78,7 +79,7 @@ export default function RedefinirSenha() {
         <div style={{ backgroundColor: "rgba(15,23,42,0.85)", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.08)", padding: "32px", backdropFilter: "blur(16px)" }}>
           {sucesso ? (
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "40px", marginBottom: "16px" }}>✅</div>
+              <div style={{ marginBottom: "16px", color: "#10b981", display: "flex", justifyContent: "center" }}><CheckCircle2 size={40} /></div>
               <h2 style={{ margin: "0 0 12px", color: "#f0f4ff", fontSize: "18px" }}>Senha redefinida!</h2>
               <p style={{ color: "#94a3b8", fontSize: "14px" }}>Redirecionando para o login...</p>
             </div>

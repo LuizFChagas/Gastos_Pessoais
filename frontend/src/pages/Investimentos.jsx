@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -159,7 +159,7 @@ function Modal({ item, onSave, onClose }) {
         <div style={{ backgroundColor: "var(--card)", borderRadius: "16px", padding: "28px", width: "100%", maxWidth: "460px", boxShadow: "var(--shadow-md)", border: "1px solid var(--border)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <h3 style={{ margin: 0, color: "var(--text)", fontSize: "17px" }}>Editar posição</h3>
-            <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--subtext)", fontSize: "18px" }}>✕</button>
+            <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--subtext)", display: "flex", alignItems: "center" }}><X size={16} /></button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div style={{ display: "flex", gap: "12px" }}>
@@ -250,7 +250,7 @@ function Modal({ item, onSave, onClose }) {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
           <h3 style={{ margin: 0, color: "var(--text)", fontSize: "17px" }}>Adicionar posição</h3>
-          <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--subtext)", fontSize: "18px" }}>✕</button>
+          <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--subtext)", display: "flex", alignItems: "center" }}><X size={16} /></button>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -722,7 +722,7 @@ function HistoricoAportes({ posicao, onClose }) {
               Total investido: <strong style={{ color: "var(--text)" }}>{fmt(posicao.valor_investido)}</strong>
             </div>
           </div>
-          <button onClick={onClose} style={{ border: "none", background: "var(--input)", cursor: "pointer", color: "var(--subtext)", width: "30px", height: "30px", borderRadius: "8px", fontSize: "14px" }}>✕</button>
+          <button onClick={onClose} style={{ border: "none", background: "var(--input)", cursor: "pointer", color: "var(--subtext)", width: "30px", height: "30px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
         </div>
 
         {/* Form novo aporte */}
