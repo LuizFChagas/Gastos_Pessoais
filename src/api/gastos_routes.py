@@ -10,14 +10,13 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, extract
 
-from src.database.deps import get_db
 from src.database.models import Gasto, Extrato, Usuario
 
 from src.services.ingestao_manual import adicionar_gasto_manual
 from src.services.ingestao_extrato_bancario import importar_extrato, pre_visualizar_extrato
 from src.services.gastos_fixos import processar_gastos_fixos, marcar_fixo
 from src.services.exportacao import gerar_csv, gerar_excel, gerar_pdf
-from src.auth.security import pegar_usuario_logado
+from src.auth.security import pegar_usuario_logado, get_db_autenticado
 
 
 logger = logging.getLogger(__name__)
@@ -44,9 +43,10 @@ class GastoManualRequest(BaseModel):
 def criar_gasto_manual(
     request: GastoManualRequest,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     adicionar_gasto_manual(
+        db,
         request.descricao,
         request.valor,
         request.categoria,
@@ -84,7 +84,7 @@ class AjusteSaldoRequest(BaseModel):
 def ajustar_saldo(
     request: AjusteSaldoRequest,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     gastos = db.query(Gasto).filter(
         Gasto.usuario_id == usuario_id,
@@ -147,10 +147,11 @@ def _salvar_csv_temp(file: UploadFile) -> Path:
 def preview_extrato_bancario(
     file: UploadFile = File(...),
     usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db_autenticado)
 ):
     caminho_temp = _salvar_csv_temp(file)
     try:
-        return pre_visualizar_extrato(caminho_temp, usuario_id)
+        return pre_visualizar_extrato(db, caminho_temp, usuario_id)
     finally:
         caminho_temp.unlink(missing_ok=True)
 
@@ -161,7 +162,7 @@ def importar_extrato_bancario(
     file: UploadFile = File(...),
     banco: str = "",
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     caminho_temp = _salvar_csv_temp(file)
 
@@ -177,7 +178,7 @@ def importar_extrato_bancario(
 
         usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
         nome_usuario = usuario.nome if usuario else None
-        importar_extrato(caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco, nome_usuario=nome_usuario)
+        importar_extrato(db, caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco, nome_usuario=nome_usuario)
 
         processar_gastos_fixos(db, usuario_id)
 
@@ -196,7 +197,7 @@ def importar_extrato_bancario(
 @router.get("/extratos")
 def listar_extratos(
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     extratos = db.query(Extrato).filter(
         Extrato.usuario_id == usuario_id
@@ -218,7 +219,7 @@ def listar_extratos(
 def deletar_extrato(
     extrato_id: int,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     extrato = db.query(Extrato).filter(
         Extrato.id == extrato_id,
@@ -238,7 +239,7 @@ def deletar_extrato(
 @router.get("/meses-disponiveis")
 def meses_disponiveis(
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     resultados = db.query(
         extract("year",  Gasto.data_hora).label("ano"),
@@ -255,7 +256,7 @@ def meses_disponiveis(
 @router.get("/")
 def listar_gastos(
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     processar_gastos_fixos(db, usuario_id)
 
@@ -289,7 +290,7 @@ def listar_gastos(
 @router.get("/por-dia")
 def gastos_por_dia(
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     resultados = db.query(
         func.date(Gasto.data_hora).label("data"),
@@ -309,7 +310,7 @@ def gastos_por_dia(
 @router.get("/por-categoria")
 def gastos_por_categoria(
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     resultados = db.query(
         Gasto.categoria,
@@ -328,7 +329,7 @@ def gastos_por_categoria(
 @router.get("/dashboard/resumo")
 def resumo_dashboard(
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     gastos = db.query(Gasto).filter(
         Gasto.usuario_id == usuario_id,
@@ -362,7 +363,7 @@ def gastos_por_mes(
     ano: int,
     mes: int,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     inicio = datetime(ano, mes, 1)
 
@@ -405,7 +406,7 @@ def gastos_por_intervalo(
     data_inicio: str = Query(...),
     data_fim: str = Query(...),
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     try:
         inicio = datetime.fromisoformat(data_inicio)
@@ -446,7 +447,7 @@ def gastos_por_intervalo(
 def top_maiores_gastos(
     limite: int = 5,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     gastos = db.query(Gasto).filter(
         Gasto.usuario_id == usuario_id,
@@ -499,7 +500,7 @@ class RecategorizarLoteRequest(BaseModel):
 def recategorizar_lote(
     request: RecategorizarLoteRequest,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     db.query(Gasto).filter(
         Gasto.id.in_(request.ids),
@@ -515,7 +516,7 @@ def editar_gasto(
     gasto_id: int,
     request: EditarGastoRequest,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     gasto = db.query(Gasto).filter(
         Gasto.id == gasto_id,
@@ -554,7 +555,7 @@ def editar_gasto(
 def deletar_gasto(
     gasto_id: int,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     gasto = db.query(Gasto).filter(
         Gasto.id == gasto_id,
@@ -584,7 +585,7 @@ def exportar_gastos(
     ano: int | None = None,
     mes: int | None = None,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     query = db.query(Gasto).filter(Gasto.usuario_id == usuario_id)
 

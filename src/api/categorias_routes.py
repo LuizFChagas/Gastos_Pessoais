@@ -5,9 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
-from src.database.deps import get_db
 from src.database.models import CategoriaPersonalizada
-from src.auth.security import pegar_usuario_logado
+from src.auth.security import pegar_usuario_logado, get_db_autenticado
 
 router = APIRouter()
 
@@ -66,7 +65,7 @@ class CategoriaRequest(BaseModel):
 @router.get("/")
 def listar_categorias(
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     categorias = db.query(CategoriaPersonalizada).filter(
         CategoriaPersonalizada.usuario_id == usuario_id
@@ -82,7 +81,7 @@ def listar_categorias(
 def criar_categoria(
     request: CategoriaRequest,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     existentes = db.query(CategoriaPersonalizada).filter(
         CategoriaPersonalizada.usuario_id == usuario_id
@@ -115,7 +114,7 @@ def criar_categoria(
 def deletar_categoria(
     categoria_id: int,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     categoria = db.query(CategoriaPersonalizada).filter(
         CategoriaPersonalizada.id == categoria_id,

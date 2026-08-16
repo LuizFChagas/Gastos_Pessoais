@@ -4,9 +4,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import os
 
-from src.database.deps import get_db
 from src.database.models import Sugestao, Usuario
-from src.auth.security import pegar_usuario_logado
+from src.auth.security import pegar_usuario_logado, get_db_autenticado
 from src.services.email_service import enviar_sugestao_admin
 
 router = APIRouter()
@@ -20,7 +19,7 @@ class SugestaoIn(BaseModel):
 def criar_sugestao(
     body: SugestaoIn,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_autenticado),
 ):
     if not body.texto.strip():
         raise HTTPException(status_code=400, detail="Sugestão não pode ser vazia")

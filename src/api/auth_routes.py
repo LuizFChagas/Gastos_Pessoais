@@ -16,7 +16,7 @@ from collections import defaultdict
 from src.database.deps import get_db
 from src.database.models import Usuario, Gasto, Extrato
 
-from src.auth.security import criar_token, pegar_usuario_logado, definir_cookie_auth, limpar_cookie_auth
+from src.auth.security import criar_token, pegar_usuario_logado, definir_cookie_auth, limpar_cookie_auth, get_db_autenticado
 from src.auth.hash import gerar_hash, verificar_senha
 from src.services.email_service import enviar_otp, enviar_verificacao, enviar_reset_senha
 
@@ -259,7 +259,7 @@ def logout(response: Response):
 def toggle_2fa(
     dados: Toggle2FARequest,
     usuario_id: int = Depends(pegar_usuario_logado),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not usuario:
@@ -318,7 +318,7 @@ def redefinir_senha(dados: RedefinirSenhaRequest, db: Session = Depends(get_db))
 
 
 @router.get("/me")
-def me(usuario_id: int = Depends(pegar_usuario_logado), db: Session = Depends(get_db)):
+def me(usuario_id: int = Depends(pegar_usuario_logado), db: Session = Depends(get_db_autenticado)):
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")

@@ -2,7 +2,6 @@ import calendar
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from src.database.database import SessionLocal
 from src.database.models import Gasto
 from src.services.gastos_fixos import marcar_fixo
 
@@ -26,6 +25,7 @@ def _somar_mes(data: datetime, meses: int) -> datetime:
 
 
 def adicionar_gasto_manual(
+    db: Session,
     descricao: str,
     valor: float,
     categoria: str,
@@ -37,9 +37,6 @@ def adicionar_gasto_manual(
     fixo: bool = False,
     parcelas: int | None = None,
 ):
-
-    db: Session = SessionLocal()
-
     descricao = (descricao or "").strip()
     if not descricao:
         descricao = "Sem descrição"
@@ -67,7 +64,6 @@ def adicionar_gasto_manual(
             db.refresh(gasto)
             if primeiro_id is None:
                 primeiro_id = gasto.id
-        db.close()
         return
 
     gasto = Gasto(
@@ -87,5 +83,3 @@ def adicionar_gasto_manual(
 
     if fixo:
         marcar_fixo(db, gasto, True)
-
-    db.close()
