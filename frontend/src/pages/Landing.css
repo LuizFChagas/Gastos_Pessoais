@@ -5,13 +5,492 @@
 .landing-root {
   min-height: 100vh;
   background-color: #070b14;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 60px 60px;
   color: #f0f4ff;
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* ===========================
+   HERO — só o texto, centralizado
+   =========================== */
+
+.hero-inner--solo {
+  flex-direction: column;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  align-items: center;
+}
+
+.hero-inner--solo .hero-subtitle { margin-left: auto; margin-right: auto; }
+.hero-inner--solo .hero-buttons { justify-content: center; }
+
+/* ===========================
+   A HISTÓRIA NO NOTEBOOK — uma única seção com scroll fixo (pin via GSAP):
+   o headline acende linha a linha ao lado enquanto a tela do notebook
+   passa da planilha bagunçada pro app de verdade, tela por tela, com uma
+   transição de "atualização de tela" (scan-line) entre cada uma.
+   =========================== */
+
+.story-scroll { position: relative; }
+
+.story-scroll-sticky {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.story-scroll-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 60px;
+  display: flex;
+  align-items: center;
+  gap: 64px;
+  box-sizing: border-box;
+}
+
+.story-headline {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.story-line {
+  font-size: 32px;
+  font-weight: var(--type-display-weight);
+  letter-spacing: -1.1px;
+  line-height: 1.2;
+  color: #f0f4ff;
+  min-height: 1.2em;
+}
+
+.story-laptop-wrap {
+  flex-shrink: 0;
+  width: min(720px, 60vw);
+}
+
+.laptop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.laptop-screen-frame {
+  width: 100%;
+  background: linear-gradient(150deg, #656b78, #383c45 55%, #2a2d34);
+  border-radius: 18px 18px 6px 6px;
+  padding: 16px 16px 22px;
+  box-shadow: 0 50px 120px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.18);
+  position: relative;
+}
+
+.laptop-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 16px;
+  background: #2a2d34;
+  border-radius: 0 0 10px 10px;
+}
+
+.laptop-screen {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: #050914;
+}
+
+.screen-panel {
+  position: absolute;
+  inset: 0;
+}
+
+.screen-panel .excel-window {
+  border-radius: 0;
+  box-shadow: none;
+  height: 100%;
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 5px;
+  background: linear-gradient(180deg, transparent, rgba(16,185,129,0.9), transparent);
+  box-shadow: 0 0 18px 4px rgba(16,185,129,0.55);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.laptop-base {
+  width: 114%;
+  height: 14px;
+  background: linear-gradient(180deg, #dcdce1, #a9a9b0);
+  border-radius: 0 0 10px 10px;
+  margin-top: -2px;
+  position: relative;
+}
+
+.laptop-base::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 5px;
+  background: #111318;
+  border-radius: 0 0 7px 7px;
+}
+
+.app-screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #0b1220;
+}
+
+.app-screen-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.app-screen-body .hero-preview {
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.app-titlebar {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 14px;
+  flex-shrink: 0;
+}
+
+.app-urlbar {
+  flex: 1;
+  text-align: center;
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+
+.preview-month {
+  position: relative;
+}
+
+.preview-cursor {
+  position: absolute;
+  right: -14px;
+  bottom: -12px;
+  color: #f0f4ff;
+  opacity: 0;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6));
+  pointer-events: none;
+}
+
+.preview-tx-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #34d399;
+  background: rgba(16,185,129,0.14);
+  border-radius: 999px;
+  padding: 1px 6px 1px 5px;
+  vertical-align: middle;
+}
+
+/* --- Telas de recursos (relatórios / transações / importar) --- */
+.rep-panel-title, .tx-panel-title, .imp-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f0f4ff;
+  margin: 0 0 16px;
+}
+
+.rep-donut-row { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; }
+
+.rep-donut {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rep-donut-hole {
+  width: 58%;
+  height: 58%;
+  border-radius: 50%;
+  background: #0b1220;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.rep-donut-hole strong { font-size: 11px; color: #f0f4ff; }
+.rep-donut-hole span { font-size: 7.5px; color: #4a5568; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.rep-legend { display: flex; flex-direction: column; gap: 7px; }
+.rep-legend-item { font-size: 11px; color: #c8d0de; display: flex; align-items: center; gap: 6px; }
+.rep-legend-item b { margin-left: auto; color: #7d8fa8; font-weight: 600; }
+.rep-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.rep-bars-label { font-size: 10px; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.rep-bars { display: flex; align-items: flex-end; gap: 6px; height: 68px; }
+.rep-bar { flex: 1; background: linear-gradient(180deg, #10b981, #059669); border-radius: 3px 3px 0 0; min-height: 4px; }
+
+/* --- Transações --- */
+.tx-filters { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.tx-filter { font-size: 10px; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); color: #7d8fa8; }
+.tx-filter.active { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #34d399; }
+
+.tx-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.tx-row-name { font-size: 12px; font-weight: 600; color: #f0f4ff; }
+.tx-row-bank { font-size: 10px; color: #4a5568; }
+.tx-row-pills { display: flex; gap: 5px; flex-shrink: 0; }
+.tx-pill { font-size: 9px; padding: 2px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.tx-row-value { font-size: 12px; font-weight: 700; color: #ef4444; flex-shrink: 0; }
+
+/* --- Importar extrato --- */
+.imp-dropzone {
+  border: 1.5px dashed rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 26px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #7d8fa8;
+  text-align: center;
+}
+.imp-dropzone svg { color: #4a5568; }
+.imp-dropzone span { font-size: 12px; color: #c8d0de; font-weight: 600; }
+.imp-dropzone small { font-size: 10px; color: #4a5568; }
+.imp-history { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.imp-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #7d8fa8;
+  background: rgba(255,255,255,0.03);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.excel-window {
+  width: 100%;
+  height: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 40px 90px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.excel-window--big {
+  max-width: 100%;
+}
+
+.excel-titlebar {
+  background: linear-gradient(135deg, #1c8a45, #146c37);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+}
+
+.excel-dots { display: flex; gap: 5px; }
+.excel-dots span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.35); }
+
+.excel-filename {
+  color: rgba(255,255,255,0.92);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.excel-formulabar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e2e5e9;
+  padding: 6px 12px;
+}
+
+.excel-namebox {
+  font-size: 10px;
+  color: #374151;
+  font-weight: 700;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  padding: 1px 7px;
+}
+
+.excel-fx { font-style: italic; color: #6b7280; font-size: 11px; }
+
+.excel-formula-text {
+  font-size: 11px;
+  color: #111827;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+
+.excel-grid {
+  background: white;
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  transition: transform 0.1s linear;
+}
+
+.excel-colheaders,
+.excel-row {
+  display: grid;
+  grid-template-columns: 26px repeat(6, 1fr);
+}
+
+.excel-colheaders span,
+.excel-rownum {
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 10px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+  padding: 6px 0;
+  font-weight: 700;
+}
+
+.excel-corner { background: #e5e7eb; border: 1px solid #e5e7eb; }
+
+.excel-row {
+  transition: opacity 0.1s linear, transform 0.1s linear;
+}
+
+.excel-cell {
+  position: relative;
+  font-size: 11.5px;
+  color: #1f2937;
+  padding: 7px 8px;
+  border: 1px solid #e5e7eb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: white;
+}
+
+.excel-row--header .excel-cell {
+  font-weight: 700;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.sheet-chaos-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 38%, rgba(220,38,38,0.16) 100%);
+  opacity: 0;
+  z-index: 4;
+}
+
+.excel-cell.neg { color: #dc2626; }
+.excel-cell.strike { text-decoration: line-through; color: #9ca3af; }
+.excel-cell.err { color: #b45309; background: #fffbeb; }
+
+.excel-cell.selected {
+  outline: 2px solid #10b981;
+  outline-offset: -2px;
+  background: #ecfdf5;
+}
+
+.excel-err-flag {
+  position: absolute;
+  top: 0; right: 0;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 0 7px 7px 0;
+  border-color: transparent #dc2626 transparent transparent;
+}
+
+.excel-sheettabs {
+  display: flex;
+  gap: 3px;
+  background: #e5e7eb;
+  padding: 5px 10px;
+}
+
+.excel-sheettabs span {
+  font-size: 10px;
+  color: #6b7280;
+  padding: 4px 12px;
+  border-radius: 4px 4px 0 0;
+  background: #f3f4f6;
+}
+
+.excel-sheettabs span.active {
+  background: white;
+  color: #111827;
+  font-weight: 700;
+}
+
+@media (max-width: 960px) {
+  .story-scroll-inner { flex-direction: column; gap: 16px; padding: 0 20px; }
+  .story-headline { gap: 2px; }
+  .story-line { font-size: 22px; letter-spacing: -0.6px; line-height: 1.15; }
+  .story-laptop-wrap { width: min(560px, 92vw); }
+  .excel-cell { font-size: 10px; padding: 5px 5px; }
+}
+
+@media (max-width: 640px) {
+  /* esconde as colunas Categoria e Forma, mantém Data/Descrição/Valor/Saldo */
+  .excel-colheaders > *:nth-child(4),
+  .excel-colheaders > *:nth-child(5),
+  .excel-row > *:nth-child(4),
+  .excel-row > *:nth-child(5) { display: none; }
+  .excel-colheaders,
+  .excel-row { grid-template-columns: 22px repeat(4, 1fr); }
+  .excel-cell { font-size: 9px; padding: 4px; }
+  .story-scroll-inner { padding: 0 14px; }
+  .story-line { font-size: 18px; letter-spacing: -0.4px; }
 }
 
 /* ===========================
@@ -153,10 +632,10 @@
    =========================== */
 
 .hero {
-  min-height: 100vh;
+  min-height: 62vh;
   display: flex;
   align-items: center;
-  padding: 120px 60px 80px;
+  padding: 110px 60px 50px;
   position: relative;
   overflow: hidden;
 }
@@ -220,10 +699,10 @@
 }
 
 .hero-title {
-  font-size: 70px;
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -2.5px;
+  font-size: var(--type-display-size);
+  font-weight: var(--type-display-weight);
+  line-height: var(--type-display-line);
+  letter-spacing: var(--type-display-tracking);
   color: #f0f4ff;
   margin: 0 0 24px;
   animation: fadeUp 0.7s ease 0.2s both;
@@ -239,9 +718,10 @@
 }
 
 .hero-subtitle {
-  font-size: 18px;
+  font-size: var(--type-body-lg-size);
+  font-weight: var(--type-body-lg-weight);
   color: #7d8fa8;
-  line-height: 1.75;
+  line-height: var(--type-body-lg-line);
   max-width: 480px;
   margin: 0 0 40px;
   animation: fadeUp 0.7s ease 0.3s both;
@@ -484,26 +964,26 @@
 
 .section-eyebrow {
   color: #10b981;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 2.5px;
+  font-size: var(--type-eyebrow-size);
+  font-weight: var(--type-eyebrow-weight);
+  letter-spacing: var(--type-eyebrow-tracking);
   text-transform: uppercase;
   margin-bottom: 14px;
 }
 
 .section-heading {
-  font-size: 46px;
-  font-weight: 800;
-  letter-spacing: -1.8px;
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-h1-weight);
+  letter-spacing: var(--type-h1-tracking);
   color: #f0f4ff;
   margin: 0 0 16px;
-  line-height: 1.1;
+  line-height: var(--type-h1-line);
 }
 
 .section-sub {
-  font-size: 17px;
+  font-size: var(--type-body-lg-size);
   color: #7d8fa8;
-  line-height: 1.75;
+  line-height: var(--type-body-lg-line);
   max-width: 480px;
   margin: 0 0 60px;
 }
@@ -558,17 +1038,17 @@
 }
 
 .feature-name {
-  font-size: 19px;
-  font-weight: 700;
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-h2-weight);
   color: #f0f4ff;
   margin: 0 0 10px;
-  letter-spacing: -0.3px;
+  letter-spacing: var(--type-h2-tracking);
 }
 
 .feature-desc {
-  font-size: 14px;
+  font-size: var(--type-body-size);
   color: #7d8fa8;
-  line-height: 1.7;
+  line-height: var(--type-body-line);
   margin: 0;
 }
 
@@ -605,7 +1085,7 @@
 }
 
 .story-body {
-  font-size: 16px;
+  font-size: var(--type-body-lg-size);
   color: #7d8fa8;
   line-height: 1.85;
   margin: 0;
@@ -665,13 +1145,13 @@
 
 .timeline-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: #c8d0de;
   margin: 6px 0 4px;
 }
 
 .timeline-desc {
-  font-size: 13px;
+  font-size: var(--type-small-size);
   color: #4a5568;
   line-height: 1.65;
   margin: 0;
@@ -706,8 +1186,8 @@
 }
 
 .cta-title {
-  font-size: 58px;
-  font-weight: 800;
+  font-size: clamp(32px, 5vw, 58px);
+  font-weight: var(--type-display-weight);
   letter-spacing: -2px;
   color: #f0f4ff;
   margin: 0 auto 18px;
@@ -717,11 +1197,11 @@
 }
 
 .cta-subtitle {
-  font-size: 17px;
+  font-size: var(--type-body-lg-size);
   color: #7d8fa8;
   margin: 0 auto 44px;
   max-width: 460px;
-  line-height: 1.7;
+  line-height: var(--type-body-lg-line);
   position: relative;
 }
 
