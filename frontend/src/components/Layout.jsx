@@ -5,6 +5,7 @@ import {
   LogOut, Moon, Sun, Lightbulb, User, ChevronUp, Lock, Crown, Check, X, Users, MessageSquare,
 } from "lucide-react";
 import { getPerfil } from "../api/perfilApi";
+import { logout } from "../api/authApi";
 import { FinlyLogo } from "./FinlyLogo";
 import { enviarSugestao } from "../api/sugestoesApi";
 
@@ -290,9 +291,9 @@ function Layout({ children, toggleTheme, darkMode }) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("token_expiry");
-    sessionStorage.removeItem("token");
+    logout().catch(() => {}); // limpa o cookie httpOnly no backend; segue o fluxo mesmo se falhar
+    localStorage.removeItem("finly_auth");
+    sessionStorage.removeItem("finly_auth");
     navigate("/");
   };
 

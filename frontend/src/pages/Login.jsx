@@ -36,13 +36,15 @@ function Login() {
     setDarkMode(!darkMode);
   };
 
-  const salvarToken = (token) => {
+  /* A sessão de verdade vive num cookie httpOnly (o backend define, o JS
+     nem consegue ler). Isso aqui é só uma marcação leve, sem nenhum dado
+     sensível, pra decidir instantaneamente se mostra a rota protegida ou
+     manda pro /login — a validação real acontece em toda chamada de API. */
+  const marcarSessaoAtiva = () => {
     if (manterConectado) {
-      const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000;
-      localStorage.setItem("token", token);
-      localStorage.setItem("token_expiry", expiry);
+      localStorage.setItem("finly_auth", "1");
     } else {
-      sessionStorage.setItem("token", token);
+      sessionStorage.setItem("finly_auth", "1");
     }
   };
 
@@ -65,7 +67,7 @@ function Login() {
         return;
       }
 
-      salvarToken(data.access_token);
+      marcarSessaoAtiva();
       navigate("/app");
     } catch (err) {
       const detail = err?.response?.data?.detail || "";
@@ -88,8 +90,8 @@ function Login() {
     setErro("");
     setCarregando(true);
     try {
-      const data = await verificarOTP(otpEmail, otpCodigo, manterConectado);
-      salvarToken(data.access_token);
+      await verificarOTP(otpEmail, otpCodigo, manterConectado);
+      marcarSessaoAtiva();
       navigate("/app");
     } catch {
       setErro("Código inválido ou expirado");

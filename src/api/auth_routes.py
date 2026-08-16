@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -16,7 +16,7 @@ from collections import defaultdict
 from src.database.deps import get_db
 from src.database.models import Usuario, Gasto, Extrato
 
-from src.auth.security import criar_token, pegar_usuario_logado
+from src.auth.security import criar_token, pegar_usuario_logado, definir_cookie_auth, limpar_cookie_auth
 from src.auth.hash import gerar_hash, verificar_senha
 from src.services.email_service import enviar_otp, enviar_verificacao, enviar_reset_senha
 
@@ -180,7 +180,7 @@ def verificar_email(token: str, db: Session = Depends(get_db)):
 
 
 @router.post("/login")
-def login(dados: LoginRequest, request: Request, db: Session = Depends(get_db)):
+def login(dados: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
     ip = request.client.host if request.client else "unknown"
 
     if not _checar_rate_limit(ip):
@@ -213,12 +213,13 @@ def login(dados: LoginRequest, request: Request, db: Session = Depends(get_db)):
         return {"requires_2fa": True, "email": email}
 
     token = criar_token(usuario.id, remember_me=dados.remember_me)
+    definir_cookie_auth(response, token, dados.remember_me)
     logger.info(f"Usuário logado: {email}")
-    return {"access_token": token, "token_type": "bearer"}
+    return {"message": "Login realizado com sucesso"}
 
 
 @router.post("/verify-otp")
-def verify_otp(dados: VerificarOTPRequest, request: Request, db: Session = Depends(get_db)):
+def verify_otp(dados: VerificarOTPRequest, request: Request, response: Response, db: Session = Depends(get_db)):
     ip = request.client.host if request.client else "unknown"
     if not _checar_rate_limit(f"otp:{ip}"):
         raise HTTPException(status_code=429, detail="Muitas tentativas. Aguarde 15 minutos.")
@@ -243,8 +244,15 @@ def verify_otp(dados: VerificarOTPRequest, request: Request, db: Session = Depen
     db.commit()
 
     token = criar_token(usuario.id, remember_me=dados.remember_me)
+    definir_cookie_auth(response, token, dados.remember_me)
     logger.info(f"2FA verificado com sucesso: {email}")
-    return {"access_token": token, "token_type": "bearer"}
+    return {"message": "Login realizado com sucesso"}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    limpar_cookie_auth(response)
+    return {"message": "Logout realizado com sucesso"}
 
 
 @router.post("/toggle-2fa")

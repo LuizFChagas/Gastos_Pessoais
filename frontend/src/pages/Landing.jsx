@@ -369,8 +369,8 @@ function Landing() {
 
   /* Redirect if already logged in */
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) navigate("/app");
+    const autenticado = localStorage.getItem("finly_auth") || sessionStorage.getItem("finly_auth");
+    if (autenticado) navigate("/app");
   }, [navigate]);
 
   /* Scroll-triggered animations via IntersectionObserver */

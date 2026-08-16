@@ -48,3 +48,8 @@ export const verificarEmailToken = async (token) => {
   const response = await api.get(`/auth/verificar-email?token=${token}`);
   return response.data;
 };
+
+export const logout = async () => {
+  const response = await api.post("/auth/logout");
+  return response.data;
+};
