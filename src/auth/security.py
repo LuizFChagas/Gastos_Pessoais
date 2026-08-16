@@ -3,6 +3,7 @@ from jose import jwt, JWTError
 
 from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.core.config import SECRET_KEY
@@ -87,6 +88,19 @@ def pegar_usuario_logado(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido"
         )
+
+
+def get_db_autenticado(
+    usuario_id: int = Depends(pegar_usuario_logado),
+    db: Session = Depends(get_db),
+) -> Session:
+    """Sessão de banco com o contexto do usuário logado já setado pra RLS
+    (SET LOCAL via set_config — o comando SET puro não aceita bind parameter).
+    Usar no lugar de get_db em toda rota que também dependa de
+    pegar_usuario_logado; o FastAPI cacheia a resolução por request, então
+    o JWT não é decodificado duas vezes."""
+    db.execute(text("SELECT set_config('app.current_user_id', :uid, true)"), {"uid": str(usuario_id)})
+    return db
 
 
 def exigir_premium(

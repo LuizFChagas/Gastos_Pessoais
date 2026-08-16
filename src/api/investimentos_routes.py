@@ -4,9 +4,8 @@ from typing import Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from src.database.deps import get_db
 from src.database.models import Investimento, Aporte
-from src.auth.security import exigir_premium
+from src.auth.security import exigir_premium, get_db_autenticado
 
 router = APIRouter()
 
@@ -60,7 +59,7 @@ def _serialize_aporte(a):
 @router.get("/")
 def listar_investimentos(
     usuario_id: int = Depends(exigir_premium),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     itens = db.query(Investimento).filter(
         Investimento.usuario_id == usuario_id
@@ -72,7 +71,7 @@ def listar_investimentos(
 def criar_investimento(
     req: InvestimentoRequest,
     usuario_id: int = Depends(exigir_premium),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     inv = Investimento(
         usuario_id        = usuario_id,
@@ -95,7 +94,7 @@ def editar_investimento(
     inv_id: int,
     req: InvestimentoRequest,
     usuario_id: int = Depends(exigir_premium),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     inv = db.query(Investimento).filter(
         Investimento.id == inv_id,
@@ -119,7 +118,7 @@ def editar_investimento(
 def deletar_investimento(
     inv_id: int,
     usuario_id: int = Depends(exigir_premium),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     inv = db.query(Investimento).filter(
         Investimento.id == inv_id,
@@ -138,7 +137,7 @@ def deletar_investimento(
 def listar_aportes(
     inv_id: int,
     usuario_id: int = Depends(exigir_premium),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     inv = db.query(Investimento).filter(
         Investimento.id == inv_id,
@@ -148,7 +147,8 @@ def listar_aportes(
         raise HTTPException(status_code=404, detail="Investimento não encontrado")
 
     aportes = db.query(Aporte).filter(
-        Aporte.investimento_id == inv_id
+        Aporte.investimento_id == inv_id,
+        Aporte.usuario_id == usuario_id
     ).order_by(Aporte.data.desc()).all()
     return [_serialize_aporte(a) for a in aportes]
 
@@ -158,7 +158,7 @@ def criar_aporte(
     inv_id: int,
     req: AporteRequest,
     usuario_id: int = Depends(exigir_premium),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     inv = db.query(Investimento).filter(
         Investimento.id == inv_id,
@@ -191,7 +191,7 @@ def criar_aporte(
 def deletar_aporte(
     aporte_id: int,
     usuario_id: int = Depends(exigir_premium),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_autenticado)
 ):
     aporte = db.query(Aporte).filter(
         Aporte.id == aporte_id,
@@ -200,7 +200,10 @@ def deletar_aporte(
     if not aporte:
         raise HTTPException(status_code=404, detail="Aporte não encontrado")
 
-    inv = db.query(Investimento).filter(Investimento.id == aporte.investimento_id).first()
+    inv = db.query(Investimento).filter(
+        Investimento.id == aporte.investimento_id,
+        Investimento.usuario_id == usuario_id
+    ).first()
     if inv:
         inv.valor_investido = max(0, (inv.valor_investido or 0) - aporte.valor)
 

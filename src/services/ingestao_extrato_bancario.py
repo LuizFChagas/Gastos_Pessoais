@@ -8,7 +8,6 @@ import re
 import pandas as pd
 import logging
 
-from src.database.database import SessionLocal
 from src.database.models import Gasto
 from src.services.categorizador import categorizar
 
@@ -347,7 +346,7 @@ def _nome_pix_bate_usuario(nome_pix: str, nome_usuario_norm: str) -> bool:
     return False
 
 
-def _detectar_transferencias_internas(usuario_id: int, extrato_id: int, nome_usuario: str | None = None):
+def _detectar_transferencias_internas(db: Session, usuario_id: int, extrato_id: int, nome_usuario: str | None = None):
     """Detecta e marca pares entrada↔saída entre extratos diferentes como transferência interna.
     Ao importar um novo extrato, re-verifica TODOS os extratos do mesmo mês para garantir que
     pares já existentes também sejam detectados retroativamente."""
@@ -356,97 +355,89 @@ def _detectar_transferencias_internas(usuario_id: int, extrato_id: int, nome_usu
 
     nome_usuario_norm = _normalizar(nome_usuario) if nome_usuario else None
 
-    db = SessionLocal()
-    try:
-        # Descobre o mês/ano do novo extrato para escanear todo o período
-        referencia = db.query(Gasto).filter(Gasto.extrato_id == extrato_id).first()
-        if not referencia:
-            return
+    # Descobre o mês/ano do novo extrato para escanear todo o período
+    referencia = db.query(Gasto).filter(Gasto.extrato_id == extrato_id).first()
+    if not referencia:
+        return
 
-        mes_ref = referencia.data_hora.month
-        ano_ref = referencia.data_hora.year
+    mes_ref = referencia.data_hora.month
+    ano_ref = referencia.data_hora.year
 
-        # Busca TODAS as transações não-internas do usuário naquele mês (todos os extratos)
-        from sqlalchemy import extract as sa_extract
-        candidatas = db.query(Gasto).filter(
-            Gasto.usuario_id == usuario_id,
-            Gasto.transferencia_interna.isnot(True),
-            sa_extract("month", Gasto.data_hora) == mes_ref,
-            sa_extract("year",  Gasto.data_hora) == ano_ref,
-        ).all()
+    # Busca TODAS as transações não-internas do usuário naquele mês (todos os extratos)
+    from sqlalchemy import extract as sa_extract
+    candidatas = db.query(Gasto).filter(
+        Gasto.usuario_id == usuario_id,
+        Gasto.transferencia_interna.isnot(True),
+        sa_extract("month", Gasto.data_hora) == mes_ref,
+        sa_extract("year",  Gasto.data_hora) == ano_ref,
+    ).all()
 
-        for nova in candidatas:
-            if nova.transferencia_interna:
+    for nova in candidatas:
+        if nova.transferencia_interna:
+            continue
+
+        # Pix com nome → valida se é o próprio usuário (bigrama)
+        nome_pix = _extrair_nome_pix(nova.descricao or "")
+        if nome_pix is not None:
+            if not nome_usuario_norm:
+                continue
+            if not _nome_pix_bate_usuario(nome_pix, nome_usuario_norm):
                 continue
 
-            # Pix com nome → valida se é o próprio usuário (bigrama)
-            nome_pix = _extrair_nome_pix(nova.descricao or "")
-            if nome_pix is not None:
-                if not nome_usuario_norm:
-                    continue
-                if not _nome_pix_bate_usuario(nome_pix, nome_usuario_norm):
-                    continue
+        tipo_oposto = "saida" if nova.tipo == "entrada" else "entrada"
+        data_min = nova.data_hora - timedelta(days=1)
+        data_max = nova.data_hora + timedelta(days=1)
 
-            tipo_oposto = "saida" if nova.tipo == "entrada" else "entrada"
-            data_min = nova.data_hora - timedelta(days=1)
-            data_max = nova.data_hora + timedelta(days=1)
+        par = db.query(Gasto).filter(
+            Gasto.usuario_id == usuario_id,
+            Gasto.tipo == tipo_oposto,
+            Gasto.valor.between(nova.valor - 0.01, nova.valor + 0.01),
+            Gasto.data_hora >= data_min,
+            Gasto.data_hora <= data_max,
+            Gasto.extrato_id != nova.extrato_id,
+            Gasto.transferencia_interna.isnot(True),
+            Gasto.id != nova.id
+        ).first()
 
-            par = db.query(Gasto).filter(
-                Gasto.usuario_id == usuario_id,
-                Gasto.tipo == tipo_oposto,
-                Gasto.valor.between(nova.valor - 0.01, nova.valor + 0.01),
-                Gasto.data_hora >= data_min,
-                Gasto.data_hora <= data_max,
-                Gasto.extrato_id != nova.extrato_id,
-                Gasto.transferencia_interna.isnot(True),
-                Gasto.id != nova.id
-            ).first()
+        if par:
+            nova.transferencia_interna = True
+            par.transferencia_interna = True
+            logger.info(
+                f"Transferência interna: R${nova.valor:.2f} "
+                f"({nova.banco} ↔ {par.banco}) em {nova.data_hora.date()}"
+            )
 
-            if par:
-                nova.transferencia_interna = True
-                par.transferencia_interna = True
-                logger.info(
-                    f"Transferência interna: R${nova.valor:.2f} "
-                    f"({nova.banco} ↔ {par.banco}) em {nova.data_hora.date()}"
-                )
-
-        db.commit()
-    finally:
-        db.close()
+    db.commit()
 
 
-def _buscar_historico_categorias(usuario_id: int) -> dict:
+def _buscar_historico_categorias(db: Session, usuario_id: int) -> dict:
     """Retorna mapa {descricao_normalizada: categoria} com base no histórico do usuário.
     Prioridade: categorias marcadas manualmente > mais recente por data."""
-    db = SessionLocal()
-    try:
-        # Primeira passada: categorias automáticas (por data crescente, a mais recente vence)
-        resultados = db.query(Gasto.descricao, Gasto.categoria, Gasto.data_hora).filter(
-            Gasto.usuario_id == usuario_id,
-            Gasto.categoria_manual.isnot(True)
-        ).order_by(Gasto.data_hora.asc()).all()
+    # Primeira passada: categorias automáticas (por data crescente, a mais recente vence)
+    resultados = db.query(Gasto.descricao, Gasto.categoria, Gasto.data_hora).filter(
+        Gasto.usuario_id == usuario_id,
+        Gasto.categoria_manual.isnot(True)
+    ).order_by(Gasto.data_hora.asc()).all()
 
-        historico = {}
-        for r in resultados:
-            if r.descricao and r.categoria:
-                historico[_normalizar(r.descricao)] = r.categoria
+    historico = {}
+    for r in resultados:
+        if r.descricao and r.categoria:
+            historico[_normalizar(r.descricao)] = r.categoria
 
-        # Segunda passada: categorias manuais sobrescrevem sempre
-        manuais = db.query(Gasto.descricao, Gasto.categoria).filter(
-            Gasto.usuario_id == usuario_id,
-            Gasto.categoria_manual == True
-        ).all()
+    # Segunda passada: categorias manuais sobrescrevem sempre
+    manuais = db.query(Gasto.descricao, Gasto.categoria).filter(
+        Gasto.usuario_id == usuario_id,
+        Gasto.categoria_manual == True
+    ).all()
 
-        for r in manuais:
-            if r.descricao and r.categoria:
-                historico[_normalizar(r.descricao)] = r.categoria
+    for r in manuais:
+        if r.descricao and r.categoria:
+            historico[_normalizar(r.descricao)] = r.categoria
 
-        return historico
-    finally:
-        db.close()
+    return historico
 
 
-def _parsear_extrato(caminho_extrato, usuario_id):
+def _parsear_extrato(db: Session, caminho_extrato, usuario_id):
     """Lê o CSV, detecta o formato/colunas e devolve (formato, transacoes_ajustadas)
     SEM tocar no banco de dados. Usado tanto pela importação de verdade quanto
     pela pré-visualização (preview) antes de confirmar."""
@@ -518,7 +509,7 @@ def _parsear_extrato(caminho_extrato, usuario_id):
                 continue
 
     # Carrega histórico de categorias do usuário para herdar correções em meses futuros
-    historico_categorias = _buscar_historico_categorias(usuario_id)
+    historico_categorias = _buscar_historico_categorias(db, usuario_id)
 
     # Primeira passada: coleta todas as transações válidas
     transacoes = []
@@ -612,10 +603,10 @@ def _parsear_extrato(caminho_extrato, usuario_id):
     return formato, transacoes_ajustadas
 
 
-def pre_visualizar_extrato(caminho_extrato, usuario_id):
+def pre_visualizar_extrato(db: Session, caminho_extrato, usuario_id):
     """Faz o parsing do CSV sem persistir nada no banco — usado pela tela de
     conferência antes do usuário confirmar a importação de verdade."""
-    formato, transacoes_ajustadas = _parsear_extrato(caminho_extrato, usuario_id)
+    formato, transacoes_ajustadas = _parsear_extrato(db, caminho_extrato, usuario_id)
     return {
         "formato": formato,
         "total": len(transacoes_ajustadas),
@@ -634,11 +625,8 @@ def pre_visualizar_extrato(caminho_extrato, usuario_id):
     }
 
 
-def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, nome_usuario=None):
-    formato, transacoes_ajustadas = _parsear_extrato(caminho_extrato, usuario_id)
-
-    # Persiste no banco
-    db: Session = SessionLocal()
+def importar_extrato(db: Session, caminho_extrato, usuario_id, extrato_id=None, banco=None, nome_usuario=None):
+    formato, transacoes_ajustadas = _parsear_extrato(db, caminho_extrato, usuario_id)
 
     for descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela, forma_pagamento in transacoes_ajustadas:
         existe = db.query(Gasto).filter(
@@ -667,7 +655,6 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
         db.add(gasto)
 
     db.commit()
-    db.close()
 
     logger.info(
         f"Importação finalizada para usuário {usuario_id} "
@@ -675,4 +662,4 @@ def importar_extrato(caminho_extrato, usuario_id, extrato_id=None, banco=None, n
     )
 
     # Detecta transferências internas entre contas do mesmo usuário
-    _detectar_transferencias_internas(usuario_id, extrato_id, nome_usuario=nome_usuario)
+    _detectar_transferencias_internas(db, usuario_id, extrato_id, nome_usuario=nome_usuario)
