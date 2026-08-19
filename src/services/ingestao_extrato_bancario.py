@@ -388,16 +388,20 @@ def _detectar_transferencias_internas(db: Session, usuario_id: int, extrato_id: 
         data_min = nova.data_hora - timedelta(days=1)
         data_max = nova.data_hora + timedelta(days=1)
 
-        par = db.query(Gasto).filter(
-            Gasto.usuario_id == usuario_id,
-            Gasto.tipo == tipo_oposto,
-            Gasto.valor.between(nova.valor - 0.01, nova.valor + 0.01),
-            Gasto.data_hora >= data_min,
-            Gasto.data_hora <= data_max,
-            Gasto.extrato_id != nova.extrato_id,
-            Gasto.transferencia_interna.isnot(True),
-            Gasto.id != nova.id
-        ).first()
+        # valor é criptografado (não compara/filtra no SQL) — filtra em Python
+        # dentro do conjunto já restrito de "candidatas" (mesmo usuário/mês)
+        par = next(
+            (
+                c for c in candidatas
+                if c.tipo == tipo_oposto
+                and abs(c.valor - nova.valor) <= 0.01
+                and data_min <= c.data_hora <= data_max
+                and c.extrato_id != nova.extrato_id
+                and not c.transferencia_interna
+                and c.id != nova.id
+            ),
+            None,
+        )
 
         if par:
             nova.transferencia_interna = True
@@ -629,12 +633,16 @@ def importar_extrato(db: Session, caminho_extrato, usuario_id, extrato_id=None, 
     formato, transacoes_ajustadas = _parsear_extrato(db, caminho_extrato, usuario_id)
 
     for descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela, forma_pagamento in transacoes_ajustadas:
-        existe = db.query(Gasto).filter(
+        # descricao/valor são criptografados (não comparam no SQL) — filtra
+        # em Python dentro do conjunto já restrito por usuario_id + data_hora
+        candidatos_duplicata = db.query(Gasto).filter(
             Gasto.usuario_id == usuario_id,
-            Gasto.descricao == descricao,
-            Gasto.valor == valor_abs,
             Gasto.data_hora == data_hora
-        ).first()
+        ).all()
+        existe = any(
+            c.descricao == descricao and c.valor == valor_abs
+            for c in candidatos_duplicata
+        )
 
         if existe:
             continue

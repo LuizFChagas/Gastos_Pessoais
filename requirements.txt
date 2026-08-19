@@ -7,6 +7,7 @@ python-multipart==0.0.31
 pydantic==2.12.5
 bcrypt==4.0.1
 python-jose[cryptography]==3.5.0
+cryptography==46.0.5
 python-dotenv==1.2.2
 alembic==1.18.4
 openpyxl==3.1.5

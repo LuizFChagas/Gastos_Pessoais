@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, extract
+from sqlalchemy import extract
 
 from src.database.models import Gasto, Extrato, Usuario
 
@@ -292,18 +292,19 @@ def gastos_por_dia(
     usuario_id: int = Depends(pegar_usuario_logado),
     db: Session = Depends(get_db_autenticado)
 ):
-    resultados = db.query(
-        func.date(Gasto.data_hora).label("data"),
-        func.sum(Gasto.valor).label("total")
-    ).filter(
+    # valor é criptografado (não soma no SQL) — soma em Python depois de decifrado
+    gastos = db.query(Gasto.data_hora, Gasto.valor).filter(
         Gasto.usuario_id == usuario_id,
         Gasto.tipo == "saida",
         Gasto.transferencia_interna.isnot(True)
-    ).group_by(
-        func.date(Gasto.data_hora)
     ).all()
 
-    return [{"data": str(r.data), "total": float(r.total)} for r in resultados]
+    totais_por_dia: dict[str, float] = {}
+    for data_hora, valor in gastos:
+        chave = data_hora.date().isoformat()
+        totais_por_dia[chave] = totais_por_dia.get(chave, 0) + float(valor)
+
+    return [{"data": data, "total": total} for data, total in totais_por_dia.items()]
 
 
 # ✅ GASTOS POR CATEGORIA (SOMENTE SAÍDA)
@@ -312,18 +313,18 @@ def gastos_por_categoria(
     usuario_id: int = Depends(pegar_usuario_logado),
     db: Session = Depends(get_db_autenticado)
 ):
-    resultados = db.query(
-        Gasto.categoria,
-        func.sum(Gasto.valor).label("total")
-    ).filter(
+    # valor é criptografado (não soma no SQL) — soma em Python depois de decifrado
+    gastos = db.query(Gasto.categoria, Gasto.valor).filter(
         Gasto.usuario_id == usuario_id,
         Gasto.tipo == "saida",
         Gasto.transferencia_interna.isnot(True)
-    ).group_by(
-        Gasto.categoria
     ).all()
 
-    return [{"categoria": r.categoria, "total": float(r.total)} for r in resultados]
+    totais_por_categoria: dict[str, float] = {}
+    for categoria, valor in gastos:
+        totais_por_categoria[categoria] = totais_por_categoria.get(categoria, 0) + float(valor)
+
+    return [{"categoria": categoria, "total": total} for categoria, total in totais_por_categoria.items()]
 
 
 @router.get("/dashboard/resumo")
@@ -449,13 +450,14 @@ def top_maiores_gastos(
     usuario_id: int = Depends(pegar_usuario_logado),
     db: Session = Depends(get_db_autenticado)
 ):
-    gastos = db.query(Gasto).filter(
+    # valor é criptografado (não ordena no SQL) — busca tudo e ordena em Python
+    gastos_todos = db.query(Gasto).filter(
         Gasto.usuario_id == usuario_id,
         Gasto.tipo == "saida",
         Gasto.transferencia_interna.isnot(True)
-    ).order_by(
-        desc(Gasto.valor)
-    ).limit(limite).all()
+    ).all()
+
+    gastos = sorted(gastos_todos, key=lambda g: g.valor, reverse=True)[:limite]
 
     return [
         {
