@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from src.database.database import Base
+from src.database.crypto_types import EncryptedString, EncryptedFloat
 
 
 class Usuario(Base):
@@ -31,7 +32,7 @@ class Extrato(Base):
     __tablename__ = "extratos"
 
     id = Column(Integer, primary_key=True, index=True)
-    nome_arquivo = Column(String)
+    nome_arquivo = Column(EncryptedString)
     banco = Column(String)
     data_importacao = Column(DateTime, default=datetime.utcnow)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), index=True)
@@ -44,8 +45,8 @@ class Gasto(Base):
     __tablename__ = "gastos"
 
     id = Column(Integer, primary_key=True, index=True)
-    descricao = Column(String)
-    valor = Column(Float)
+    descricao = Column(EncryptedString)
+    valor = Column(EncryptedFloat)
     categoria = Column(String, index=True)
     banco = Column(String, index=True)
     tipo = Column(String, index=True)
@@ -83,13 +84,13 @@ class Investimento(Base):
 
     id                = Column(Integer, primary_key=True, index=True)
     usuario_id        = Column(Integer, ForeignKey("usuarios.id"), index=True)
-    nome              = Column(String)
-    ticker            = Column(String, nullable=True)
+    nome              = Column(EncryptedString)
+    ticker            = Column(EncryptedString, nullable=True)
     tipo              = Column(String)           # renda_fixa | acoes | fiis | cripto | outros
-    valor_investido   = Column(Float, default=0)
-    valor_atual       = Column(Float, default=0)
-    rentabilidade_mes = Column(Float, default=0) # % no mês
-    rentabilidade_ano = Column(Float, default=0) # % no ano
+    valor_investido   = Column(EncryptedFloat, default=0)
+    valor_atual       = Column(EncryptedFloat, default=0)
+    rentabilidade_mes = Column(EncryptedFloat, default=0) # % no mês
+    rentabilidade_ano = Column(EncryptedFloat, default=0) # % no ano
     criado_em         = Column(DateTime, default=datetime.utcnow)
 
     usuario  = relationship("Usuario")
@@ -103,10 +104,10 @@ class Aporte(Base):
     investimento_id = Column(Integer, ForeignKey("investimentos.id"), index=True)
     usuario_id      = Column(Integer, ForeignKey("usuarios.id"), index=True)
     data            = Column(DateTime, default=datetime.utcnow)
-    quantidade      = Column(Float, nullable=True)    # nº de ações/cotas (opcional)
-    preco_unitario  = Column(Float, nullable=True)    # preço por unidade (opcional)
-    valor           = Column(Float)                   # valor total do aporte
-    nota            = Column(String, nullable=True)
+    quantidade      = Column(EncryptedFloat, nullable=True)    # nº de ações/cotas (opcional)
+    preco_unitario  = Column(EncryptedFloat, nullable=True)    # preço por unidade (opcional)
+    valor           = Column(EncryptedFloat)                   # valor total do aporte
+    nota            = Column(EncryptedString, nullable=True)
 
     investimento = relationship("Investimento", back_populates="aportes")
 

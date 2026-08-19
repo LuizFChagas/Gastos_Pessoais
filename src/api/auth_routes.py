@@ -324,12 +324,11 @@ def me(usuario_id: int = Depends(pegar_usuario_logado), db: Session = Depends(ge
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
     total_transacoes = db.query(func.count(Gasto.id)).filter(Gasto.usuario_id == usuario_id).scalar() or 0
-    total_entradas   = db.query(func.coalesce(func.sum(Gasto.valor), 0)).filter(
-        Gasto.usuario_id == usuario_id, Gasto.tipo == "entrada"
-    ).scalar() or 0
-    total_saidas     = db.query(func.coalesce(func.sum(Gasto.valor), 0)).filter(
-        Gasto.usuario_id == usuario_id, Gasto.tipo == "saida", Gasto.valor > 0
-    ).scalar() or 0
+
+    # valor é criptografado (não soma/compara no SQL) — soma em Python depois de decifrado
+    gastos_tipo_valor = db.query(Gasto.tipo, Gasto.valor).filter(Gasto.usuario_id == usuario_id).all()
+    total_entradas = sum(float(v) for t, v in gastos_tipo_valor if t == "entrada")
+    total_saidas   = sum(float(v) for t, v in gastos_tipo_valor if t == "saida" and v > 0)
 
     criado_em = usuario.criado_em
     if not criado_em:
