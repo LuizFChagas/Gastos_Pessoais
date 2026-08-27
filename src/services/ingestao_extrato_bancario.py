@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from datetime import datetime, timedelta
@@ -411,6 +412,7 @@ def _detectar_transferencias_internas(db: Session, usuario_id: int, extrato_id: 
                 f"({nova.banco} ↔ {par.banco}) em {nova.data_hora.date()}"
             )
 
+    db.execute(text("SELECT set_config('app.current_user_id', :uid, false)"), {"uid": str(usuario_id)})
     db.commit()
 
 
@@ -662,6 +664,7 @@ def importar_extrato(db: Session, caminho_extrato, usuario_id, extrato_id=None, 
         )
         db.add(gasto)
 
+    db.execute(text("SELECT set_config('app.current_user_id', :uid, false)"), {"uid": str(usuario_id)})
     db.commit()
 
     logger.info(
