@@ -99,7 +99,7 @@ def get_db_autenticado(
     Usar no lugar de get_db em toda rota que também dependa de
     pegar_usuario_logado; o FastAPI cacheia a resolução por request, então
     o JWT não é decodificado duas vezes."""
-    db.execute(text("SELECT set_config('app.current_user_id', :uid, true)"), {"uid": str(usuario_id)})
+    db.execute(text("SELECT set_config('app.current_user_id', :uid, false)"), {"uid": str(usuario_id)})
     return db
 
 
