@@ -173,12 +173,13 @@ def importar_extrato_bancario(
             usuario_id=usuario_id
         )
         db.add(extrato)
+        db.flush()
+        extrato_id = extrato.id
         db.commit()
-        db.refresh(extrato)
 
         usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
         nome_usuario = usuario.nome if usuario else None
-        importar_extrato(db, caminho_temp, usuario_id, extrato_id=extrato.id, banco=banco, nome_usuario=nome_usuario)
+        importar_extrato(db, caminho_temp, usuario_id, extrato_id=extrato_id, banco=banco, nome_usuario=nome_usuario)
 
         processar_gastos_fixos(db, usuario_id)
 
@@ -187,7 +188,7 @@ def importar_extrato_bancario(
         return {
             "message": "Extrato importado com sucesso",
             "arquivo": file.filename,
-            "extrato_id": extrato.id
+            "extrato_id": extrato_id
         }
     finally:
         caminho_temp.unlink(missing_ok=True)
