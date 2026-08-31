@@ -173,8 +173,9 @@ def _extrair_parcela(titulo: str):
 
 def _parse_valor_brl(v) -> float:
     """Converte valor monetário aceitando tanto '50.70' quanto '50,70'
-    (e '1.234,56' com separador de milhar) para float."""
-    s = str(v).strip().replace(" ", "")
+    (e '1.234,56' com separador de milhar) para float.
+    Também aceita prefixo 'R$' (ex: extratos Itaú)."""
+    s = str(v).strip().replace(" ", "").replace("R$", "")
     if "," in s:
         s = s.replace(".", "").replace(",", ".")
     return float(s)
