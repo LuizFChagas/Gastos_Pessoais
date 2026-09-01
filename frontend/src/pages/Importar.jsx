@@ -21,6 +21,7 @@ function Importar() {
   const [preview, setPreview] = useState(null);
   const [carregandoPreview, setCarregandoPreview] = useState(false);
   const [erroPreview, setErroPreview] = useState(null);
+  const [tipoDocumento, setTipoDocumento] = useState(null); // "fatura" | "extrato" — null até o preview detectar
 
   useEffect(() => {
     carregarHistorico();
@@ -39,20 +40,23 @@ function Importar() {
     if (!file) return;
     setArquivo(file);
     setStep(2);
-    buscarPreview(file);
+    setTipoDocumento(null);
+    buscarPreview(file, null);
   };
 
   const handleFileChange = (e) => selecionarArquivo(e.target.files[0]);
   const handleDrop = (e) => { e.preventDefault(); selecionarArquivo(e.dataTransfer.files[0]); };
   const handleDragOver = (e) => e.preventDefault();
 
-  const buscarPreview = async (file) => {
+  const buscarPreview = async (file, tipoDocumentoEscolhido) => {
     setPreview(null);
     setErroPreview(null);
     setCarregandoPreview(true);
     try {
-      const data = await previewExtrato(file);
+      const data = await previewExtrato(file, tipoDocumentoEscolhido);
       setPreview(data);
+      // só adota o palpite automático se o usuário ainda não escolheu manualmente
+      if (!tipoDocumentoEscolhido) setTipoDocumento(data.tipo_documento_detectado);
     } catch (e) {
       const msg = e?.response?.data?.detail || "Não foi possível ler esse arquivo.";
       setErroPreview(msg);
@@ -61,10 +65,16 @@ function Importar() {
     }
   };
 
+  const escolherTipoDocumento = (tipo) => {
+    setTipoDocumento(tipo);
+    if (arquivo) buscarPreview(arquivo, tipo);
+  };
+
   const cancelarArquivo = () => {
     setArquivo(null);
     setPreview(null);
     setErroPreview(null);
+    setTipoDocumento(null);
     setStep(1);
   };
 
@@ -79,12 +89,13 @@ function Importar() {
     setStep(3);
 
     try {
-      await importarExtrato(arquivo, banco);
+      await importarExtrato(arquivo, banco, tipoDocumento);
       await carregarHistorico();
       setStep(1);
       setArquivo(null);
       setBanco("");
       setPreview(null);
+      setTipoDocumento(null);
     } catch (e) {
       const msg = e?.response?.data?.detail || "Erro ao processar o arquivo.";
       setErro(msg);
@@ -279,6 +290,39 @@ function Importar() {
                 Banco detectado automaticamente — confira os valores abaixo
               </span>
             )}
+          </div>
+
+          {/* TIPO DE DOCUMENTO — fatura força tudo pra crédito; extrato mantém Pix/débito por transação */}
+          <div style={{
+            padding: "10px 16px", borderBottom: "1px solid var(--border)",
+            display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap"
+          }}>
+            <span style={{ fontSize: "12px", color: "var(--subtext)" }}>Isso é:</span>
+            <div style={{ display: "flex", gap: "6px" }}>
+              {[
+                { valor: "extrato", rotulo: "Extrato bancário (Pix/Débito)" },
+                { valor: "fatura", rotulo: "Fatura de cartão (Crédito)" },
+              ].map(({ valor, rotulo }) => (
+                <button
+                  key={valor}
+                  onClick={() => escolherTipoDocumento(valor)}
+                  disabled={carregandoPreview}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: `1px solid ${tipoDocumento === valor ? "#10b981" : "var(--border)"}`,
+                    background: tipoDocumento === valor ? "rgba(16,185,129,0.15)" : "var(--input)",
+                    color: tipoDocumento === valor ? "#10b981" : "var(--subtext)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: carregandoPreview ? "not-allowed" : "pointer",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  {rotulo}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div style={{ maxHeight: "280px", overflowY: "auto" }}>

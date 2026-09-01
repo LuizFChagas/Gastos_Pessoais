@@ -142,16 +142,21 @@ def _salvar_csv_temp(file: UploadFile) -> Path:
     return caminho_temp
 
 
+TIPOS_DOCUMENTO_VALIDOS = ("fatura", "extrato")
+
+
 # ✅ PRÉ-VISUALIZAR EXTRATO (sem salvar nada no banco)
 @router.post("/importar/preview")
 def preview_extrato_bancario(
     file: UploadFile = File(...),
+    tipo_documento: str = "",
     usuario_id: int = Depends(pegar_usuario_logado),
     db: Session = Depends(get_db_autenticado)
 ):
+    tipo_documento_forcado = tipo_documento if tipo_documento in TIPOS_DOCUMENTO_VALIDOS else None
     caminho_temp = _salvar_csv_temp(file)
     try:
-        return pre_visualizar_extrato(db, caminho_temp, usuario_id)
+        return pre_visualizar_extrato(db, caminho_temp, usuario_id, tipo_documento_forcado)
     finally:
         caminho_temp.unlink(missing_ok=True)
 
@@ -161,9 +166,11 @@ def preview_extrato_bancario(
 def importar_extrato_bancario(
     file: UploadFile = File(...),
     banco: str = "",
+    tipo_documento: str = "",
     usuario_id: int = Depends(pegar_usuario_logado),
     db: Session = Depends(get_db_autenticado)
 ):
+    tipo_documento_forcado = tipo_documento if tipo_documento in TIPOS_DOCUMENTO_VALIDOS else None
     caminho_temp = _salvar_csv_temp(file)
 
     try:
@@ -179,7 +186,10 @@ def importar_extrato_bancario(
 
         usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
         nome_usuario = usuario.nome if usuario else None
-        importar_extrato(db, caminho_temp, usuario_id, extrato_id=extrato_id, banco=banco, nome_usuario=nome_usuario)
+        importar_extrato(
+            db, caminho_temp, usuario_id, extrato_id=extrato_id, banco=banco,
+            nome_usuario=nome_usuario, tipo_documento_forcado=tipo_documento_forcado
+        )
 
         processar_gastos_fixos(db, usuario_id)
 

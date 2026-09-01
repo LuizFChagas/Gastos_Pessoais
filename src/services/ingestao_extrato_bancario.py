@@ -46,15 +46,32 @@ def _is_pagamento_fatura(descricao: str) -> bool:
 def _is_ignorar_conta(descricao: str) -> bool:
     return any(k in descricao.lower() for k in KEYWORDS_IGNORAR_CONTA)
 
-def _inferir_forma_pagamento(formato: str, descricao: str) -> str:
+FORMATOS_FATURA = ("nubank_fatura", "c6_fatura")
+
+
+def _tipo_documento_detectado(formato: str) -> str:
+    """'fatura' pros formatos de fatura de cartão conhecidos, 'extrato' pro resto
+    (conta corrente ou formato genérico/não reconhecido)."""
+    return "fatura" if formato in FORMATOS_FATURA else "extrato"
+
+
+def _inferir_forma_pagamento(formato: str, descricao: str, tipo_documento_forcado: str | None = None) -> str:
     """Infere a forma de pagamento a partir do formato do extrato/fatura e da
     descrição, pra já popular o campo de verdade na importação (em vez de só
-    inferir na hora de exibir, como era feito antes)."""
+    inferir na hora de exibir, como era feito antes).
+
+    tipo_documento_forcado ('fatura' | 'extrato') deixa o usuário corrigir o
+    palpite automático na tela de conferência — importante pro formato
+    genérico (banco não reconhecido), que hoje sempre cai em 'extrato' mesmo
+    quando o arquivo é uma fatura de cartão."""
     if descricao.strip().startswith("Pix"):
         return "pix"
-    if formato in ("nubank_fatura", "c6_fatura"):
-        return "credito"
-    return "debito"
+    eh_fatura = (
+        tipo_documento_forcado == "fatura"
+        if tipo_documento_forcado
+        else formato in FORMATOS_FATURA
+    )
+    return "credito" if eh_fatura else "debito"
 
 def _normalizar(texto: str) -> str:
     """Remove acentos e converte para minúsculo — usado para comparar nomes de colunas."""
@@ -444,7 +461,7 @@ def _buscar_historico_categorias(db: Session, usuario_id: int) -> dict:
     return historico
 
 
-def _parsear_extrato(db: Session, caminho_extrato, usuario_id):
+def _parsear_extrato(db: Session, caminho_extrato, usuario_id, tipo_documento_forcado: str | None = None):
     """Lê o CSV, detecta o formato/colunas e devolve (formato, transacoes_ajustadas)
     SEM tocar no banco de dados. Usado tanto pela importação de verdade quanto
     pela pré-visualização (preview) antes de confirmar."""
@@ -578,7 +595,7 @@ def _parsear_extrato(db: Session, caminho_extrato, usuario_id):
             if categoria_historica:
                 categoria = categoria_historica
 
-            forma_pagamento = _inferir_forma_pagamento(formato, descricao)
+            forma_pagamento = _inferir_forma_pagamento(formato, descricao, tipo_documento_forcado)
 
             transacoes.append((descricao, valor_abs, data_hora, tipo, categoria, parcela, forma_pagamento))
 
@@ -610,12 +627,13 @@ def _parsear_extrato(db: Session, caminho_extrato, usuario_id):
     return formato, transacoes_ajustadas
 
 
-def pre_visualizar_extrato(db: Session, caminho_extrato, usuario_id):
+def pre_visualizar_extrato(db: Session, caminho_extrato, usuario_id, tipo_documento_forcado: str | None = None):
     """Faz o parsing do CSV sem persistir nada no banco — usado pela tela de
     conferência antes do usuário confirmar a importação de verdade."""
-    formato, transacoes_ajustadas = _parsear_extrato(db, caminho_extrato, usuario_id)
+    formato, transacoes_ajustadas = _parsear_extrato(db, caminho_extrato, usuario_id, tipo_documento_forcado)
     return {
         "formato": formato,
+        "tipo_documento_detectado": _tipo_documento_detectado(formato),
         "total": len(transacoes_ajustadas),
         "transacoes": [
             {
@@ -632,8 +650,8 @@ def pre_visualizar_extrato(db: Session, caminho_extrato, usuario_id):
     }
 
 
-def importar_extrato(db: Session, caminho_extrato, usuario_id, extrato_id=None, banco=None, nome_usuario=None):
-    formato, transacoes_ajustadas = _parsear_extrato(db, caminho_extrato, usuario_id)
+def importar_extrato(db: Session, caminho_extrato, usuario_id, extrato_id=None, banco=None, nome_usuario=None, tipo_documento_forcado: str | None = None):
+    formato, transacoes_ajustadas = _parsear_extrato(db, caminho_extrato, usuario_id, tipo_documento_forcado)
 
     for descricao, valor_abs, data_hora, tipo, categoria, data_original, parcela, forma_pagamento in transacoes_ajustadas:
         # descricao/valor são criptografados (não comparam no SQL) — filtra
