@@ -55,6 +55,16 @@ def _tipo_documento_detectado(formato: str) -> str:
     return "fatura" if formato in FORMATOS_FATURA else "extrato"
 
 
+def _eh_fatura(formato: str, tipo_documento_forcado: str | None) -> bool:
+    """Se o usuário corrigiu manualmente na tela de conferência, essa escolha
+    vence a detecção automática por formato — usado tanto pra forma de
+    pagamento quanto pra convenção de sinal (positivo = saída numa fatura,
+    positivo = entrada numa conta)."""
+    if tipo_documento_forcado:
+        return tipo_documento_forcado == "fatura"
+    return formato in FORMATOS_FATURA
+
+
 def _inferir_forma_pagamento(formato: str, descricao: str, tipo_documento_forcado: str | None = None) -> str:
     """Infere a forma de pagamento a partir do formato do extrato/fatura e da
     descrição, pra já popular o campo de verdade na importação (em vez de só
@@ -66,12 +76,7 @@ def _inferir_forma_pagamento(formato: str, descricao: str, tipo_documento_forcad
     quando o arquivo é uma fatura de cartão."""
     if descricao.strip().startswith("Pix"):
         return "pix"
-    eh_fatura = (
-        tipo_documento_forcado == "fatura"
-        if tipo_documento_forcado
-        else formato in FORMATOS_FATURA
-    )
-    return "credito" if eh_fatura else "debito"
+    return "credito" if _eh_fatura(formato, tipo_documento_forcado) else "debito"
 
 def _normalizar(texto: str) -> str:
     """Remove acentos e converte para minúsculo — usado para comparar nomes de colunas."""
@@ -571,16 +576,17 @@ def _parsear_extrato(db: Session, caminho_extrato, usuario_id, tipo_documento_fo
                     continue
 
             # Lógica de tipo por formato:
-            # - Fatura (nubank/c6): positivo = saída, negativo = entrada/estorno
-            # - Conta:  positivo = entrada, negativo = saída/estorno
-            if formato in ("nubank_fatura", "c6_fatura"):
+            # - Fatura (nubank/c6, ou formato genérico marcado como fatura na
+            #   conferência): positivo = saída, negativo = entrada/estorno
+            # - Conta/extrato: positivo = entrada, negativo = saída/estorno
+            if _eh_fatura(formato, tipo_documento_forcado):
                 if valor < 0 and _is_estorno(descricao):
                     tipo = "saida"
                     valor_abs = -abs(valor)
                 else:
                     tipo = "saida" if valor > 0 else "entrada"
                     valor_abs = abs(valor)
-            else:  # nubank_conta, c6_conta, bradesco_conta e legado
+            else:
                 if valor < 0 and _is_estorno(descricao):
                     tipo = "saida"
                     valor_abs = -abs(valor)
@@ -631,10 +637,23 @@ def pre_visualizar_extrato(db: Session, caminho_extrato, usuario_id, tipo_docume
     """Faz o parsing do CSV sem persistir nada no banco — usado pela tela de
     conferência antes do usuário confirmar a importação de verdade."""
     formato, transacoes_ajustadas = _parsear_extrato(db, caminho_extrato, usuario_id, tipo_documento_forcado)
+
+    avisos = []
+    if _eh_fatura(formato, tipo_documento_forcado):
+        n_entradas = sum(1 for t in transacoes_ajustadas if t[3] == "entrada")
+        if n_entradas > 0:
+            avisos.append(
+                f"{n_entradas} transaç{'ão' if n_entradas == 1 else 'ões'} "
+                f"marcada{'s' if n_entradas != 1 else ''} como entrada numa fatura "
+                "de cartão — incomum (fatura normalmente só tem gastos). "
+                "Confira se o arquivo é realmente uma fatura antes de importar."
+            )
+
     return {
         "formato": formato,
         "tipo_documento_detectado": _tipo_documento_detectado(formato),
         "total": len(transacoes_ajustadas),
+        "avisos": avisos,
         "transacoes": [
             {
                 "descricao": descricao,
