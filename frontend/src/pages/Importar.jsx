@@ -1,6 +1,20 @@
 import { useState, useEffect } from "react";
 import { importarExtrato, previewExtrato, listarExtratos, deletarExtrato } from "../api/gastosApi";
-import { FolderOpen, Upload, Trash2, CheckCircle, AlertTriangle, FileText } from "lucide-react";
+import { FolderOpen, Upload, Trash2, CheckCircle, AlertTriangle, FileText, Download } from "lucide-react";
+
+const MODELO_CSV = "Data,Descricao,Valor\n01/08/2026,Exemplo Supermercado,150.00\n02/08/2026,Exemplo Assinatura,39.90\n";
+
+const baixarModeloCsv = () => {
+  const blob = new Blob([MODELO_CSV], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "modelo-importacao-finly.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
 const fmtMoeda = (v) =>
   Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -21,6 +35,7 @@ function Importar() {
   const [preview, setPreview] = useState(null);
   const [carregandoPreview, setCarregandoPreview] = useState(false);
   const [erroPreview, setErroPreview] = useState(null);
+  const [tipoDocumento, setTipoDocumento] = useState(null); // "fatura" | "extrato" — null até o preview detectar
 
   useEffect(() => {
     carregarHistorico();
@@ -39,20 +54,23 @@ function Importar() {
     if (!file) return;
     setArquivo(file);
     setStep(2);
-    buscarPreview(file);
+    setTipoDocumento(null);
+    buscarPreview(file, null);
   };
 
   const handleFileChange = (e) => selecionarArquivo(e.target.files[0]);
   const handleDrop = (e) => { e.preventDefault(); selecionarArquivo(e.dataTransfer.files[0]); };
   const handleDragOver = (e) => e.preventDefault();
 
-  const buscarPreview = async (file) => {
+  const buscarPreview = async (file, tipoDocumentoEscolhido) => {
     setPreview(null);
     setErroPreview(null);
     setCarregandoPreview(true);
     try {
-      const data = await previewExtrato(file);
+      const data = await previewExtrato(file, tipoDocumentoEscolhido);
       setPreview(data);
+      // só adota o palpite automático se o usuário ainda não escolheu manualmente
+      if (!tipoDocumentoEscolhido) setTipoDocumento(data.tipo_documento_detectado);
     } catch (e) {
       const msg = e?.response?.data?.detail || "Não foi possível ler esse arquivo.";
       setErroPreview(msg);
@@ -61,10 +79,16 @@ function Importar() {
     }
   };
 
+  const escolherTipoDocumento = (tipo) => {
+    setTipoDocumento(tipo);
+    if (arquivo) buscarPreview(arquivo, tipo);
+  };
+
   const cancelarArquivo = () => {
     setArquivo(null);
     setPreview(null);
     setErroPreview(null);
+    setTipoDocumento(null);
     setStep(1);
   };
 
@@ -79,12 +103,13 @@ function Importar() {
     setStep(3);
 
     try {
-      await importarExtrato(arquivo, banco);
+      await importarExtrato(arquivo, banco, tipoDocumento);
       await carregarHistorico();
       setStep(1);
       setArquivo(null);
       setBanco("");
       setPreview(null);
+      setTipoDocumento(null);
     } catch (e) {
       const msg = e?.response?.data?.detail || "Erro ao processar o arquivo.";
       setErro(msg);
@@ -128,9 +153,20 @@ function Importar() {
 
       {/* HEADER */}
       <h1 style={{ marginBottom: "5px", color: "var(--text)" }}>Importar Extrato</h1>
-      <p style={{ color: "var(--subtext)", marginBottom: "24px", margin: "0 0 24px" }}>
+      <p style={{ color: "var(--subtext)", margin: "0 0 10px" }}>
         Importe um arquivo CSV do seu extrato bancário
       </p>
+      <button
+        onClick={baixarModeloCsv}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: "6px",
+          background: "none", border: "none", padding: 0,
+          color: "#10b981", fontSize: "13px", fontWeight: "600",
+          cursor: "pointer", marginBottom: "24px"
+        }}
+      >
+        <Download size={14} /> Seu banco não exporta CSV? Baixe um modelo em branco
+      </button>
 
       {/* STEPPER */}
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
@@ -280,6 +316,54 @@ function Importar() {
               </span>
             )}
           </div>
+
+          {/* TIPO DE DOCUMENTO — fatura força tudo pra crédito; extrato mantém Pix/débito por transação */}
+          <div style={{
+            padding: "10px 16px", borderBottom: "1px solid var(--border)",
+            display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap"
+          }}>
+            <span style={{ fontSize: "12px", color: "var(--subtext)" }}>Isso é:</span>
+            <div style={{ display: "flex", gap: "6px" }}>
+              {[
+                { valor: "extrato", rotulo: "Extrato bancário (Pix/Débito)" },
+                { valor: "fatura", rotulo: "Fatura de cartão (Crédito)" },
+              ].map(({ valor, rotulo }) => (
+                <button
+                  key={valor}
+                  onClick={() => escolherTipoDocumento(valor)}
+                  disabled={carregandoPreview}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: `1px solid ${tipoDocumento === valor ? "#10b981" : "var(--border)"}`,
+                    background: tipoDocumento === valor ? "rgba(16,185,129,0.15)" : "var(--input)",
+                    color: tipoDocumento === valor ? "#10b981" : "var(--subtext)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: carregandoPreview ? "not-allowed" : "pointer",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  {rotulo}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* AVISOS — ex: fatura com transação marcada como entrada (incomum) */}
+          {preview.avisos && preview.avisos.length > 0 && (
+            <div style={{
+              padding: "10px 16px", borderBottom: "1px solid var(--border)",
+              background: "rgba(245,158,11,0.1)", display: "flex", flexDirection: "column", gap: "6px"
+            }}>
+              {preview.avisos.map((aviso, i) => (
+                <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px", color: "#f59e0b" }}>
+                  <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: "1px" }} />
+                  <span>{aviso}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div style={{ maxHeight: "280px", overflowY: "auto" }}>
             {preview.transacoes.map((t, i) => (
