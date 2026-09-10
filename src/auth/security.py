@@ -3,7 +3,6 @@ from jose import jwt, JWTError
 
 from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.core.config import SECRET_KEY
@@ -94,12 +93,15 @@ def get_db_autenticado(
     usuario_id: int = Depends(pegar_usuario_logado),
     db: Session = Depends(get_db),
 ) -> Session:
-    """Sessão de banco com o contexto do usuário logado já setado pra RLS
-    (SET LOCAL via set_config — o comando SET puro não aceita bind parameter).
+    """Sessão de banco com o usuário logado marcado pra RLS. O contexto de
+    verdade (app.current_user_id via set_config) é reaplicado automaticamente
+    a cada transação nova por um event listener em src/database/database.py —
+    sobrevive a qualquer número de commits na mesma request, mesmo trocando
+    de conexão física por baixo dos panos (pooler do Supabase).
     Usar no lugar de get_db em toda rota que também dependa de
     pegar_usuario_logado; o FastAPI cacheia a resolução por request, então
     o JWT não é decodificado duas vezes."""
-    db.execute(text("SELECT set_config('app.current_user_id', :uid, false)"), {"uid": str(usuario_id)})
+    db.info["usuario_id"] = usuario_id
     return db
 
 
